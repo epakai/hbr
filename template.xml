@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE handbrake_encode SYSTEM "handbrake_encode.dtd">
+<handbrake_encode>
+	<handbrake_options>
+		<video>
+			<video_encoder>x264</video_encoder> <!-- x264, x265, mpeg4, mpeg2, VP8, theora -->
+			<quality>18</quality> <!-- varies by codec choice, see handbrake gui -->
+		</video>
+		<audio>
+			<audio_encoder>fdk_aac</audio_encoder> <!-- av_aac, fdk_aac, fdk_haac, copy:aac, ac3, copy:ac3, copy:dts, 
+											copy:dtshd, mp3, copy:mp3, vorbis, flac16, flac24, copy -->
+			<audio_bitrate>192</audio_bitrate> <!-- kb/s -->
+			<audio_quality></audio_quality> <!-- only supported for mp3 [10-0] with 10 being worst, vorbis [-2,10] with -2 worst -->
+		</audio>
+		<picture>
+			<crop></crop> <!-- top:bottom:left:right -->
+			<anamorphic>loose</anamorphic> <!-- strict, loose -->
+		</picture>
+		<filters>
+			<!-- deinterlace and decome are mutually exclusive -->
+			<deinterlace>none</deinterlace> <!-- fast, slow, slower, bob, default, none -->
+			<decomb>default</decomb> <!-- fast, bob, default, none -->
+			<denoise>none</denoise> <!-- ultralight, light, medium, strong, default, none -->
+		</filters>
+	</handbrake_options>
+	
+	<outfile>
+		<type></type><!-- type may be series or movie -->
+		<source>
+			<filename></filename>
+			<dvdtitle></dvdtitle>
+		</source>
+		<!-- filename depends on outfile type -->
+		<!-- series filename: "<name> - s<season>e<episode_number> - <episode_name>" -->
+		<!-- movie filename: "<name> (<year>) -->
+		<name></name>
+		<year></year>
+		<season></season>
+		<episode_number></episode_number>
+		<episode_name></episode_name>
+
+		<chapters></chapters> <!-- specified as a range "1-3" or single chapter "3" -->
+		<audio></audio> <!-- comma separated list of audio tracks -->
+		<audio_names></audio_names> <!-- comma separated list of track names if defaults are bad -->
+		<subtitle></subtitle> <!-- comma separated list of subtitle tracks -->
+	</outfile>
+</handbrake_encode>

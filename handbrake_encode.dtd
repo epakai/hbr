@@ -1,0 +1,29 @@
+<!ELEMENT handbrake_encode (handbrake_options, outfile+)>
+<!ELEMENT handbrake_options (video, audio, picture, filters)>
+<!ELEMENT video (video_encoder, quality)>
+<!ELEMENT video_encoder (#PCDATA)>
+<!ELEMENT quality (#PCDATA)>
+<!ELEMENT audio (audio_encoder?, audio_bitrate?, audio_quality?)>
+<!ELEMENT audio_encoder (#PCDATA)>
+<!ELEMENT audio_bitrate (#PCDATA)>
+<!ELEMENT audio_quality (#PCDATA)>
+<!ELEMENT picture (crop, anamorphic)>
+<!ELEMENT crop (#PCDATA)>
+<!ELEMENT anamorphic (#PCDATA)>
+<!ELEMENT filters (deinterlace, decomb, denoise)>
+<!ELEMENT deinterlace (#PCDATA)>
+<!ELEMENT decomb (#PCDATA)>
+<!ELEMENT denoise (#PCDATA)>
+<!ELEMENT outfile (type, source, name, year, season, episode_number, episode_name?, chapters, audio, audio_names?, subtitle?)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT source (filename, dvdtitle)>
+<!ELEMENT filename (#PCDATA)>
+<!ELEMENT dvdtitle (#PCDATA)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT year (#PCDATA)>
+<!ELEMENT season (#PCDATA)>
+<!ELEMENT episode_number (#PCDATA)>
+<!ELEMENT episode_name (#PCDATA)>
+<!ELEMENT chapters (#PCDATA)>
+<!ELEMENT audio_names (#PCDATA)>
+<!ELEMENT subtitle (#PCDATA)>
