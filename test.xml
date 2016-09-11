@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE handbrake_encode SYSTEM "handbrake_encode.dtd">
+	<handbrake_encode>
+ <handbrake_options 
+			video_encoder="x264"
+ 			quality="18"
+ 			audio_encoder="fdk_aac" 
+ 			audio_bitrate="192" 
+			audio_quality=""
+ 			crop="3:3:3:3"
+ 			anamorphic="loose"
+ 			deinterlace="none"
+			decomb="default"
+ 			denoise="none"
+ />	<outfile>
+ 		<type></type><!-- type may be series or movie -->
+		<source>
+ 			<filename>moya.iso</filename>
+			<dvdtitle>5</dvdtitle>
+ 		</source>
+		<!-- filename depends on outfile type -->
+		<!-- series filename: "<name> - s<season>e<episode_number> - <episode_name>" -->
+		<!-- movie filename: "<name> (<year>)" -->
+		<name>Moya</name>
+ 		<year>1986</year>
+ 		<season>5</season>
+		<episode_number></episode_number>
+ 		<episode_name></episode_name>
+		<chapters></chapters> <!-- specified as a range "1-3" or single chapter "3" -->
+		<audio></audio> <!-- comma separated list of audio tracks -->
+		<audio_names></audio_names> <!-- comma separated list of track names if defaults are bad -->
+		<subtitle></subtitle> <!-- comma separated list of subtitle tracks -->
+	</outfile>
+	<outfile>
+ 		<type></type>
+		<source>
+ 			<filename>moya.iso</filename>
+			<dvdtitle>5</dvdtitle>
+ 		</source>
+		<name>Moya</name>
+ 		<year>1986</year>
+ 		<season>5</season>
+		<episode_number></episode_number>
+ 		<episode_name></episode_name>
+		<chapters></chapters>
+		<audio></audio>
+		<audio_names></audio_names>
+		<subtitle></subtitle>
+	</outfile>
+	<outfile>
+ 		<type></type>
+		<source>
+ 			<filename>moya.iso</filename>
+			<dvdtitle>5</dvdtitle>
+ 		</source>
+		<name>Moya</name>
+ 		<year>1986</year>
+ 		<season>5</season>
+		<episode_number></episode_number>
+ 		<episode_name></episode_name>
+		<chapters></chapters>
+		<audio></audio>
+		<audio_names></audio_names>
+		<subtitle></subtitle>
+	</outfile>
+</handbrake_encode>
