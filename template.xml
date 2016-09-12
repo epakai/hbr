@@ -2,8 +2,9 @@
 <!DOCTYPE handbrake_encode SYSTEM "handbrake_encode.dtd">
 <handbrake_encode>
 	<handbrake_options
+			format="mkv"
 			video_encoder="x264"
-			quality="18"
+			video_quality="18"
 			audio_encoder="fdk_aac"
 			audio_bitrate="192"
 			audio_quality=""
