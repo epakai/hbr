@@ -11,10 +11,9 @@
 							deinterlace (fast|slow|slower|bob|default|none) "none"
 							decomb (fast|bob|default|none) "default"
 							denoise (ultralight|light|medium|strong|default|none) "none">
-<!ELEMENT outfile (type, source, name, year, season, episode_number, episode_name?, chapters, audio, audio_names?, subtitle?)>
+<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, episode_number, episode_name?, chapters, audio, audio_names?, subtitle?)>
 <!ELEMENT type (#PCDATA)>
-<!ELEMENT source (filename, dvdtitle)>
-<!ELEMENT filename (#PCDATA)>
+<!ELEMENT iso_filename (#PCDATA)>
 <!ELEMENT dvdtitle (#PCDATA)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT year (#PCDATA)>

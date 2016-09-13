@@ -3,9 +3,10 @@
 #include <string.h>
 #include <argp.h>
 #include <unistd.h>
-#include <libxml/parser.h>
 #include <libxml/tree.h>
-
+#include <libxml/xpath.h>
+#include <libxml/xpointer.h>
+//TODO add error checking for malloc
 /***************/
 /* PROTOTYPES  */
 /***************/
@@ -14,6 +15,9 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, char *so
 static error_t parse_gen_opt(int , char *, struct argp_state *);
 static error_t parse_enc_opt (int , char *, struct argp_state *);
 char* hb_options_string(xmlNode *root_element);
+int outfile_count(xmlDocPtr doc); 
+char* out_options_string(xmlDocPtr doc, int out_count);
+char* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, char *child);
 
 const char *argp_program_version = "hbr 1.0";
 const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
@@ -66,8 +70,6 @@ static struct argp gen_argp = { gen_options, parse_gen_opt, gen_args_doc, gen_do
 static struct argp enc_argp = { enc_options, parse_enc_opt, enc_args_doc, enc_doc };
 /*************************************************/
 
-
-
 int main(int argc, char * argv[]) {
 	struct enc_arguments enc_arguments;
 	struct gen_arguments gen_arguments;
@@ -93,19 +95,32 @@ int main(int argc, char * argv[]) {
 		// parse normal options
 		argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
 		// parse xml document to tree
-		xmlDocPtr hb_encode = parse_xml(enc_arguments.args[0]);
-		xmlNode *root_element = xmlDocGetRootElement(hb_encode);
+		xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
+		xmlNode *root_element = xmlDocGetRootElement(xml_doc);
 		if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
 			fprintf(stderr,"Wrong document type: handbrake_encode elemnt not found");
 			return 1;
 		}
 		//assemble call to HandBrakeCLI
 		char *hb_options = NULL;
+		char *out_options = NULL;
 		hb_options = hb_options_string(root_element);
 		printf("hb_options: %s (strlen:%d)\n", hb_options, strlen(hb_options));
 
-		xmlFreeDoc(hb_encode);
+		int out_count = outfile_count(xml_doc);
+		printf("out_count: %d\n", out_count);
+		int i;
+		for(i = 1; i <= out_count; i++) {
+			out_options = out_options_string(xml_doc, i); 
+			// call handbrake
+			// generate preview? (ffmpeg)
+			// call mkvpropedit
+		}
+
+		xmlFreeDoc(xml_doc);
 		free(hb_options);
+		free(out_options);
+
 	}
 
 	return 0;
@@ -205,11 +220,13 @@ xmlDocPtr parse_xml(char *infile) {
 	/* check if parsing suceeded */
 	if (doc == NULL) {
 		fprintf(stderr, "Failed to parse %s\n", infile);
+		xmlFreeParserCtxt(ctxt);
 		exit(1);
 	} else {
 		/* check if validation suceeded */
 		if (ctxt->valid == 0) {
 			fprintf(stderr, "Failed to validate %s\n", infile);
+			xmlFreeParserCtxt(ctxt);
 			exit(1);
 		}
 	}
@@ -237,8 +254,8 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, char *so
 		if(i == 0) {
 			printf("<!-- type may be series or movie -->");
 		}
-		printf("\n\t\t<source>\n \t\t\t<filename>%s</filename>\n", source);
-		printf("\t\t\t<dvdtitle>%d</dvdtitle>\n \t\t</source>\n", title);
+		printf("\n\t\t\t<iso_filename>%s</iso_filename>\n", source);
+		printf("\t\t\t<dvdtitle>%d</dvdtitle>\n", title);
 		if(i == 0) {
 			printf("\t\t<!-- filename depends on outfile type -->\n" \
 					"\t\t<!-- series filename: \"<name> - s<season>e<episode_number> - <episode_name>\" -->\n" \
@@ -278,9 +295,9 @@ char* hb_options_string(xmlNode *root_element) {
 		cur = cur->next;
 	}
 	// allocate and initialize options string
-	char *opt_str= (char *)malloc(120*sizeof(char)); //TODO: determine max string length
+	char *opt_str= (char *)malloc(120*sizeof(char)); //TODO: better allocation technique
 	opt_str[0] = '\0';
-	
+
 
 	// Build options string
 	xmlChar *temp;
@@ -288,11 +305,11 @@ char* hb_options_string(xmlNode *root_element) {
 	strcat(opt_str, " -f ");
 	strcat(opt_str, temp = xmlGetNoNsProp(cur, (const xmlChar *) "format"));
 	xmlFree(temp);
-	
+
 	strcat(opt_str, " -e ");
 	strcat(opt_str, temp = xmlGetNoNsProp(cur, (const xmlChar *) "video_encoder"));
 	xmlFree(temp);
-	
+
 	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "video_quality"))[0] != '\0') {
 		strcat(opt_str, " -q ");
 		strcat(opt_str, temp);
@@ -329,10 +346,10 @@ char* hb_options_string(xmlNode *root_element) {
 			xmlFree(temp2);
 		}
 	} else { // set bitrate for all other codecs
-			xmlChar *temp2;
-			strcat(opt_str, " -B ");
-			strcat(opt_str, temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"));
-			xmlFree(temp2);
+		xmlChar *temp2;
+		strcat(opt_str, " -B ");
+		strcat(opt_str, temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"));
+		xmlFree(temp2);
 	}
 	xmlFree(temp);
 
@@ -367,7 +384,7 @@ char* hb_options_string(xmlNode *root_element) {
 		xmlFree(temp);
 		xmlFree(temp2);
 	}
-	
+
 	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "denoise"))[0] != 'n') {
 		strcat(opt_str, " -8 ");
 		strcat(opt_str, temp);
@@ -376,4 +393,100 @@ char* hb_options_string(xmlNode *root_element) {
 
 	//strncat(opt_str, temp = , 7*sizeof(char));
 	return opt_str;
+}
+
+
+int outfile_count(xmlDocPtr doc) {
+	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+	if(xpath_context == NULL) {
+		fprintf(stderr, "Unable to create XPath context\n");
+		return 0;
+	} else {
+		xmlChar *outfile_xpath;
+		outfile_xpath = "/handbrake_encode/outfile";
+		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
+		if(outfile_obj == NULL) {
+			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			xmlXPathFreeContext(xpath_context); 
+			return 0;
+		}
+		xmlXPathFreeContext(xpath_context); 
+		int count = outfile_obj->nodesetval->nodeNr;
+		xmlXPathFreeObject(outfile_obj);
+		return count;
+	}
+}
+
+char* out_options_string(xmlDocPtr doc, int out_count) {
+	xmlChar *type, *name, *year, *season, *episode_number, *episode_name; // output filename stuff
+	xmlChar *iso_filename, *dvdtitle, *chapters, *audio, *audio_names, *subtitle; // handbrake options
+
+	// abstract this out to a new function
+	type = xpath_get_outfile_child_content(doc, out_count, "type");
+	name = xpath_get_outfile_child_content(doc, out_count, "name");
+	year = xpath_get_outfile_child_content(doc, out_count, "year");
+	season = xpath_get_outfile_child_content(doc, out_count, "season");
+	episode_number = xpath_get_outfile_child_content(doc, out_count, "episode_number");
+	episode_name = xpath_get_outfile_child_content(doc, out_count, "episode_name");
+
+	iso_filename = xpath_get_outfile_child_content(doc, out_count, "iso_filename");
+	dvdtitle = xpath_get_outfile_child_content(doc, out_count, "dvdtitle");
+	chapters = xpath_get_outfile_child_content(doc, out_count, "chapters");
+	audio = xpath_get_outfile_child_content(doc, out_count, "audio");
+	audio_names = xpath_get_outfile_child_content(doc, out_count, "audio_names");
+	subtitle = xpath_get_outfile_child_content(doc, out_count, "subtitle");
+
+	//TODO: do logic and strcat type
+	printf("\n%s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n", type, name, year, season, episode_number, episode_name, iso_filename,dvdtitle,chapters,audio,audio_names,subtitle);
+	
+	xmlFree(type);
+	xmlFree(name);
+	xmlFree(year);
+	xmlFree(season);
+	xmlFree(episode_number);
+	xmlFree(episode_name);
+	xmlFree(iso_filename);
+	xmlFree(dvdtitle);
+	xmlFree(chapters);
+	xmlFree(audio);
+	xmlFree(audio_names);
+	xmlFree(subtitle);
+	return strdup("me");// TEMP RETURN
+}
+
+char* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, char *child) {
+	xmlChar *content; 
+	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
+	if(xpath_context == NULL) {
+		fprintf(stderr, "Unable to create XPath context\n");
+		return NULL;
+	} else {
+		// build xpath like: "/handbrake_encode/outfile[3]/child"
+		xmlChar *base_xpath = strdup("/handbrake_encode/outfile[");
+		xmlChar *outfile_xpath = malloc( strlen(base_xpath)+strlen(child)+10 );
+		outfile_xpath[0] = '\0';
+		strcat(outfile_xpath, base_xpath);			//add base_xpath
+		snprintf(base_xpath, 9, "%d", out_count);	//convert out_count to string
+		strcat(outfile_xpath, base_xpath);			//add out_count
+		strcat(outfile_xpath, "]/");				//close expression
+		strcat(outfile_xpath, child);				//add child
+
+		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
+		if(outfile_obj == NULL) {
+			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			xmlXPathFreeContext(xpath_context); 
+			return NULL;
+		}
+		//copy content so we can free the XPath Object
+		xmlChar *temp = xmlNodeGetContent((xmlNode *) outfile_obj->nodesetval->nodeTab[0]);
+		content = malloc(strlen(temp)+1);
+		strcpy(content, temp);
+		xmlFree(temp);
+		xmlXPathFreeObject(outfile_obj);
+		// free other libxml structures
+		xmlFree(base_xpath);
+		xmlFree(outfile_xpath);
+	}
+	xmlXPathFreeContext(xpath_context); 
+	return content;
 }

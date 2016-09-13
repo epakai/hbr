@@ -15,23 +15,39 @@
 			denoise="none"
 			/>
 	<outfile>
-		<type></type><!-- type may be series or movie -->
-		<source>
-			<filename></filename>
-			<dvdtitle></dvdtitle>
-		</source>
+		<type>series</type><!-- type may be series or movie -->
+		<iso_filename>test_filename.iso</iso_filename>
+		<dvdtitle>2</dvdtitle>
 		<!-- filename depends on outfile type -->
 		<!-- series filename: "<name> - s<season>e<episode_number> - <episode_name>" -->
 		<!-- movie filename: "<name> (<year>) -->
-		<name></name>
-		<year></year>
-		<season></season>
-		<episode_number></episode_number>
-		<episode_name></episode_name>
+		<name>test name</name>
+		<year>1986</year>
+		<season>1</season>
+		<episode_number>6</episode_number>
+		<episode_name>test episode name!</episode_name>
 
-		<chapters></chapters> <!-- specified as a range "1-3" or single chapter "3" -->
-		<audio></audio> <!-- comma separated list of audio tracks -->
-		<audio_names></audio_names> <!-- comma separated list of track names if defaults are bad -->
-		<subtitle></subtitle> <!-- comma separated list of subtitle tracks -->
+		<chapters>3-8</chapters>		<!-- specified as a range "1-3" or single chapter "3" -->
+		<audio>1,2,4</audio>				<!-- comma separated list of audio tracks -->
+		<audio_names>1,2,3</audio_names>	<!-- comma separated list of track names if defaults are bad -->
+		<subtitle>1</subtitle>		<!-- comma separated list of subtitle tracks -->
+	</outfile>
+	<outfile>
+		<type>series</type><!-- type may be series or movie -->
+		<iso_filename>test_filename.iso</iso_filename>
+		<dvdtitle>2</dvdtitle>
+		<!-- filename depends on outfile type -->
+		<!-- series filename: "<name> - s<season>e<episode_number> - <episode_name>" -->
+		<!-- movie filename: "<name> (<year>) -->
+		<name>test name</name>
+		<year>1986</year>
+		<season>1</season>
+		<episode_number>5</episode_number>
+		<episode_name>other test episode name!</episode_name>
+
+		<chapters>9-16</chapters>		<!-- specified as a range "1-3" or single chapter "3" -->
+		<audio>1,2,4</audio>				<!-- comma separated list of audio tracks -->
+		<audio_names>1,2,3</audio_names>	<!-- comma separated list of track names if defaults are bad -->
+		<subtitle>1</subtitle>		<!-- comma separated list of subtitle tracks -->
 	</outfile>
 </handbrake_encode>
