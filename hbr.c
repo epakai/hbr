@@ -136,8 +136,8 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state) {
 			argp_help(&enc_argp, stdout, ARGP_HELP_LONG, "hbr");
 
 			printf("\nUsage: hbr -g NUM [OPTION...]\n");
-			argp_state_help(state, stdout, ARGP_HELP_PRE_DOC);
-			argp_state_help(state, stdout, ARGP_HELP_LONG);
+			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, "hbr");
+			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, "hbr");
 			break;
 		case 'g':
 			if ( atoi(arg) > 0 )
