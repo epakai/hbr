@@ -1,7 +1,7 @@
 <!ELEMENT handbrake_encode (handbrake_options, outfile+)>
 <!ELEMENT handbrake_options EMPTY>
 <!ATTLIST handbrake_options format (mp4|mkv) "mkv"
-							video_encoder (x264|x265|mpeg4|mpeg2|VP8|theora) "x264"
+							video_encoder (x264|mpeg4|mpeg2|VP8|theora) "x264"
 							video_quality CDATA "18"
 							audio_encoder (av_aac|fdk_aac|fdk_haac|copy:aac|ac3|copy:ac3|copy:dts|copy:dtshd|mp3|copy:mp3|vorbis|flac16|flac24|copy) "fdk_aac"
 							audio_bitrate CDATA #IMPLIED

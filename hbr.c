@@ -8,9 +8,14 @@
 #include <libxml/xpath.h>
 #include <libxml/xpointer.h>
 #include <ctype.h>
+#include <errno.h>
+
+const char *argp_program_version = "hbr 1.0";
+const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
 
 int global_mkv = 1;
 //TODO add error checking for malloc
+//TODO make all errors print line number if relevant
 /***************/
 /* PROTOTYPES  */
 /***************/
@@ -18,16 +23,15 @@ xmlDocPtr parse_xml(char *);
 void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, char *year, char *crop, char *name, char *format); 
 static error_t parse_gen_opt(int , char *, struct argp_state *);
 static error_t parse_enc_opt (int , char *, struct argp_state *);
-char* hb_options_string(xmlNode *root_element);
+char* hb_options_string(xmlDocPtr doc);
 int outfile_count(xmlDocPtr doc); 
 char* out_options_string(xmlDocPtr doc, int out_count);
 char* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, char *child);
 int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, char *child);
 int validate_file_string(xmlChar * file_string);
+int validate_bit_rate(int bitrate, int minimum, int maximum);
 xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count);
 
-const char *argp_program_version = "hbr 1.0";
-const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
 /***************/
 
 
@@ -106,13 +110,13 @@ int main(int argc, char * argv[]) {
 		xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
 		xmlNode *root_element = xmlDocGetRootElement(xml_doc);
 		if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
-			fprintf(stderr,"Wrong document type: handbrake_encode element not found");
+			fprintf(stderr,"Wrong document type: handbrake_encode element not found in \"%s\"", xml_doc->URL);
 			return 1;
 		}
 		//assemble call to HandBrakeCLI
 		char *hb_options = NULL;
 		char *out_options = NULL;
-		hb_options = hb_options_string(root_element);
+		hb_options = hb_options_string(xml_doc);
 		printf("hb_options: %s (strlen:%d)\n", hb_options, strlen(hb_options));
 
 		int out_count = outfile_count(xml_doc);
@@ -221,31 +225,31 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state) {
 }
 
 xmlDocPtr parse_xml(char *infile) {
-	xmlParserCtxtPtr ctxt; /* the parser context */
-	xmlDocPtr doc; /* the resulting document tree */
+	xmlParserCtxtPtr ctxt; // the parser context
+	xmlDocPtr doc; // the resulting document tree
 
-	/* create a parser context */
+	// create a parser context
 	ctxt = xmlNewParserCtxt();
 	if (ctxt == NULL) {
 		fprintf(stderr, "Failed to allocate parser context\n");
 		exit(1);
 	}
-	/* parse the file, activating the DTD validation option */
+	// parse the file, activating the DTD validation option
 	doc = xmlCtxtReadFile(ctxt, infile, NULL, XML_PARSE_DTDVALID);
-	/* check if parsing suceeded */
+	// check if parsing suceeded
 	if (doc == NULL) {
 		fprintf(stderr, "Failed to parse %s\n", infile);
 		xmlFreeParserCtxt(ctxt);
 		exit(1);
 	} else {
-		/* check if validation suceeded */
+		// check if validation suceeded
 		if (ctxt->valid == 0) {
 			fprintf(stderr, "Failed to validate %s\n", infile);
 			xmlFreeParserCtxt(ctxt);
 			exit(1);
 		}
 	}
-	/* free up the parser context */
+	// free up the parser context
 	xmlFreeParserCtxt(ctxt);
 	return doc;
 }
@@ -302,7 +306,8 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, char *so
 }
 
 
-char* hb_options_string(xmlNode *root_element) {
+char* hb_options_string(xmlDocPtr doc) {
+	xmlNode *root_element = xmlDocGetRootElement(doc);
 	int child_count  = xmlChildElementCount(root_element);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
@@ -310,7 +315,7 @@ char* hb_options_string(xmlNode *root_element) {
 		cur = cur->next;
 	}
 	// allocate and initialize options string
-	char *opt_str= (char *)malloc(120*sizeof(char)); //TODO: better allocation technique
+	char *opt_str= (char *)malloc(120*sizeof(char)); // 120 is based on 
 	opt_str[0] = '\0';
 
 
@@ -329,22 +334,62 @@ char* hb_options_string(xmlNode *root_element) {
 		global_mkv=0;
 	}
 	strcat(opt_str, temp);
-	free(temp);
+	xmlFree(temp);
 
 	strcat(opt_str, " -e ");
 	strcat(opt_str, temp = xmlGetNoNsProp(cur, (const xmlChar *) "video_encoder"));
-	xmlFree(temp);
 
-	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "video_quality"))[0] != '\0') {
-		strcat(opt_str, " -q ");
-		strcat(opt_str, temp);
+	xmlChar * quality_string;
+	if((quality_string = xmlGetNoNsProp(cur, (const xmlChar *) "video_quality"))[0] != '\0') {
+		long quality = strtol(quality_string, NULL, 10);
+		int good_quality= 0;
+		if ( strlen(quality_string) <= 2 && isdigit(quality_string[0]) && isdigit(quality_string[1])) {
+			good_quality = 1;
+			if ( xmlStrcmp(temp, (const xmlChar *) "x264") == 0) {
+				if ( 0 <= quality && quality <=51 ) {
+					strcat(opt_str, " -q ");
+					strcat(opt_str, quality_string);
+					good_quality= 2;
+				}
+			} else if ( xmlStrcmp(temp, (const xmlChar *) "mpeg4") == 0) {
+				if ( 1 <= quality && quality <=31 ) {
+					strcat(opt_str, " -q ");
+					strcat(opt_str, quality_string);
+					good_quality= 2;
+				}
+			} else if ( xmlStrcmp(temp, (const xmlChar *) "mpeg2") == 0) {
+				if ( 1 <= quality && quality <=31 ) {
+					strcat(opt_str, " -q ");
+					strcat(opt_str, quality_string);
+					good_quality= 2;
+				}
+			} else if ( xmlStrcmp(temp, (const xmlChar *) "VP8") == 0) {
+				if ( 0 <= quality && quality <=63 ) {
+					strcat(opt_str, " -q ");
+					strcat(opt_str, quality_string);
+					good_quality= 2;
+				}
+			} else if ( xmlStrcmp(temp, (const xmlChar *) "theora") == 0) {
+				if ( 0 <= quality && quality <=63 ) {
+					strcat(opt_str, " -q ");
+					strcat(opt_str, quality_string);
+					good_quality= 2;
+				}
+			} 
+		}
+		if (good_quality == 0){
+			fprintf(stderr, "Invalid video quality '%s' for %s encoder in \"%s\" line number: ~%d\n", quality_string, temp, doc->URL, xmlGetLineNo(cur)-9);
+		} else if (good_quality == 1) {
+			fprintf(stderr, "Video quality '%s' out of range for %s encoder in \"%s\" line number: ~%d\n", quality_string, temp, doc->URL, xmlGetLineNo(cur)-9);
+		}
 	}
 	xmlFree(temp);
+	xmlFree(quality_string);
 
 	strcat(opt_str, " -E ");
 	strcat(opt_str, temp =  xmlGetNoNsProp(cur, (const xmlChar *) "audio_encoder"));
-	if(xmlStrcmp(temp, (const xmlChar *) "mp3") == 0 || xmlStrcmp(temp, (const xmlChar *) "vorbis") == 0 ) {
-		xmlChar * temp2;
+	if(xmlStrcmp(temp, (const xmlChar *) "mp3") == 0 || xmlStrcmp(temp, (const xmlChar *) "vorbis") == 0  || xmlStrcmp(temp, (const xmlChar *) "copy:mp3") == 0) {
+		xmlChar * temp2, *temp3;
 		if((temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_quality"))[0] != '\0') {
 			// verify quality is within bounds
 			float a_quality = strtof(temp2, NULL);
@@ -365,32 +410,121 @@ char* hb_options_string(xmlNode *root_element) {
 					strcat(opt_str, temp2);
 				}
 			}
-		} else { // set bitrate for mp3/vorbis if no quality found
-			strcat(opt_str, " -B ");
-			strcat(opt_str, temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"));
-			xmlFree(temp2);
+		} else if ( (temp3 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"))[0] != '\0'){ 
+			// set bitrate for mp3/vorbis if no quality found
+
+			// Only tests subset of bit rates for vorbis/mp3 (vorbis can go a bit higher)
+			int bitrate = strtol(temp3, NULL, 10);
+			// test firs char of audio encoder and for valid bit rate
+			if ( ( (temp[0] == 'm' || temp[0] == 'c') && validate_bit_rate(bitrate,32,320)) || (temp[0] == 'v' && validate_bit_rate(bitrate, 192, 1344)) ){
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp3 );
+			} else {
+				// make bad guess at line numbers since there doesn't seem to be a way to get attributes' line number
+				fprintf(stderr, "Invalid bitrate '%d' for %s codec in \"%s\" line number: ~%d\n", bitrate, temp, doc->URL, xmlGetLineNo(cur)-7);
+			}
+			xmlFree(temp3);
 		}
+		xmlFree(temp2);
 	} else { // set bitrate for all other codecs
 		xmlChar *temp2;
-		strcat(opt_str, " -B ");
-		strcat(opt_str, temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"));
+		temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate");
+		if ( temp2[0] != '\0'){
+			int bitrate = strtol(temp2, NULL, 10);
+			int good_bitrate = 0;
+			if( xmlStrcmp(temp, (const xmlChar *) "av_aac") == 0 && validate_bit_rate(bitrate, 192, 1536 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "fdk_aac") == 0 && validate_bit_rate(bitrate, 160, 1344 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "fdk_haac") == 0 && validate_bit_rate(bitrate, 80, 256)) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "copy:aac") == 0 && validate_bit_rate(bitrate, 192, 1536 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "ac3") == 0 && validate_bit_rate(bitrate, 224, 640)) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "copy:ac3") == 0 && validate_bit_rate(bitrate, 224, 640)) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "copy:dts") == 0 && validate_bit_rate(bitrate, 160, 1344 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "copy:dtshd") == 0 && validate_bit_rate(bitrate, 160, 1344 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrcmp(temp, (const xmlChar *) "copy") == 0 && validate_bit_rate(bitrate, 160, 1344 )) {
+				strcat(opt_str, " -B ");
+				strcat(opt_str, temp2);
+				good_bitrate = 1;
+			}
+			if( xmlStrncmp(temp, (const xmlChar *) "flac", 4) == 0) {
+			}
+			if (good_bitrate = 0) {
+				fprintf(stderr, "Invalid bitrate '%d' for %s codec in \"%s\" line number: ~%d\n", bitrate, temp, doc->URL, xmlGetLineNo(cur)-7);
+			}
+		}
 		xmlFree(temp2);
 	}
 	xmlFree(temp);
-
+	//TODO: left off here on setting up validation for inputs
 	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop"))[0] != '\0') {
-		strcat(opt_str, " --crop ");
-		//TODO: validate crop matches w:x:y:z format
-		strcat(opt_str, temp);
+		char *crop[4];
+		int non_digit_found = 0;
+		crop[0] = strtok(temp, ":");
+		crop[1] = strtok(NULL, ":");
+		crop[2] = strtok(NULL, ":");
+		crop[3] = strtok(NULL, "\0");
+		if ((strlen(crop[0]) <= 4) && (strlen(crop[1]) <= 4) && (strlen(crop[2]) <= 4) && (strlen(crop[3]) <= 4)){
+			int i;
+			for(i = 0; i<4; i++){
+				int j = 0;
+				while (crop[i][j] != '\0'){
+					if (!isdigit(crop[i][j])){
+						non_digit_found = 1;
+					}
+					j++;
+				}
+			}
+			if(non_digit_found == 0){
+				strcat(opt_str, " --crop ");
+				xmlFree(temp);
+				temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop");
+				strcat(opt_str, temp);
+			} else {
+				fprintf(stderr, "Invalid crop (non-digits) '%s:%s:%s:%s' in \"%s\" line number: ~%d\n", crop[0], crop[1], crop[2], crop[3],  doc->URL, xmlGetLineNo(cur)-5);
+			}
+		} else {
+			fprintf(stderr, "Invalid crop (values too large) '%s:%s:%s:%s' in \"%s\" line number: ~%d\n", crop[0], crop[1], crop[2], crop[3],  doc->URL, xmlGetLineNo(cur)-5);
+		}
+		xmlFree(temp);
 	}
-	xmlFree(temp);
 
 	temp = xmlGetNoNsProp(cur, (const xmlChar *) "anamorphic");
 	if(xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
-		strcat(opt_str, " --strict-anamorphic ");
+		strcat(opt_str, " --strict-anamorphic");
 	}
 	if(xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
-		strcat(opt_str, " --loose-anamorphic ");
+		strcat(opt_str, " --loose-anamorphic");
 	}
 	xmlFree(temp);
 
@@ -416,10 +550,22 @@ char* hb_options_string(xmlNode *root_element) {
 	}
 	xmlFree(temp);
 
-	//strncat(opt_str, temp = , 7*sizeof(char));
 	return opt_str;
 }
 
+int validate_bit_rate(int bitrate, int minimum, int maximum) {
+	// list is slightly reordered to put common rates first
+	int valid_bitrates[] = { 128, 160, 192, 224, 256, 320, 384, 448, 512, 40, 48, 56, 64, 80, 96, 112, 576, 640, 768, 960, 1152, 1344, 1536, 2304, 3072, 4608, 6144 };
+	int i;
+	for (i=0; i<27; i++) {
+		if (bitrate == valid_bitrates[i]){
+			if (bitrate > minimum && bitrate < maximum) {
+				return 1; //valid
+			}
+		}
+	}
+	return 0;
+}
 
 int outfile_count(xmlDocPtr doc) {
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
@@ -448,6 +594,7 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 	xmlChar *out_options;
 	int out_options_length; //keep track of string length
 
+	// Fetch all tag contents for a single outfile
 	xmlChar * tag_name[] = {"type", "name", "year", "season", "episode_number", "specific_name", "iso_filename", "dvdtitle", "chapters", "audio", "audio_names", "subtitle"};
 	type = xpath_get_outfile_child_content(doc, out_count, tag_name[0]);
 	name = xpath_get_outfile_child_content(doc, out_count, tag_name[1]);
@@ -462,7 +609,8 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 	audio = xpath_get_outfile_child_content(doc, out_count, tag_name[9]);
 	audio_names = xpath_get_outfile_child_content(doc, out_count, tag_name[10]);
 	subtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[11]);
-	
+
+	// Test all tag contents for bad characters
 	xmlChar *validate_array[] = {type, name, year, season, episode_number, specific_name, iso_filename, dvdtitle, chapters, audio, audio_names, subtitle};
 	int i;
 	for (i=0; i<12; i++) {
@@ -473,9 +621,12 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 			goto badstring;
 		}
 	}
+
+	//Begin building out_options
 	out_options = xmlStrdup("-o \"");
 	out_options_length = 5;
-
+	
+	// Verify <name> is non-empty
 	int name_len = xmlStrlen(name);
 	if( name_len == 0 ) {
 		fprintf(stderr, "Empty <name> tag in \"%s\" tag <%s> line number: %d\n", doc->URL, tag_name[1], xpath_get_outfile_line_number(doc, out_count, tag_name[1]) );
@@ -483,9 +634,9 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 		goto badstring;
 	}
 	out_options = xmlStrncat(out_options, name, out_options_length = out_options_length + name_len);
-
+	// Build filename for <type>series
+	// series name = -o <name> - s<season>e<episode_number> - <specific_name>
 	if ( xmlStrcmp(type, (const xmlChar *) "series") == 0 ){
-		//do series name = -o <name> - s<season>e<episode_number> - <specific_name>
 		//TODO: add conditionals to check all input values
 		/*TODO: filter strings for /\ */
 		// return empty string for no name
@@ -513,8 +664,9 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 			out_options = xmlStrncat(out_options, (const xmlChar *) ".mp4\"", out_options_length + 5);
 		}
 		printf("Series out_options test: %s\n", out_options);
+	// Build filename for <type>movie
+	// movie name = -o <name> (<year>) <specific_name>
 	} else if ( xmlStrcmp(type, (const xmlChar *) "movie") == 0 ){
-		// do movie name = -o <name> (<year>) <specific_name>
 		// TODO: change specific_name to specific_name and use it in movies and series
 		if (global_mkv)
 			//TODO truncate filenames longer than 255 characters
@@ -525,7 +677,7 @@ char* out_options_string(xmlDocPtr doc, int out_count) {
 	} else {
 		fprintf(stderr, "Invalid outfile <type> in outfile %d\n", out_count);
 	}
-badstring:
+badstring: //code should set out_options[0] to '\0' before jumping to badstring
 	xmlFree(type);
 	xmlFree(name);
 	xmlFree(year);
