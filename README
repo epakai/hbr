@@ -1,0 +1,23 @@
+handbrake runner (hbr)                      https://github.com/epakai/hbr
+====================== 
+
+This is a tool for automating the running of HandBrakeCLI and
+allowing for encodes to be easily re-run with modified settings.
+
+Usage is to specify an xml file for all relevant settings and an output
+directory.
+
+	hbr show.xml /video/show
+
+You may also specify a specific episode from the xml file to be encoded.
+
+	hbr show.xml -e 8 /video/show/
+
+In order to generate an xml file run hbr with the -g option. Some tags
+and options can be prefilled by the generator. See hbr --help for a list.
+Output of hbr -g is to stdout. Redirect it to a file.
+
+	hbr -g 12 --format=mkv --basedir=/video/iso > show.xml
+
+This generates a file with 12 outfile sections. Edit this manually and
+then feed it back into hbr to begin encoding.
