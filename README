@@ -1,3 +1,8 @@
+This tool is incomplete. Still needs work to get handbrake calls in order
+then log all output. Finally I want to get some additional metadata or
+tags added to mkv files and maybe generate preview images (via ffmpeg) 
+for quick sampling of output.
+
 handbrake runner (hbr)                      https://github.com/epakai/hbr
 ====================== 
 
