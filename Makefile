@@ -1,6 +1,6 @@
 PRGM_NAME = hbr
 CC = gcc
-CFLAGS = -g
+CFLAGS =-g -Wall -Wextra -Os
 SOURCE  = hbr.c
 OBJECTS = hbr.o
 INCLUDES = `xml2-config --cflags`
@@ -20,3 +20,5 @@ test-gen: hbr
 	- xmllint --valid test-gen.xml -o /dev/null
 	rm test-gen.xml
 
+clean:
+	rm hbr.o hbr

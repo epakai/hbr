@@ -4,19 +4,20 @@
 	<handbrake_options
 			format="mkv"
 			video_encoder="x264"
-			video_quality="58"
+			video_quality="18"
 			audio_encoder="fdk_aac"
 			audio_bitrate="192"
 			audio_quality=""
-			crop="0:0:0:0"
+			crop="23:456:0:10"
 			anamorphic="loose"
 			deinterlace="none"
 			decomb="default"
 			denoise="none"
+			input_basedir="/mnt/storage/video/iso/Moyashimon"
 			/>
 	<outfile>
 		<type>series</type><!-- type may be series or movie -->
-		<iso_filename>test_filename.iso</iso_filename>
+		<iso_filename>Moyashimon_01.iso</iso_filename>
 		<dvdtitle>2</dvdtitle>
 		<!-- filename depends on outfile type -->
 		<!-- series filename: "<name> - s<season>e<episode_number> - <specific_name>" -->
@@ -24,17 +25,16 @@
 		<name>toodles</name>
 		<year>1986</year>
 		<season>1</season>
-		<episode_number>a</episode_number>
-		<specific_name>test episode name!</specific_name>
+		<episode_number>4</episode_number>
+		<specific_name>test episode name</specific_name>
 
 		<chapters>3-8</chapters>		<!-- specified as a range "1-3" or single chapter "3" -->
 		<audio>1,2,4</audio>				<!-- comma separated list of audio tracks -->
-		<audio_names>1,2,3</audio_names>	<!-- comma separated list of track names if defaults are bad -->
 		<subtitle>1</subtitle>		<!-- comma separated list of subtitle tracks -->
 	</outfile>
 	<outfile>
 		<type>series</type><!-- type may be series or movie -->
-		<iso_filename>test_filename.iso</iso_filename>
+		<iso_filename>Moyashimon_02.iso</iso_filename>
 		<dvdtitle>2</dvdtitle>
 		<!-- filename depends on outfile type -->
 		<!-- series filename: "<name> - s<season>e<episode_number> - <specific_name>" -->
@@ -43,11 +43,10 @@
 		<year>1986</year>
 		<season>1</season>
 		<episode_number>5</episode_number>
-		<specific_name>other test episode name!</specific_name>
+		<specific_name>other test episode name</specific_name>
 
 		<chapters>9-16</chapters>		<!-- specified as a range "1-3" or single chapter "3" -->
 		<audio>1,2,4</audio>				<!-- comma separated list of audio tracks -->
-		<audio_names>1,2,3</audio_names>	<!-- comma separated list of track names if defaults are bad -->
 		<subtitle>1</subtitle>		<!-- comma separated list of subtitle tracks -->
 	</outfile>
 </handbrake_encode>
