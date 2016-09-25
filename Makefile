@@ -1,6 +1,6 @@
 PRGM_NAME = hbr
 CC = gcc
-CFLAGS =-g -Wall -Wextra -Os
+CFLAGS =-g -Wall -Wextra
 SOURCE  = hbr.c
 OBJECTS = hbr.o
 INCLUDES = `xml2-config --cflags`
