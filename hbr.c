@@ -49,7 +49,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 static char gen_doc[] = "handbrake runner -- generates a xml template with [NUM] outfile sections";
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an [XML FILE] with all encoded files placed in [OUTPUT PATH]";
 static char gen_args_doc[] = "-g NUM";
-static char enc_args_doc[] = "[XML FILE] [OUTPUT PATH]";
+static char enc_args_doc[] = "[XML FILE]";
 
 
 static struct argp_option gen_options[] = {
@@ -69,7 +69,6 @@ static struct argp_option gen_options[] = {
 
 static struct argp_option enc_options[] = {
 	{"in",      'i', "FILE", 0, "handbrake_encode XML File", 0},
-	{"out",     'o', "PATH", 0, "directory for output files", 0},
 	{"episode", 'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
 	{"overwrite", 'y', 0, 0, "overwrite encoded files without confirmation", 1},
 	{"help", '?', 0,      OPTION_HIDDEN, "", 0 },
@@ -82,7 +81,7 @@ struct gen_arguments {
 };
 
 struct enc_arguments {
-	char *args[2];
+	char *args[1];
 	int episode, overwrite;
 };
 
@@ -580,8 +579,13 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 		xmlFree(temp);
 	} else if((temp2= xmlGetNoNsProp(cur, (const xmlChar *) "decomb"))[0] != 'n') {
 		xmlFree(temp);
-		opt_str = xmlStrncat(opt_str, (const xmlChar *) " -5 ", 4);
-		opt_str = xmlStrncat(opt_str, temp2, xmlStrlen(temp2));
+		if(xmlStrcmp(temp2, (const xmlChar *) "none") != 0){
+		} else {
+			opt_str = xmlStrncat(opt_str, (const xmlChar *) " -5 ", 4);
+			if(xmlStrcmp(temp2, (const xmlChar *) "default") != 0) {
+				opt_str = xmlStrncat(opt_str, temp2, xmlStrlen(temp2));
+			}
+		}
 		xmlFree(temp2);
 	} else {
 		xmlFree(temp);
