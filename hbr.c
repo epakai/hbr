@@ -39,6 +39,7 @@ int validate_bit_rate(int bitrate, int minimum, int maximum);
 xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count);
 int call_handbrake(xmlChar *hb_command, int out_count, int overwrite);
 int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int out_count);
+void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i);
 
 /***************/
 
@@ -70,6 +71,7 @@ static struct argp_option gen_options[] = {
 static struct argp_option enc_options[] = {
 	{"in",      'i', "FILE", 0, "handbrake_encode XML File", 0},
 	{"episode", 'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
+	{"preview", 'p', 0, 0, "generate a preview image for each output file", 1},
 	{"overwrite", 'y', 0, 0, "overwrite encoded files without confirmation", 1},
 	{"help", '?', 0,      OPTION_HIDDEN, "", 0 },
 	{ 0 }
@@ -82,7 +84,7 @@ struct gen_arguments {
 
 struct enc_arguments {
 	char *args[1];
-	int episode, overwrite;
+	int episode, overwrite, preview;
 };
 
 static struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc, gen_doc, NULL, 0, 0};
@@ -91,10 +93,12 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc, enc_doc
 
 int main(int argc, char * argv[]) {
 	struct enc_arguments enc_arguments;
+	enc_arguments.episode = -1;
+	enc_arguments.overwrite = 0;
+	enc_arguments.preview = 0;
 	struct gen_arguments gen_arguments;
 	gen_arguments.generate = -1;
 	gen_arguments.help = 0;
-	enc_arguments.episode = -1;
 	gen_arguments.title = 0;
 	gen_arguments.season = 0;
 	gen_arguments.video_type = -1;
@@ -179,7 +183,6 @@ int main(int argc, char * argv[]) {
 		}
 		// encode all the episodes if loop parameters weren't modified above
 		for(; i <= out_count; i++) {
-			printf("DEBUG: i: %d\n", i);
 			out_options = out_options_string(xml_doc, i);
 			if ( out_options[0] == '\0'){
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
@@ -192,7 +195,7 @@ int main(int argc, char * argv[]) {
 			xmlChar *hb_command = xmlCharStrdup("HandBrakeCLI");
 			hb_command = xmlStrcat(hb_command, hb_options);
 			hb_command = xmlStrcat(hb_command, out_options);
-			if (call_handbrake(hb_command, out_count, enc_arguments.overwrite) == -1) {
+			if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
 				fprintf(stderr, "%d: Handbrake call failed in \"%s\" line number: %ld  was not encoded\n", \
 						i, xml_doc->URL, xmlGetLineNo(outfile_node));
@@ -200,8 +203,22 @@ int main(int argc, char * argv[]) {
 				xmlFree(hb_command);
 				continue;
 			}
-			//TODO generate preview? (ffmpeg)
-			//TODO call mkvpropedit
+			const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
+			const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
+			xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
+			// produce a thumbnail
+			if(enc_arguments.preview) {
+				xmlChar *ft_command = xmlCharStrdup("ffmpegthumbnailer");
+				ft_command = xmlStrncat(ft_command, (xmlChar *) " -i \"", 5);
+				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
+				ft_command = xmlStrncat(ft_command, (xmlChar *) "\" -o \"", 6);
+				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
+				ft_command = xmlStrncat(ft_command, (xmlChar *) ".png\" -s0 -q10", 14);
+				system((char *) ft_command);
+				xmlFree(ft_command);
+			}
+			call_mkvpropedit(filename, xml_doc, i);
+			xmlFree(filename);
 			xmlFree(out_options);
 			xmlFree(hb_command);
 		}
@@ -274,6 +291,9 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state) {
 			break;
 		case 'y':
 			enc_arguments->overwrite =  1;
+			break;
+		case 'p':
+			enc_arguments->preview =  1;
 			break;
 		case '?':
 			break;
@@ -1232,7 +1252,8 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 					close(2);
 					dup2(hb_err[1],2);
 					close(hb_err[1]);
-					execl("/bin/sh", "sh", "-c", hb_command, NULL );
+					//TODO fix so this errors before handbrake is called and outputs a log file
+					execl("/bin/sh", "sh", "-c", hb_command, (char *) NULL);
 					_exit(1);
 				} else {
 					perror("hb_fork(): Failed to fork");
@@ -1242,11 +1263,12 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 					return 1;
 				}
 				// buffer output from handbrake and write to logfile
-				char *buf = malloc(1024*sizeof(char));
+				char *buf = malloc(80*sizeof(char));
 				int bytes;
-				while((bytes = read(hb_err[0], buf, 1024)) != 0) {
+				while((bytes = read(hb_err[0], buf, 80)) != 0) {
 					fwrite(buf, bytes, 1, logfile);
 				}
+				free(buf);
 			}
 			close(hb_err[1]);
 			fclose(logfile);
@@ -1262,4 +1284,8 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 	}
 	free(cwd);
 	return 0;
+}
+
+void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i) {
+	
 }

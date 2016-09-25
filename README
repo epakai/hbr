@@ -1,7 +1,6 @@
 This tool is incomplete. 
 I still want to add features to write metadata or have mkpropedit add
-tags to mkv files and maybe generate preview images (via ffmpeg) 
-for quick sampling of output.
+tags to mkv files.
 
 handbrake runner (hbr)                      https://github.com/epakai/hbr
 ====================== 
@@ -75,6 +74,7 @@ with a number of other options to fill out elements that might be common
 across multiple <outfile> elements.
 
 The user configures each outfile. Here are descriptions of each element:
+
     <type>            - series or movie
                         Affects which elements below are used for naming
     <iso_filename>    - The input file or device. This is combined with
