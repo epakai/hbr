@@ -1,6 +1,6 @@
 /*
  * hbr - handbrake runner
- * Copyright (C) 2016 Joshua Honeycutt 
+ * Copyright (C) 2016 Joshua Honeycutt
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,19 +38,15 @@ xmlChar * global_input_basedir;
 /* PROTOTYPES  */
 /***************/
 // command line option handling
-static error_t parse_gen_opt(int , char *, struct argp_state *);
-static error_t parse_enc_opt (int , char *, struct argp_state *);
-// Produce a xml file with prefilled options
-void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, char *year, char *crop, char *name, char *format, char *basedir); 
-// build options from handbrake_options tag
+static error_t parse_gen_opt(int key, char *arg, struct argp_state *);
+static error_t parse_enc_opt (int key, char *arg, struct argp_state *);
+void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, \
+		char *year, char *crop, char *name, char *format, char *basedir);
 xmlChar* hb_options_string(xmlDocPtr doc);
-// build options for each outfile
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
-
-// Helper functions
-xmlDocPtr parse_xml(char *); 
+xmlDocPtr parse_xml(char *);
 xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child);
-int outfile_count(xmlDocPtr doc); 
+int outfile_count(xmlDocPtr doc);
 int get_outfile_from_episode(xmlDocPtr doc, int episode_number);
 long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child);
 int validate_file_string(xmlChar * file_string);
@@ -60,45 +56,38 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite);
 int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int out_count);
 void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i);
 
-/***************/
-
-
-/*************************************************/
-/* OPTION HANDLING                               */
-/*************************************************/
 static char gen_doc[] = "handbrake runner -- generates a xml template with [NUM] outfile sections";
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an [XML FILE] with all encoded files placed in [OUTPUT PATH]";
 static char gen_args_doc[] = "-g NUM";
 static char enc_args_doc[] = "[XML FILE]";
 
-
 static struct argp_option gen_options[] = {
-	{"generate", 'g', "NUM",  0, "Generate xml file with NUM outfile sections", 0 },
-	{"format", 'f', "NUM", 0, "Output container format", 0},
-	{"title",  't', "NUM", 0, "DVD Title number (for discs with a single title)", 0},
-	{"type",   'p', "series|movie", 0, "Type of video", 1},
-	{"source", 's', "FILE", 0, "Source filename (DVD iso file)", 0},
-	{"year",   'y', "YEAR", 0, "Movie Release year", 1},
-	{"crop",   'c', "T:B:L:R", 0, "Pixels to crop, top:bottom:left:right",0},
-	{"name",   'n', "Name", 0, "Movie or series name", 1},
-	{"season", 'e', "NUM", 0, "Series season", 1},
-	{"basedir",'b', "PATH", 0, "Base directory for input files", 1},
-	{"help",   '?', 0, 0, "Give this help list", 2},
+	{"generate", 'g', "NUM",          0, "Generate xml file with NUM outfile sections", 0 },
+	{"format",   'f', "NUM",          0, "Output container format", 0},
+	{"title",    't', "NUM",          0, "DVD Title number (for discs with a single title)", 0},
+	{"type",     'p', "series|movie", 0, "Type of video", 1},
+	{"source",   's', "FILE",         0, "Source filename (DVD iso file)", 0},
+	{"year",     'y', "YEAR",         0, "Movie Release year", 1},
+	{"crop",     'c', "T:B:L:R",      0, "Pixels to crop, top:bottom:left:right", 0},
+	{"name",     'n', "Name",         0, "Movie or series name", 1},
+	{"season",   'e', "NUM",          0, "Series season", 1},
+	{"basedir",  'b', "PATH",         0, "Base directory for input files", 1},
+	{"help",     '?', 0,              0, "Give this help list", 2},
 	{ 0 }
 };
 
 static struct argp_option enc_options[] = {
-	{"in",      'i', "FILE", 0, "handbrake_encode XML File", 0},
-	{"episode", 'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
-	{"preview", 'p', 0, 0, "generate a preview image for each output file", 1},
-	{"overwrite", 'y', 0, 0, "overwrite encoded files without confirmation", 1},
-	{"help", '?', 0,      OPTION_HIDDEN, "", 0 },
+	{"in",        'i', "FILE", 0, "handbrake_encode XML File", 0},
+	{"episode",   'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
+	{"preview",   'p', 0,      0, "generate a preview image for each output file", 1},
+	{"overwrite", 'y', 0,      0, "overwrite encoded files without confirmation", 1},
+	{"help",      '?', 0,      OPTION_HIDDEN, "", 0 },
 	{ 0 }
 };
 
 struct gen_arguments {
 	int generate, title, season, help, video_type;
-	char *source, *year, *crop, *name, *format, *basedir; 
+	char *source, *year, *crop, *name, *format, *basedir;
 };
 
 struct enc_arguments {
@@ -110,7 +99,8 @@ static struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc, gen_doc
 static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc, enc_doc, NULL, 0, 0};
 /*************************************************/
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[])
+{
 	struct enc_arguments enc_arguments;
 	enc_arguments.episode = -1;
 	enc_arguments.overwrite = 0;
@@ -123,7 +113,7 @@ int main(int argc, char * argv[]) {
 	gen_arguments.video_type = -1;
 	gen_arguments.source = NULL;
 	gen_arguments.year = NULL;
-	gen_arguments.crop = NULL; 
+	gen_arguments.crop = NULL;
 	gen_arguments.name = NULL;
 	gen_arguments.format = NULL;
 	gen_arguments.basedir = NULL;
@@ -132,9 +122,10 @@ int main(int argc, char * argv[]) {
 	argp_parse (&gen_argp, argc, argv, ARGP_NO_ARGS|ARGP_IN_ORDER|ARGP_NO_EXIT|ARGP_SILENT, 0, &gen_arguments);
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
-		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1, gen_arguments.season ?: 1, gen_arguments.video_type, \
-				gen_arguments.source ?: "", gen_arguments.year ?: "", gen_arguments.crop ?: "0:0:0:0", \
-				gen_arguments.name ?: "", gen_arguments.format ?: "mkv", gen_arguments.basedir ?: "" ); 
+		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1, gen_arguments.season ?: 1, \
+				gen_arguments.video_type, gen_arguments.source ?: "", gen_arguments.year ?: "", \
+				gen_arguments.crop ?: "0:0:0:0", gen_arguments.name ?: "", gen_arguments.format ?: "mkv", \
+				gen_arguments.basedir ?: "" );
 	} else if (gen_arguments.help == 0) {
 		// parse normal options
 		argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
@@ -142,7 +133,7 @@ int main(int argc, char * argv[]) {
 		xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
 		xmlNode *root_element = xmlDocGetRootElement(xml_doc);
 		if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
-			fprintf(stderr,"Wrong document type: handbrake_encode element not found in \"%s\"", xml_doc->URL);
+			fprintf(stderr, "Wrong document type: handbrake_encode element not found in \"%s\"", xml_doc->URL);
 			return 1;
 		}
 
@@ -157,7 +148,7 @@ int main(int argc, char * argv[]) {
 		bad_chars[1] = '`';
 		bad_chars[2] = '\'';
 		bad_chars[3] = '\"';
-		int i; 
+		int i;
 		for (i = 0; i<4; i++) {
 			const xmlChar * temp;
 			if ((temp = xmlStrchr(global_input_basedir, bad_chars[i])) != NULL ){
@@ -169,7 +160,7 @@ int main(int argc, char * argv[]) {
 			}
 		}
 		errno = 0;
-		if( access((char *) global_input_basedir, R_OK|X_OK ) == -1 ) { 
+		if ( access((char *) global_input_basedir, R_OK|X_OK ) == -1 ) {
 			perror ("main(): input_basedir was inaccessible");
 			xmlFreeDoc(xml_doc);
 			xmlFree(global_input_basedir);
@@ -189,19 +180,19 @@ int main(int argc, char * argv[]) {
 
 		// loop for each out_file tag in xml_doc
 		int out_count = outfile_count(xml_doc);
-		if(out_count < 1) {
-				fprintf(stderr, "No valid outfiles found in \"%s\"\n", xml_doc->URL);
+		if (out_count < 1) {
+			fprintf(stderr, "No valid outfiles found in \"%s\"\n", xml_doc->URL);
 		}
 		// Handle -e option to encode a single episode
 		i = 1;
-		if(enc_arguments.episode >= 0) {
+		if (enc_arguments.episode >= 0) {
 			// adjust parameters for following loop
 			int outfile_number = get_outfile_from_episode(xml_doc, enc_arguments.episode);
 			i = outfile_number;
 			out_count = outfile_number;
 		}
 		// encode all the episodes if loop parameters weren't modified above
-		for(; i <= out_count; i++) {
+		for (; i <= out_count; i++) {
 			out_options = out_options_string(xml_doc, i);
 			if ( out_options[0] == '\0'){
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
@@ -226,7 +217,7 @@ int main(int argc, char * argv[]) {
 			const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
 			xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 			// produce a thumbnail
-			if(enc_arguments.preview) {
+			if (enc_arguments.preview) {
 				xmlChar *ft_command = xmlCharStrdup("ffmpegthumbnailer");
 				ft_command = xmlStrncat(ft_command, (xmlChar *) " -i \"", 5);
 				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
@@ -249,7 +240,8 @@ int main(int argc, char * argv[]) {
 	return 0;
 }
 
-static error_t parse_gen_opt(int key, char *arg, struct argp_state *state) {
+static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
+{
 	struct gen_arguments *gen_arguments = state->input;
 	switch (key) {
 		case '?':
@@ -264,21 +256,25 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state) {
 			exit(0);
 			break;
 		case 'g':
-			if ( atoi(arg) > 0 )
+			if ( atoi(arg) > 0 ) {
 				gen_arguments->generate = atoi(arg);
+			}
 			break;
 		case 's':
 			gen_arguments->source = arg;
 			break;
 		case 'p':
-			if (strncmp(arg, "movie", 5) == 0)
+			if (strncmp(arg, "movie", 5) == 0) {
 				gen_arguments->video_type = 0;
-			if (strncmp(arg, "series", 6) == 0)
+			}
+			if (strncmp(arg, "series", 6) == 0) {
 				gen_arguments->video_type = 1;
+			}
 			break;
 		case 't':
-			if ( atoi(arg) > 0 )
+			if ( atoi(arg) > 0 ) {
 				gen_arguments->title = atoi(arg);
+			}
 			break;
 		case 'y':
 			gen_arguments->year = arg;
@@ -290,8 +286,9 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state) {
 			gen_arguments->name = arg;
 			break;
 		case 'e':
-			if ( atoi(arg) > 0 )
+			if ( atoi(arg) > 0 ) {
 				gen_arguments->season = atoi(arg);
+			}
 			break;
 		case 'b':
 			gen_arguments->basedir = arg;
@@ -301,7 +298,8 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state) {
 	return 0;
 }
 
-static error_t parse_enc_opt (int key, char *arg, struct argp_state *state) {
+static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
+{
 	struct enc_arguments *enc_arguments = state->input;
 
 	switch (key) {
@@ -317,15 +315,17 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state) {
 		case '?':
 			break;
 		case ARGP_KEY_ARG:
-			if (state->arg_num >= 1)
+			if (state->arg_num >= 1) {
 				/* Too many arguments. */
 				argp_usage (state);
+			}
 			enc_arguments->args[state->arg_num] = arg;
 			break;
 		case ARGP_KEY_END:
-			if (state->arg_num < 1)
+			if (state->arg_num < 1) {
 				/* Not enough arguments. */
 				argp_usage (state);
+			}
 			break;
 		default:
 			return ARGP_ERR_UNKNOWN;
@@ -333,7 +333,8 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state) {
 	return 0;
 }
 
-xmlDocPtr parse_xml(char *infile) {
+xmlDocPtr parse_xml(char *infile)
+{
 	xmlParserCtxtPtr ctxt; // the parser context
 	xmlDocPtr doc; // the resulting document tree
 
@@ -363,13 +364,14 @@ xmlDocPtr parse_xml(char *infile) {
 	return doc;
 }
 
-void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, char *year, char *crop, char *name, char *format, char *basedir) {
+void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, char *year, char *crop, char *name, char *format, char *basedir)
+{
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE handbrake_encode SYSTEM \"handbrake_encode.dtd\">\n");
 	printf("<handbrake_encode>\n \t<handbrake_options \n" \
 			"\t\t\tformat=\"%s\"\n \t\t\tvideo_encoder=\"x264\"\n \t\t\tvideo_quality=\"18\"\n \t\t\taudio_encoder=\"fdk_aac\" \n" \
 			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n \t\t\tcrop=\"%s\"\n \t\t\tanamorphic=\"loose\"\n" \
-			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n \t\t\t/>\n",format, crop, basedir);
+			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n \t\t\t/>\n", format, crop, basedir);
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
 		if ( video_type == 0) {
@@ -379,12 +381,12 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, char *so
 		} else {
 			printf("\t<outfile>\n \t\t<type></type>");
 		}
-		if(i == 0) {
+		if (i == 0) {
 			printf("<!-- type may be series or movie -->");
 		}
 		printf("\n\t\t\t<iso_filename>%s</iso_filename>\n", source);
 		printf("\t\t\t<dvdtitle>%d</dvdtitle>\n", title);
-		if(i == 0) {
+		if (i == 0) {
 			printf("\t\t<!-- filename depends on outfile type -->\n" \
 					"\t\t<!-- series filename: \"<name> - s<season>e<episode_number> - <specific_name>\" -->\n" \
 					"\t\t<!-- movie filename: \"<name> (<year>)\" -->\n");
@@ -393,25 +395,26 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, char *so
 				"\t\t<episode_number></episode_number>\n \t\t<specific_name></specific_name>\n", name, year, season);
 
 		printf("\t\t<chapters></chapters>");
-		if(i == 0) {
+		if (i == 0) {
 			printf("\t\t<!-- specified as a range \"1-3\" or single chapter \"3\" -->");
 		}
 		printf("\n\t\t<audio></audio>");
-		if(i == 0) {
+		if (i == 0) {
 			printf("\t\t\t<!-- comma separated list of audio tracks -->");
 		}
 		printf("\n\t\t<subtitle></subtitle>");
-		if(i == 0) {
+		if (i == 0) {
 			printf("\t\t<!-- comma separated list of subtitle tracks -->");
 		}
 		printf("\n\t</outfile>\n");
-	} 
+	}
 	printf("</handbrake_encode>\n");
 	return;
 }
 
 
-xmlChar* hb_options_string(xmlDocPtr doc) {
+xmlChar* hb_options_string(xmlDocPtr doc)
+{
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
@@ -442,7 +445,7 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 	temp = xmlGetNoNsProp(cur, (const xmlChar *) "video_encoder");
 	opt_str = xmlStrncat(opt_str, temp, xmlStrlen(temp));
 	xmlChar * quality_string;
-	if((quality_string = xmlGetNoNsProp(cur, (const xmlChar *) "video_quality"))[0] != '\0') {
+	if ((quality_string = xmlGetNoNsProp(cur, (const xmlChar *) "video_quality"))[0] != '\0') {
 		long quality = strtol((char *) quality_string, NULL, 10);
 		int good_quality= 0;
 		if ( xmlStrlen(quality_string) <= 2 && isdigit(quality_string[0]) && isdigit(quality_string[1])) {
@@ -467,7 +470,7 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 				if ( 0 <= quality && quality <=63 ) {
 					good_quality= 2;
 				}
-			} 
+			}
 		}
 		if (good_quality == 0){
 			fprintf(stderr, "Invalid video quality '%s' for %s encoder in \"%s\" line number: ~%ld\n", \
@@ -487,15 +490,15 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 	opt_str = xmlStrncat(opt_str, (const xmlChar *) " -E ", 4);
 	temp = xmlGetNoNsProp(cur, (const xmlChar *) "audio_encoder");
 	opt_str = xmlStrncat(opt_str, temp, xmlStrlen(temp));
-	if(xmlStrcmp(temp, (const xmlChar *) "mp3") == 0 \
+	if (xmlStrcmp(temp, (const xmlChar *) "mp3") == 0 \
 			|| xmlStrcmp(temp, (const xmlChar *) "vorbis") == 0 \
 			|| xmlStrcmp(temp, (const xmlChar *) "copy:mp3") == 0) {
 		xmlChar *temp2, *temp3;
-		if((temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_quality"))[0] != '\0') {
+		if ((temp2 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_quality"))[0] != '\0') {
 			// verify quality is within bounds
 			float a_quality = strtof((char *) temp2, NULL);
 			xmlFree(temp2);
-			if(temp[0] == 'm') { //mp3
+			if (temp[0] == 'm') { //mp3
 				if (a_quality > 0.0 && a_quality < 10.0) {
 					char temp2[5];
 					snprintf(temp2, 4, "%f.1", a_quality);
@@ -509,13 +512,13 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 			}
 			opt_str = xmlStrncat(opt_str, (const xmlChar *) " -Q ", 4);
 			opt_str = xmlStrncat(opt_str, temp2, xmlStrlen(temp2));
-		} else if ( (temp3 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"))[0] != '\0'){ 
+		} else if ( (temp3 = xmlGetNoNsProp(cur, (const xmlChar *) "audio_bitrate"))[0] != '\0'){
 			// set bitrate for mp3/vorbis if no quality found
 
 			// Only tests subset of bit rates for vorbis/mp3 (vorbis can go a bit higher)
 			int bitrate = strtol((char *) temp3, NULL, 10);
 			// test firs char of audio encoder and for valid bit rate
-			if ( ((temp[0] == 'm' || temp[0] == 'c') && validate_bit_rate(bitrate,32,320)) \
+			if ( ((temp[0] == 'm' || temp[0] == 'c') && validate_bit_rate(bitrate, 32, 320)) \
 					|| (temp[0] == 'v' && validate_bit_rate(bitrate, 192, 1344)) ){
 				opt_str = xmlStrncat(opt_str, (const xmlChar *) " -B ", 4);
 				opt_str = xmlStrncat(opt_str, temp3, xmlStrlen(temp3) );
@@ -533,23 +536,23 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 		if ( temp2[0] != '\0'){
 			int bitrate = strtol((char *) temp2, NULL, 10);
 			int good_bitrate = 0;
-			if( ((xmlStrcmp(temp, (const xmlChar *) "av_aac") == 0) || (xmlStrcmp(temp, (const xmlChar *) "copy:aac") == 0)) \
+			if ( ((xmlStrcmp(temp, (const xmlChar *) "av_aac") == 0) || (xmlStrcmp(temp, (const xmlChar *) "copy:aac") == 0)) \
 					&& validate_bit_rate(bitrate, 192, 1536 )) {
 				good_bitrate = 1;
 			}
-			if( ((xmlStrcmp(temp, (const xmlChar *) "fdk_aac") == 0) || (xmlStrcmp(temp, (const xmlChar *) "copy:dtshd") == 0) || \
+			if ( ((xmlStrcmp(temp, (const xmlChar *) "fdk_aac") == 0) || (xmlStrcmp(temp, (const xmlChar *) "copy:dtshd") == 0) || \
 						(xmlStrcmp(temp, (const xmlChar *) "copy") == 0) || ( xmlStrcmp(temp, (const xmlChar *) "copy:dts") == 0)) \
 					&& validate_bit_rate(bitrate, 160, 1344 )) {
 				good_bitrate = 1;
 			}
-			if( ((xmlStrcmp(temp, (const xmlChar *) "ac3") == 0) || ( xmlStrcmp(temp, (const xmlChar *) "copy:ac3") == 0)) \
+			if ( ((xmlStrcmp(temp, (const xmlChar *) "ac3") == 0) || ( xmlStrcmp(temp, (const xmlChar *) "copy:ac3") == 0)) \
 					&& validate_bit_rate(bitrate, 224, 640)) {
 				good_bitrate = 1;
 			}
-			if( xmlStrcmp(temp, (const xmlChar *) "fdk_haac") == 0 && validate_bit_rate(bitrate, 80, 256)) {
+			if ( xmlStrcmp(temp, (const xmlChar *) "fdk_haac") == 0 && validate_bit_rate(bitrate, 80, 256)) {
 				good_bitrate = 1;
 			}
-			if( xmlStrncmp(temp, (const xmlChar *) "flac", 4) == 0) {
+			if ( xmlStrncmp(temp, (const xmlChar *) "flac", 4) == 0) {
 			}
 			if (good_bitrate == 0) {
 				fprintf(stderr, "Invalid bitrate '%d' for %s codec in \"%s\" line number: ~%ld\n", \
@@ -563,7 +566,7 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 	}
 	xmlFree(temp);
 
-	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop"))[0] != '\0') {
+	if ((temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop"))[0] != '\0') {
 		char *crop[4];
 		int non_digit_found = 0;
 		// break crop into components
@@ -575,16 +578,16 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 		if ((strlen(crop[0]) <= 4) && (strlen(crop[1]) <= 4) && (strlen(crop[2]) <= 4) && (strlen(crop[3]) <= 4)){
 			int i;
 			// verify all characters are digits
-			for(i = 0; i<4; i++){
+			for (i = 0; i<4; i++){
 				int j = 0;
 				while (crop[i][j] != '\0'){
-					if (!isdigit(crop[i][j])){
+					if (isdigit(crop[i][j])){
 						non_digit_found = 1;
 					}
 					j++;
 				}
 			}
-			if(non_digit_found == 0){
+			if (non_digit_found == 0){
 				opt_str = xmlStrncat(opt_str, (const xmlChar *) " --crop ", 8);
 				xmlFree(temp);
 				//re-grab the property because strtok destroyed it
@@ -602,26 +605,26 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 	}
 
 	temp = xmlGetNoNsProp(cur, (const xmlChar *) "anamorphic");
-	if(xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
+	if (xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
 		opt_str = xmlStrncat(opt_str, (const xmlChar *) " --strict-anamorphic", 20);
 	}
-	if(xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
+	if (xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
 		opt_str = xmlStrncat(opt_str, (const xmlChar *) " --loose-anamorphic", 19);
 	}
 	xmlFree(temp);
 
 	//deinterlace != none overrides decomb (check for 'n' is actually "none")
 	xmlChar *temp2;
-	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "deinterlace"))[0] != 'n') {
+	if ((temp = xmlGetNoNsProp(cur, (const xmlChar *) "deinterlace"))[0] != 'n') {
 		opt_str = xmlStrncat(opt_str, (const xmlChar *) " -d ", 4);
 		opt_str = xmlStrncat(opt_str, temp, xmlStrlen(temp));
 		xmlFree(temp);
-	} else if((temp2= xmlGetNoNsProp(cur, (const xmlChar *) "decomb"))[0] != 'n') {
+	} else if ((temp2= xmlGetNoNsProp(cur, (const xmlChar *) "decomb"))[0] != 'n') {
 		xmlFree(temp);
-		if(xmlStrcmp(temp2, (const xmlChar *) "none") != 0){
+		if (xmlStrcmp(temp2, (const xmlChar *) "none") != 0){
 		} else {
 			opt_str = xmlStrncat(opt_str, (const xmlChar *) " -5 ", 4);
-			if(xmlStrcmp(temp2, (const xmlChar *) "default") != 0) {
+			if (xmlStrcmp(temp2, (const xmlChar *) "default") != 0) {
 				opt_str = xmlStrncat(opt_str, temp2, xmlStrlen(temp2));
 			}
 		}
@@ -631,7 +634,7 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 		xmlFree(temp2);
 	}
 
-	if((temp = xmlGetNoNsProp(cur, (const xmlChar *) "denoise"))[0] != 'n') {
+	if ((temp = xmlGetNoNsProp(cur, (const xmlChar *) "denoise"))[0] != 'n') {
 		opt_str = xmlStrncat(opt_str, (const xmlChar *) " -8 ", 4);
 		opt_str = xmlStrncat(opt_str, temp, xmlStrlen(temp));
 	}
@@ -641,7 +644,8 @@ xmlChar* hb_options_string(xmlDocPtr doc) {
 	return opt_str;
 }
 
-int validate_bit_rate(int bitrate, int minimum, int maximum) {
+int validate_bit_rate(int bitrate, int minimum, int maximum)
+{
 	// list is slightly reordered to put common rates first
 	int valid_bitrates[] = { 128, 160, 192, 224, 256, 320, \
 		384, 448, 512, 40, 48, 56, 64, 80, 96, 112, 576, 640, \
@@ -657,72 +661,82 @@ int validate_bit_rate(int bitrate, int minimum, int maximum) {
 	return 0;
 }
 
-int outfile_count(xmlDocPtr doc) {
+int outfile_count(xmlDocPtr doc)
+{
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	if(xpath_context == NULL) {
+	if (xpath_context == NULL) {
 		fprintf(stderr, "outfile_count() Unable to create XPath context\n");
 		return -1;
 	} else {
 		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
 		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if(outfile_obj == NULL) {
-			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+		if (outfile_obj == NULL) {
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
 			xmlFree(outfile_xpath);
-			xmlXPathFreeContext(xpath_context); 
+			xmlXPathFreeContext(xpath_context);
 			return -1;
 		}
 		xmlFree(outfile_xpath);
-		xmlXPathFreeContext(xpath_context); 
+		xmlXPathFreeContext(xpath_context);
 		int count = outfile_obj->nodesetval->nodeNr;
 		xmlXPathFreeObject(outfile_obj);
 		return count;
 	}
 }
 
-int get_outfile_from_episode(xmlDocPtr doc, int episode_number){
+int get_outfile_from_episode(xmlDocPtr doc, int episode_number)
+{
 	int out_count = outfile_count(doc);
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	if(xpath_context == NULL) {
+	if (xpath_context == NULL) {
 		fprintf(stderr, "get_outfile_from_episode() Unable to create XPath context\n");
 		return -1;
 	} else {
 		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
 		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if(outfile_obj == NULL) {
-			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+		if (outfile_obj == NULL) {
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
 			xmlFree(outfile_xpath);
-			xmlXPathFreeContext(xpath_context); 
+			xmlXPathFreeContext(xpath_context);
 			return -1;
 		}
 		int i;
-		for(i = 1; i <= out_count; i++) {
+		for (i = 1; i <= out_count; i++) {
 			xmlChar *out_episode_num = xpath_get_outfile_child_content(doc, i, (xmlChar *) "episode_number");
 			int e = strtol((const char *) out_episode_num, NULL, 10);
-			if( e == episode_number) {
+			if ( e == episode_number) {
 				xmlFree(out_episode_num);
 				xmlFree(outfile_xpath);
-				xmlXPathFreeContext(xpath_context); 
+				xmlXPathFreeContext(xpath_context);
 				return i;
 			}
 		}
-		fprintf(stderr,"Unable to find episode matching number: %d in file \"%s\"\n", episode_number, outfile_xpath);
+		fprintf(stderr, "Unable to find episode matching number: %d in file \"%s\"\n", episode_number, outfile_xpath);
 		xmlFree(outfile_xpath);
-		xmlXPathFreeContext(xpath_context); 
+		xmlXPathFreeContext(xpath_context);
 	}
 	return -1;
 }
 
-xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
+xmlChar* out_options_string(xmlDocPtr doc, int out_count)
+{
 	xmlChar *type, *name, *year, *season, *episode_number, *specific_name; // output filename stuff
 	xmlChar *iso_filename, *dvdtitle, *chapters, *audio, *subtitle; // handbrake options
 	xmlChar *out_options;
 	int badstring = 0;
 
 	// Fetch all tag contents for a single outfile
-	xmlChar* tag_name[] = {(xmlChar *) "type",(xmlChar *) "name",(xmlChar *) "year", \
-		(xmlChar *) "season",(xmlChar *) "episode_number",(xmlChar *) "specific_name", \
-			(xmlChar *) "iso_filename",(xmlChar *) "dvdtitle",(xmlChar *) "chapters", \
-			(xmlChar *) "audio",(xmlChar *) "subtitle"};
+	xmlChar* tag_name[] = {(xmlChar *) "type",
+		(xmlChar *) "name",
+		(xmlChar *) "year",
+		(xmlChar *) "season",
+		(xmlChar *) "episode_number",
+		(xmlChar *) "specific_name",
+		(xmlChar *) "iso_filename",
+		(xmlChar *) "dvdtitle",
+		(xmlChar *) "chapters",
+		(xmlChar *) "audio",
+		(xmlChar *) "subtitle"};
 
 	type = xpath_get_outfile_child_content(doc, out_count, tag_name[0]);
 	name = xpath_get_outfile_child_content(doc, out_count, tag_name[1]);
@@ -755,7 +769,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 
 	// Verify <name> is non-empty
 	int name_len = xmlStrlen(name);
-	if( name_len == 0 ) {
+	if ( name_len == 0 ) {
 		fprintf(stderr, "%d: Empty name in \"%s\" tag <%s> line number: %ld\n", \
 				out_count, doc->URL, tag_name[1], xpath_get_outfile_line_number(doc, out_count, tag_name[1]) );
 		badstring = 1;
@@ -767,8 +781,8 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 		out_options = xmlStrncat(out_options, (const xmlChar *) " - ", 3);
 		// add season if episode also exists
 		// Season is a one or two digit number, left padded with a 0 if one digit
-		if(season[0] != '\0' && episode_number[0] != '\0') {
-			if(xmlStrlen(season) <= 2 && isdigit(season[0]) && (isdigit(season[1]) || season[1] == '\0')) {
+		if (season[0] != '\0' && episode_number[0] != '\0') {
+			if (xmlStrlen(season) <= 2 && isdigit(season[0]) && (isdigit(season[1]) || season[1] == '\0')) {
 				out_options = xmlStrncat(out_options, (const xmlChar *) "s", 1);
 				if (xmlStrlen(season) == 1){
 					out_options = xmlStrncat(out_options, (const xmlChar *) "0", 1);
@@ -784,7 +798,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 		for (i=0; i<4; i++) {
 			if ( isdigit(episode_number[i]) && i < 3) {
 				continue;
-			} else if( episode_number[i] == '\0' && i > 0) {
+			} else if ( episode_number[i] == '\0' && i > 0) {
 				out_options = xmlStrncat(out_options, (const xmlChar *) "e", 1);
 				if (i == 1) {
 					out_options = xmlStrncat(out_options, (const xmlChar *) "00", 2);
@@ -801,7 +815,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 				badstring = 1;
 			}
 		}
-		if(specific_name[0] != '\0') {
+		if (specific_name[0] != '\0') {
 			out_options = xmlStrncat(out_options, specific_name, xmlStrlen(specific_name));
 		}
 		if (xmlStrlen(out_options) > 249){
@@ -822,7 +836,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 		for (i=0; i<5; i++) {
 			if ( isdigit(year[i]) && i < 4) {
 				continue;
-			} else if( year[i] == '\0' && i == 4) {
+			} else if ( year[i] == '\0' && i == 4) {
 				out_options = xmlStrncat(out_options, (const xmlChar *) " (", 2);
 				out_options = xmlStrncat(out_options, year, xmlStrlen(year));
 				out_options = xmlStrncat(out_options, (const xmlChar *) ")", 1);
@@ -832,7 +846,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 				badstring = 1;
 			}
 		}
-		if(specific_name[0] != '\0') {
+		if (specific_name[0] != '\0') {
 			out_options = xmlStrncat(out_options, (const xmlChar *) " - ", 3);
 			out_options = xmlStrncat(out_options, specific_name, xmlStrlen(specific_name));
 		}
@@ -858,7 +872,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	out_options = xmlStrncat(out_options, (const xmlChar *) " -i \"", 5);
 	int gib_length = xmlStrlen(global_input_basedir);
 	out_options = xmlStrncat(out_options, global_input_basedir, gib_length);
-	if(global_input_basedir[gib_length-1] != '/') {
+	if (global_input_basedir[gib_length-1] != '/') {
 		out_options = xmlStrncat(out_options, (const xmlChar *) "/", 1);
 	}
 	out_options = xmlStrncat(out_options, iso_filename, xmlStrlen(iso_filename) );
@@ -866,12 +880,12 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 
 	// check input filename exists or error
 	xmlChar* full_path = xmlStrdup(global_input_basedir);
-	if(global_input_basedir[gib_length-1] != '/') {
+	if (global_input_basedir[gib_length-1] != '/') {
 		full_path = xmlStrncat(full_path, (const xmlChar *) "/", 1);
 	}
 	full_path = xmlStrncat(full_path, iso_filename, xmlStrlen(iso_filename) );
 	errno = 0;
-	if( access((char *) full_path, R_OK) == -1 ) { 
+	if ( access((char *) full_path, R_OK) == -1 ) {
 		fprintf(stderr, "%s", full_path);
 		perror ("out_options_string(): Input file was inaccessible");
 		badstring = 1;
@@ -879,7 +893,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	xmlFree(full_path);
 
 	// Set dvd title
-	if(xmlStrlen(dvdtitle) <= 2 && isdigit(dvdtitle[0]) && (isdigit(dvdtitle[1]) || dvdtitle[1] == '\0')) {
+	if (xmlStrlen(dvdtitle) <= 2 && isdigit(dvdtitle[0]) && (isdigit(dvdtitle[1]) || dvdtitle[1] == '\0')) {
 		out_options = xmlStrncat(out_options, (const xmlChar *) " -t ", 4);
 		out_options = xmlStrncat(out_options, dvdtitle, xmlStrlen(dvdtitle));
 	} else {
@@ -893,13 +907,13 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	int non_digit_dash_found = 0;
 	// Check for digits and count '-' characters
 	for (i = 0; i< xmlStrlen(chapters); i++) {
-		if(!isdigit(chapters[i]) && chapters[i] != '-' ) {
+		if (!isdigit(chapters[i]) && chapters[i] != '-' ) {
 			non_digit_dash_found = 1;
 		}
-		if(chapters[i] == '-') {
+		if (chapters[i] == '-') {
 			dash_count++;
 		}
-	} 
+	}
 	// Ensure only digits and '-'
 	if (non_digit_dash_found) {
 		fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n", \
@@ -913,7 +927,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	} else {
 		// convert to longs for testing
 		int first = strtol((const char *) chapters, NULL, 10);
-		if(first > 98 || first < 1) {
+		if (first > 98 || first < 1) {
 			fprintf(stderr, "%d: Chapter value outside range (1-98) (%s) in \"%s\" tag <%s> line number: %ld\n", \
 					out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
 			badstring = 1;
@@ -923,13 +937,13 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 		if (dash_count == 1) {
 			const xmlChar *temp = xmlStrstr(chapters, (const xmlChar *) "-") + 1; //substring starts with -, increment pointer once
 			second = strtol((const char *) temp, NULL, 10);
-			if(first > second) {
+			if (first > second) {
 				printf("first: %d second: %d\n", first, second);
 				fprintf(stderr, "%d: Initial chapter is after final chapter (%s) in \"%s\" tag <%s> line number: %ld\n", \
 						out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
 				badstring = 1;
 			}
-			if(second > 98 ) {
+			if (second > 98 ) {
 				fprintf(stderr, "%d: Max chapter value of 98 exceeded (%s) in \"%s\" tag <%s> line number: %ld\n", \
 						out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
 				badstring = 1;
@@ -946,9 +960,9 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	} else {
 		int bad_character = 0;
 		int comma_count = 0;
-		for(i = 0; i < xmlStrlen(audio); i++) {
-			if(audio[i] == ',') {
-				if( audio[i-1] == ',' ) {
+		for (i = 0; i < xmlStrlen(audio); i++) {
+			if (audio[i] == ',') {
+				if ( audio[i-1] == ',' ) {
 					fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n", \
 							out_count, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 					badstring = 1;
@@ -973,16 +987,16 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 			xmlChar *audio_copy = xmlStrdup(audio);
 			token = track_strings[0] = strtok((char *) audio_copy, ",");
 			track_numbers[0] = strtol(track_strings[0], NULL, 10);
-			if(track_numbers[0] < 1 || track_numbers[0] > 99) {
+			if (track_numbers[0] < 1 || track_numbers[0] > 99) {
 				track_out_of_range = 1;
 			}
 			i = 1;
-			while( token != NULL ) {
+			while ( token != NULL ) {
 				token = strtok(NULL, ",");
 				if (token != NULL ) {
 					track_strings[i] = token;
 					track_numbers[i] = strtol((char *) track_strings[i], NULL, 10);
-					if(track_numbers[0] < 1 || track_numbers[0] > 99) {
+					if (track_numbers[0] < 1 || track_numbers[0] > 99) {
 						track_out_of_range = 1;
 						break;
 					}
@@ -1009,9 +1023,9 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	} else {
 		int bad_character = 0;
 		int comma_count = 0;
-		for(i = 0; i < xmlStrlen(subtitle); i++) {
-			if(subtitle[i] == ',') {
-				if( subtitle[i-1] == ',' ) {
+		for (i = 0; i < xmlStrlen(subtitle); i++) {
+			if (subtitle[i] == ',') {
+				if ( subtitle[i-1] == ',' ) {
 					fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n", \
 							out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
 					badstring = 1;
@@ -1034,16 +1048,16 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 			xmlChar *subtitle_copy = xmlStrdup(subtitle);
 			token = track_strings[0] = strtok((char *) subtitle_copy, ",");
 			track_numbers[0] = strtol(track_strings[0], NULL, 10);
-			if(track_numbers[0] < 1 || track_numbers[0] > 99) {
+			if (track_numbers[0] < 1 || track_numbers[0] > 99) {
 				track_out_of_range = 1;
 			}
 			i = 1;
-			while( token != NULL ) {
+			while ( token != NULL ) {
 				token = strtok(NULL, ",");
 				if (token != NULL ) {
 					track_strings[i] = token;
 					track_numbers[i] = strtol((char *) track_strings[i], NULL, 10);
-					if(track_numbers[0] < 1 || track_numbers[0] > 99) {
+					if (track_numbers[0] < 1 || track_numbers[0] > 99) {
 						track_out_of_range = 1;
 						break;
 					}
@@ -1062,7 +1076,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 			}
 		}
 	}
-	if(badstring) {
+	if (badstring) {
 		out_options[0] = '\0';
 	}
 	xmlFree(type);
@@ -1079,10 +1093,11 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count) {
 	return out_options;
 }
 
-xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child) {
-	xmlChar *content; 
+xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
+{
+	xmlChar *content;
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	if(xpath_context == NULL) {
+	if (xpath_context == NULL) {
 		fprintf(stderr, "Unable to create XPath context\n");
 		return NULL;
 	} else {
@@ -1090,14 +1105,14 @@ xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *
 		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
 		xmlChar out_count_string[33];
 		sprintf((char *) out_count_string, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string)); 
+		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
 		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
 		outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
 
 		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if(outfile_obj == NULL) {
-			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlXPathFreeContext(xpath_context); 
+		if (outfile_obj == NULL) {
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			xmlXPathFreeContext(xpath_context);
 			xmlFree(outfile_xpath);
 			return NULL;
 		}
@@ -1108,16 +1123,17 @@ xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *
 		xmlXPathFreeObject(outfile_obj);
 		// free other libxml structures
 		xmlFree(outfile_xpath);
-		xmlXPathFreeContext(xpath_context); 
+		xmlXPathFreeContext(xpath_context);
 	}
 	return content;
 }
 
-xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count) {
+xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count)
+{
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
 	xmlXPathObjectPtr outfile_obj;
 
-	if(xpath_context == NULL) {
+	if (xpath_context == NULL) {
 		fprintf(stderr, "Unable to create XPath context\n");
 		return NULL;
 	} else {
@@ -1125,55 +1141,57 @@ xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count) {
 		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
 		xmlChar out_count_string[33];
 		sprintf((char *) out_count_string, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string)); 
+		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
 		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]", 1);
 
 		outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if(outfile_obj == NULL) {
-			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlXPathFreeContext(xpath_context); 
+		if (outfile_obj == NULL) {
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			xmlXPathFreeContext(xpath_context);
 			return NULL;
 		}
 		// free other libxml structures
 		xmlFree(outfile_xpath);
 	}
 
-	xmlXPathFreeContext(xpath_context); 
+	xmlXPathFreeContext(xpath_context);
 	xmlNodePtr outfile_node = outfile_obj->nodesetval->nodeTab[0];
 	xmlXPathFreeObject(outfile_obj);
 	return outfile_node;
 }
 
-long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child) {
+long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
+{
 	//find the bad line number
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
 	long int  line_number;
-	if(xpath_context == NULL) {
+	if (xpath_context == NULL) {
 		fprintf(stderr, "Unable to create XPath context\n");
 		line_number = -1;
 	} else {
 		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
 		xmlChar out_count_string[33];
 		sprintf((char *) out_count_string, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string)); 
+		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
 		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
 		outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
 
 		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if(outfile_obj == NULL) {
-			fprintf(stderr,"Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlXPathFreeContext(xpath_context); 
+		if (outfile_obj == NULL) {
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			xmlXPathFreeContext(xpath_context);
 			return 0;
 		}
 		line_number = xmlGetLineNo(outfile_obj->nodesetval->nodeTab[0]);
 		xmlXPathFreeObject(outfile_obj);
 		xmlFree(outfile_xpath);
 	}
-	xmlXPathFreeContext(xpath_context); 
+	xmlXPathFreeContext(xpath_context);
 	return line_number;
 }
 
-int validate_file_string(xmlChar * file_string) {
+int validate_file_string(xmlChar * file_string)
+{
 	xmlChar bad_chars[6];
 	bad_chars[0] = '\\';
 	bad_chars[1] = '/';
@@ -1183,7 +1201,7 @@ int validate_file_string(xmlChar * file_string) {
 	bad_chars[5] = '!';
 
 	const xmlChar *temp;
-	int i; 
+	int i;
 	for (i = 0; i<6; i++) {
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start
@@ -1193,7 +1211,8 @@ int validate_file_string(xmlChar * file_string) {
 	return 0;
 }
 
-int call_handbrake(xmlChar *hb_command, int out_count, int overwrite){
+int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
+{
 	printf("DEBUG: hb_command: %s (strlen:%d)\n", hb_command, xmlStrlen(hb_command));
 	// separate filename and construct log filename
 	const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
@@ -1201,18 +1220,19 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite){
 	xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 	xmlChar *log_filename = xmlStrdup(filename);
 	log_filename = xmlStrcat(log_filename, (const xmlChar *) ".log");
-	printf("DEBUG: filename: \"%s\" (strlen:%d)\n",filename, xmlStrlen(filename));
-	printf("DEBUG: log_filename: \"%s\" (strlen:%d)\n",log_filename, xmlStrlen(log_filename));
-	if( access((char *) filename, F_OK ) == 0 ) { 
-		if( access((char *) filename, W_OK ) == 0 ) { 
-			if(overwrite == 0) {
+	printf("DEBUG: filename: \"%s\" (strlen:%d)\n", filename, xmlStrlen(filename));
+	printf("DEBUG: log_filename: \"%s\" (strlen:%d)\n", log_filename, xmlStrlen(log_filename));
+	if ( access((char *) filename, F_OK ) == 0 ) {
+		if ( access((char *) filename, W_OK ) == 0 ) {
+			if (overwrite == 0) {
 				char c;
 				do{
 					printf("File: \"%s\" already exists.\n", filename);
 					printf("Run hbr with '-y' option to automatically overwrite.\n");
 					printf("Do you want to overwrite? (y/n) ");
-					scanf(" %c",&c); c = toupper(c);
-				}while(c != 'N' && c != 'Y');
+					scanf(" %c", &c);
+					c = toupper(c);
+				} while (c != 'N' && c != 'Y');
 				if ( c == 'N' ) {
 					xmlFree(filename);
 					xmlFree(log_filename);
@@ -1231,7 +1251,7 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite){
 				return r;
 			}
 		} else {
-			fprintf(stderr, "%d: filename: \"%s\" is not writable\n", out_count ,filename);
+			fprintf(stderr, "%d: filename: \"%s\" is not writable\n", out_count, filename);
 			xmlFree(filename);
 			xmlFree(log_filename);
 			return 1;
@@ -1243,18 +1263,19 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite){
 	return r;
 }
 
-int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int out_count) {
+int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int out_count)
+{
 	// check if current working directory is writeable
 	char *cwd = getcwd(NULL, 0);
-	if( access((char *) cwd, W_OK|X_OK) == 0 ) { 
+	if ( access((char *) cwd, W_OK|X_OK) == 0 ) {
 		errno = 0;
 		FILE *logfile = fopen((const char *)log_filename, "w");
 		// test logfile was opened
-		if(logfile != NULL) {
+		if (logfile != NULL) {
 			int hb_err[2];
 			pid_t hb_pid;
 			// test pipe was opened
-			if(pipe(hb_err)<0){
+			if (pipe(hb_err)<0){
 				fclose(logfile);
 				xmlFree(filename);
 				xmlFree(log_filename);
@@ -1269,7 +1290,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 					// replace stderr with our pipe for HandBrakeCLI
 					close(hb_err[0]);
 					close(2);
-					dup2(hb_err[1],2);
+					dup2(hb_err[1], 2);
 					close(hb_err[1]);
 					//TODO fix so this errors before handbrake is called and outputs a log file
 					execl("/bin/sh", "sh", "-c", hb_command, (char *) NULL);
@@ -1284,7 +1305,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 				// buffer output from handbrake and write to logfile
 				char *buf = malloc(80*sizeof(char));
 				int bytes;
-				while((bytes = read(hb_err[0], buf, 80)) != 0) {
+				while ((bytes = read(hb_err[0], buf, 80)) != 0) {
 					fwrite(buf, bytes, 1, logfile);
 				}
 				free(buf);
@@ -1297,7 +1318,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 			return 1;
 		}
 	} else {
-		fprintf(stderr, "%d: Current directory: \"%s\" is not writable\n", out_count ,cwd);
+		fprintf(stderr, "%d: Current directory: \"%s\" is not writable\n", out_count, cwd);
 		free(cwd);
 		return 1;
 	}
@@ -1305,6 +1326,6 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 	return 0;
 }
 
-void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i) {
-	
+void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i)
+{
 }
