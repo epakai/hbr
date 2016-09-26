@@ -169,7 +169,6 @@ int main(int argc, char * argv[])
 
 		//assemble call to HandBrakeCLI
 		xmlChar *hb_options = NULL;
-		xmlChar *out_options = NULL;
 		hb_options = hb_options_string(xml_doc);
 		if ( hb_options[0] == '\0'){
 			fprintf(stderr, "Unknown error: handbrake_options was empty after parsing \"%s\".\n", xml_doc->URL);
@@ -193,6 +192,7 @@ int main(int argc, char * argv[])
 		}
 		// encode all the episodes if loop parameters weren't modified above
 		for (; i <= out_count; i++) {
+			xmlChar *out_options = NULL;
 			out_options = out_options_string(xml_doc, i);
 			if ( out_options[0] == '\0'){
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
@@ -568,7 +568,6 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 
 	if ((temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop"))[0] != '\0') {
 		char *crop[4];
-		int non_digit_found = 0;
 		// break crop into components
 		crop[0] = strtok((char *) temp, ":");
 		crop[1] = strtok(NULL, ":");
@@ -576,6 +575,7 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 		crop[3] = strtok(NULL, "\0");
 		// verify each crop is 4 digit max (video isn't that big yet)
 		if ((strlen(crop[0]) <= 4) && (strlen(crop[1]) <= 4) && (strlen(crop[2]) <= 4) && (strlen(crop[3]) <= 4)){
+			int non_digit_found = 0;
 			int i;
 			// verify all characters are digits
 			for (i = 0; i<4; i++){
@@ -794,7 +794,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				badstring = 1;
 			}
 		}
-		//Veri episode number is at most 3 digits, left pad with 0s
+		//Verify episode number is at most 3 digits, left pad with 0s
 		for (i=0; i<4; i++) {
 			if ( isdigit(episode_number[i]) && i < 3) {
 				continue;
@@ -933,8 +933,8 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			badstring = 1;
 		}
 		// Deal with second digit if a single '-' was found
-		int second;
 		if (dash_count == 1) {
+			int second;
 			const xmlChar *temp = xmlStrstr(chapters, (const xmlChar *) "-") + 1; //substring starts with -, increment pointer once
 			second = strtol((const char *) temp, NULL, 10);
 			if (first > second) {
@@ -1200,9 +1200,9 @@ int validate_file_string(xmlChar * file_string)
 	bad_chars[4] = '\"';
 	bad_chars[5] = '!';
 
-	const xmlChar *temp;
 	int i;
 	for (i = 0; i<6; i++) {
+		const xmlChar *temp;
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start
 			return temp - file_string;
