@@ -17,17 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <argp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <argp.h>
 #include <unistd.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
 #include <libxml/xpath.h>
-#include <libxml/xpointer.h>
-#include <ctype.h>
-#include <errno.h>
 
 const char *argp_program_version = "hbr 1.0";
 const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
@@ -40,8 +35,8 @@ xmlChar * global_input_basedir;
 // command line option handling
 static error_t parse_gen_opt(int key, char *arg, struct argp_state *);
 static error_t parse_enc_opt (int key, char *arg, struct argp_state *);
-void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, \
-		char *year, char *crop, char *name, char *format, char *basedir);
+void gen_xml(int outfiles_count, int title, int season, int video_type, const char *source, \
+		const char *year, const char *crop, const char *name, const char *format, const char *basedir);
 xmlChar* hb_options_string(xmlDocPtr doc);
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 xmlDocPtr parse_xml(char *);
@@ -73,7 +68,7 @@ static struct argp_option gen_options[] = {
 	{"season",   'e', "NUM",          0, "Series season", 1},
 	{"basedir",  'b', "PATH",         0, "Base directory for input files", 1},
 	{"help",     '?', 0,              0, "Give this help list", 2},
-	{ 0 }
+	{ 0, 0, 0, 0, 0, 0 }
 };
 
 static struct argp_option enc_options[] = {
@@ -82,7 +77,7 @@ static struct argp_option enc_options[] = {
 	{"preview",   'p', 0,      0, "generate a preview image for each output file", 1},
 	{"overwrite", 'y', 0,      0, "overwrite encoded files without confirmation", 1},
 	{"help",      '?', 0,      OPTION_HIDDEN, "", 0 },
-	{ 0 }
+	{ 0, 0, 0, 0, 0, 0 }
 };
 
 struct gen_arguments {
@@ -227,7 +222,6 @@ int main(int argc, char * argv[])
 				system((char *) ft_command);
 				xmlFree(ft_command);
 			}
-			call_mkvpropedit(filename, xml_doc, i);
 			xmlFree(filename);
 			xmlFree(out_options);
 			xmlFree(hb_command);
@@ -242,17 +236,18 @@ int main(int argc, char * argv[])
 
 static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 {
-	struct gen_arguments *gen_arguments = state->input;
+	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
+	char prog_name[4] = "hbr";
 	switch (key) {
 		case '?':
 			gen_arguments->help = 1;
-			argp_help(&enc_argp, stdout, ARGP_HELP_SHORT_USAGE, "hbr");
-			argp_help(&enc_argp, stdout, ARGP_HELP_PRE_DOC, "hbr");
-			argp_help(&enc_argp, stdout, ARGP_HELP_LONG, "hbr");
+			argp_help(&enc_argp, stdout, ARGP_HELP_SHORT_USAGE, prog_name);
+			argp_help(&enc_argp, stdout, ARGP_HELP_PRE_DOC, prog_name);
+			argp_help(&enc_argp, stdout, ARGP_HELP_LONG, prog_name);
 
 			printf("\nUsage: hbr -g NUM [OPTION...]\n");
-			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, "hbr");
-			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, "hbr");
+			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, prog_name);
+			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, prog_name);
 			exit(0);
 			break;
 		case 'g':
@@ -300,7 +295,7 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 
 static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 {
-	struct enc_arguments *enc_arguments = state->input;
+	struct enc_arguments *enc_arguments = (struct enc_arguments *) state->input;
 
 	switch (key) {
 		case 'e':
@@ -364,10 +359,38 @@ xmlDocPtr parse_xml(char *infile)
 	return doc;
 }
 
-void gen_xml(int outfiles_count, int title, int season, int video_type, char *source, char *year, char *crop, char *name, char *format, char *basedir)
+void gen_xml(int outfiles_count, int title, int season, int video_type, const char *source, const char *year, const char *crop, const char *name, const char *format, const char *basedir)
 {
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	printf("<!DOCTYPE handbrake_encode SYSTEM \"handbrake_encode.dtd\">\n");
+	// printf("<!DOCTYPE handbrake_encode SYSTEM \"handbrake_encode.dtd\">\n");
+	printf("<!DOCTYPE handbrake_encode [\n");
+	printf("<!ELEMENT handbrake_encode (handbrake_options, outfile+)>\n");
+	printf("<!ELEMENT handbrake_options EMPTY>\n");
+	printf("<!ATTLIST handbrake_options format (mp4|mkv) \"mkv\"\n");
+	printf("                            video_encoder (x264|mpeg4|mpeg2|VP8|theora) \"x264\"\n");
+	printf("                            video_quality CDATA \"18\"\n");
+	printf("                            audio_encoder (av_aac|fdk_aac|fdk_haac|copy:aac|ac3|copy:ac3|copy:dts|copy:dtshd|mp3|copy:mp3|vorbis|flac16|flac24|copy) \"fdk_aac\"\n");
+	printf("                            audio_bitrate CDATA #IMPLIED\n");
+	printf("                            audio_quality CDATA #IMPLIED\n");
+	printf("                            crop CDATA \"0:0:0:0\"\n");
+	printf("                            anamorphic (loose|strict) \"loose\"\n");
+	printf("                            deinterlace (fast|slow|slower|bob|default|none) \"none\"\n");
+	printf("                            decomb (fast|bob|default|none) \"default\"\n");
+	printf("                            denoise (ultralight|light|medium|strong|default|none) \"none\"\n");
+	printf("                            input_basedir CDATA #IMPLIED>\n");
+	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, episode_number, specific_name?, chapters, audio, audio_names?, subtitle?)>\n");
+	printf("<!ELEMENT type (#PCDATA)>\n");
+	printf("<!ELEMENT iso_filename (#PCDATA)>\n");
+	printf("<!ELEMENT dvdtitle (#PCDATA)>\n");
+	printf("<!ELEMENT name (#PCDATA)>\n");
+	printf("<!ELEMENT year (#PCDATA)>\n");
+	printf("<!ELEMENT season (#PCDATA)>\n");
+	printf("<!ELEMENT episode_number (#PCDATA)>\n");
+	printf("<!ELEMENT specific_name (#PCDATA)>\n");
+	printf("<!ELEMENT chapters (#PCDATA)>\n");
+	printf("<!ELEMENT audio (#PCDATA)>\n");
+	printf("<!ELEMENT subtitle (#PCDATA)>\n");
+	printf("]>\n");
 	printf("<handbrake_encode>\n \t<handbrake_options \n" \
 			"\t\t\tformat=\"%s\"\n \t\t\tvideo_encoder=\"x264\"\n \t\t\tvideo_quality=\"18\"\n \t\t\taudio_encoder=\"fdk_aac\" \n" \
 			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n \t\t\tcrop=\"%s\"\n \t\t\tanamorphic=\"loose\"\n" \
@@ -422,10 +445,8 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 		cur = cur->next;
 	}
 
-
 	// allocate and initialize options string
-	xmlChar *opt_str = xmlCharStrdup('\0');
-
+	xmlChar *opt_str = xmlCharStrdup("\0");
 
 	// Build options string
 	xmlChar *temp;
@@ -980,8 +1001,8 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 		if (bad_character == 0 ){
 			// verify each track number is between 1 and 99
 			// maybe indicate duplicates, but don't fail
-			int *track_numbers = malloc((comma_count+1)*sizeof(int));
-			char **track_strings = malloc((comma_count+1)*sizeof(char *));
+			int *track_numbers = (int *) malloc((comma_count+1)*sizeof(int));
+			char **track_strings = (char **) malloc((comma_count+1)*sizeof(char *));
 			char *token;
 			int track_out_of_range = 0;
 			xmlChar *audio_copy = xmlStrdup(audio);
@@ -1041,8 +1062,8 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			}
 		}
 		if (bad_character == 0 ){
-			int *track_numbers = malloc((comma_count+1)*sizeof(int));
-			char **track_strings = malloc((comma_count+1)*sizeof(char *));
+			int *track_numbers = (int *) malloc((comma_count+1)*sizeof(int));
+			char **track_strings = (char **) malloc((comma_count+1)*sizeof(char *));
 			char *token;
 			int track_out_of_range = 0;
 			xmlChar *subtitle_copy = xmlStrdup(subtitle);
@@ -1192,16 +1213,10 @@ long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *ch
 
 int validate_file_string(xmlChar * file_string)
 {
-	xmlChar bad_chars[6];
-	bad_chars[0] = '\\';
-	bad_chars[1] = '/';
-	bad_chars[2] = '`';
-	bad_chars[3] = '\'';
-	bad_chars[4] = '\"';
-	bad_chars[5] = '!';
+	xmlChar bad_chars[7] = { '\\', '/', '`', '\'', '\"', '!', ':' };
 
 	int i;
-	for (i = 0; i<6; i++) {
+	for (i = 0; i<7; i++) {
 		const xmlChar *temp;
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start
@@ -1303,7 +1318,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 					return 1;
 				}
 				// buffer output from handbrake and write to logfile
-				char *buf = malloc(80*sizeof(char));
+				char *buf = (char *) malloc(80*sizeof(char));
 				int bytes;
 				while ((bytes = read(hb_err[0], buf, 80)) != 0) {
 					fwrite(buf, bytes, 1, logfile);
@@ -1326,6 +1341,3 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 	return 0;
 }
 
-void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i)
-{
-}
