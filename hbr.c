@@ -787,6 +787,9 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 
 	//Begin building out_options
 	out_options = xmlStrndup((const xmlChar *) "-o \"", 4);
+	char *cwd = getcwd(NULL, 0);
+	out_options = xmlStrcat(out_options, (xmlChar *) cwd);
+	out_options = xmlStrncat(out_options, (const xmlChar *) "/", 1);
 
 	// Verify <name> is non-empty
 	int name_len = xmlStrlen(name);
@@ -1213,10 +1216,10 @@ long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *ch
 
 int validate_file_string(xmlChar * file_string)
 {
-	xmlChar bad_chars[7] = { '\\', '/', '`', '\'', '\"', '!', ':' };
+	xmlChar bad_chars[6] = { '\\', '/', '`', '\'', '\"', '!'};
 
 	int i;
-	for (i = 0; i<7; i++) {
+	for (i = 0; i<6; i++) {
 		const xmlChar *temp;
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start

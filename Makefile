@@ -16,9 +16,12 @@ $(PRGM_NAME): $(OBJECTS)
 
 # Test generated templates are well formed
 test-gen: hbr
-	./hbr -g 2 > test-gen.xml
-	- xmllint --valid test-gen.xml -o /dev/null
-	rm test-gen.xml
+	./hbr -g 2 > .test-gen.xml
+	- xmllint --valid .test-gen.xml -o /dev/null
+	rm .test-gen.xml
+
+install: hbr
+	cp hbr /usr/local/bin/hbr
 
 clean:
 	rm hbr.o hbr
