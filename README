@@ -64,6 +64,7 @@ here:
                     deinterlace overrides decomb
     decomb        - fast, bob, default or none
     denoise       - ultralight, light, medium, strong, default, none
+	markers       - yes or no
     input_basedir - Path that specifies where to find <iso_filename>
                     for each <outfile>
 
