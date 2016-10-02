@@ -388,13 +388,12 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 	printf("                            audio_encoder (av_aac|fdk_aac|fdk_haac|copy:aac|ac3|copy:ac3|copy:dts|copy:dtshd|mp3|copy:mp3|vorbis|flac16|flac24|copy) \"fdk_aac\"\n");
 	printf("                            audio_bitrate CDATA #IMPLIED\n");
 	printf("                            audio_quality CDATA #IMPLIED\n");
-	printf("                            crop CDATA \"0:0:0:0\"\n");
-	printf("                            anamorphic (loose|strict) \"loose\"\n");
+	printf("                            anamorphic (loose|strict) \"strict\"\n");
 	printf("                            deinterlace (fast|slow|slower|bob|default|none) \"none\"\n");
 	printf("                            decomb (fast|bob|default|none) \"default\"\n");
 	printf("                            denoise (ultralight|light|medium|strong|default|none) \"none\"\n");
 	printf("                            input_basedir CDATA #IMPLIED>\n");
-	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, episode_number, specific_name?, chapters, audio, audio_names?, subtitle?)>\n");
+	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, episode_number, specific_name?, crop?, chapters, audio, audio_names?, subtitle?)>\n");
 	printf("<!ELEMENT type (#PCDATA)>\n");
 	printf("<!ELEMENT iso_filename (#PCDATA)>\n");
 	printf("<!ELEMENT dvdtitle (#PCDATA)>\n");
@@ -403,14 +402,15 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 	printf("<!ELEMENT season (#PCDATA)>\n");
 	printf("<!ELEMENT episode_number (#PCDATA)>\n");
 	printf("<!ELEMENT specific_name (#PCDATA)>\n");
+	printf("<!ELEMENT crop (#PCDATA)>\n");
 	printf("<!ELEMENT chapters (#PCDATA)>\n");
 	printf("<!ELEMENT audio (#PCDATA)>\n");
 	printf("<!ELEMENT subtitle (#PCDATA)>\n");
 	printf("]>\n");
 	printf("<handbrake_encode>\n \t<handbrake_options \n" \
 			"\t\t\tformat=\"%s\"\n \t\t\tvideo_encoder=\"x264\"\n \t\t\tvideo_quality=\"18\"\n \t\t\taudio_encoder=\"fdk_aac\" \n" \
-			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n \t\t\tcrop=\"%s\"\n \t\t\tanamorphic=\"loose\"\n" \
-			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n \t\t\t/>\n", format, crop, basedir);
+			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n \t\t\tanamorphic=\"strict\"\n" \
+			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n \t\t\t/>\n", format, basedir);
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
 		if ( video_type == 0) {
@@ -433,6 +433,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 		printf("\t\t<name>%s</name>\n \t\t<year>%s</year>\n \t\t<season>%d</season>\n" \
 				"\t\t<episode_number></episode_number>\n \t\t<specific_name></specific_name>\n", name, year, season);
 
+		printf("\t\t<crop>%s</crop>", crop);
 		printf("\t\t<chapters></chapters>");
 		if (i == 0) {
 			printf("\t\t<!-- specified as a range \"1-3\" or single chapter \"3\" -->");
@@ -603,44 +604,6 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 	}
 	xmlFree(temp);
 
-	if ((temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop"))[0] != '\0') {
-		char *crop[4];
-		// break crop into components
-		crop[0] = strtok((char *) temp, ":");
-		crop[1] = strtok(NULL, ":");
-		crop[2] = strtok(NULL, ":");
-		crop[3] = strtok(NULL, "\0");
-		// verify each crop is 4 digit max (video isn't that big yet)
-		if ((strlen(crop[0]) <= 4) && (strlen(crop[1]) <= 4) && (strlen(crop[2]) <= 4) && (strlen(crop[3]) <= 4)){
-			int non_digit_found = 0;
-			int i;
-			// verify all characters are digits
-			for (i = 0; i<4; i++){
-				int j = 0;
-				while (crop[i][j] != '\0'){
-					if (isdigit(crop[i][j])){
-						non_digit_found = 1;
-					}
-					j++;
-				}
-			}
-			if (non_digit_found == 0){
-				opt_str = xmlStrncat(opt_str, (const xmlChar *) " --crop ", 8);
-				xmlFree(temp);
-				//re-grab the property because strtok destroyed it
-				temp = xmlGetNoNsProp(cur, (const xmlChar *) "crop");
-				opt_str = xmlStrncat(opt_str, temp, xmlStrlen(temp));
-			} else {
-				fprintf(stderr, "Invalid crop (non-digits) '%s:%s:%s:%s' in \"%s\" line number: ~%ld\n", \
-						crop[0], crop[1], crop[2], crop[3],  doc->URL, xmlGetLineNo(cur)-5);
-			}
-		} else {
-			fprintf(stderr, "Invalid crop (values too large) '%s:%s:%s:%s' in \"%s\" line number: ~%ld\n", \
-					crop[0], crop[1], crop[2], crop[3],  doc->URL, xmlGetLineNo(cur)-5);
-		}
-		xmlFree(temp);
-	}
-
 	temp = xmlGetNoNsProp(cur, (const xmlChar *) "anamorphic");
 	if (xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
 		opt_str = xmlStrncat(opt_str, (const xmlChar *) " --strict-anamorphic", 20);
@@ -758,7 +721,7 @@ int get_outfile_from_episode(xmlDocPtr doc, int episode_number)
 xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 {
 	xmlChar *type, *name, *year, *season, *episode_number, *specific_name; // output filename stuff
-	xmlChar *iso_filename, *dvdtitle, *chapters, *audio, *subtitle; // handbrake options
+	xmlChar *iso_filename, *dvdtitle, *crop, *chapters, *audio, *subtitle; // handbrake options
 	xmlChar *out_options;
 	int badstring = 0;
 
@@ -771,6 +734,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 		(xmlChar *) "specific_name",
 		(xmlChar *) "iso_filename",
 		(xmlChar *) "dvdtitle",
+		(xmlChar *) "crop",
 		(xmlChar *) "chapters",
 		(xmlChar *) "audio",
 		(xmlChar *) "subtitle"};
@@ -784,9 +748,10 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 
 	iso_filename = xpath_get_outfile_child_content(doc, out_count, tag_name[6]);
 	dvdtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[7]);
-	chapters = xpath_get_outfile_child_content(doc, out_count, tag_name[8]);
-	audio = xpath_get_outfile_child_content(doc, out_count, tag_name[9]);
-	subtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[10]);
+	crop = xpath_get_outfile_child_content(doc, out_count, tag_name[8]);
+	chapters = xpath_get_outfile_child_content(doc, out_count, tag_name[9]);
+	audio = xpath_get_outfile_child_content(doc, out_count, tag_name[10]);
+	subtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[11]);
 
 	// Test all tag contents for bad characters
 	xmlChar *validate_array[] = {type, name, year, season, episode_number, specific_name, \
@@ -941,6 +906,44 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				out_count, doc->URL, tag_name[7], xpath_get_outfile_line_number(doc, out_count, tag_name[7]) );
 		badstring = 1;
 	}
+	
+	// Test crop values to be all digits and smaller than the video size
+	if (crop != '\0') {
+		xmlChar *temp = xmlStrdup(crop);
+		char *crop_str[4];
+		// break crop into components
+		crop_str[0] = strtok((char *) temp, ":");
+		crop_str[1] = strtok(NULL, ":");
+		crop_str[2] = strtok(NULL, ":");
+		crop_str[3] = strtok(NULL, "\0");
+		// verify each crop is 4 digit max (video isn't that big yet)
+		if ((strlen(crop_str[0]) <= 4) && (strlen(crop_str[1]) <= 4) && (strlen(crop_str[2]) <= 4) && (strlen(crop_str[3]) <= 4)){
+			int non_digit_found = 0;
+			int i;
+			// verify all characters are digits
+			for (i = 0; i<4; i++){
+				int j = 0;
+				while (crop_str[i][j] != '\0'){
+					if(!isdigit(crop_str[i][j])){
+						non_digit_found = 1;
+					}
+					j++;
+				}
+			}
+			if (non_digit_found == 0){
+				out_options = xmlStrncat(out_options, (const xmlChar *) " -c ", 4);
+				out_options = xmlStrncat(out_options, crop, xmlStrlen(crop));
+				//re-grab the property because strtok destroyed it
+			} else {
+				fprintf(stderr, "%d: Invalid crop (non-digits) '%s:%s:%s:%s' in \"%s\" line number: %ld\n", \
+				out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3], doc->URL, xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+			}
+		} else {
+			fprintf(stderr, "%d: Invalid crop (values too large) '%s:%s:%s:%s' in \"%s\" line number: %ld\n", \
+			out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3], doc->URL, xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+		}
+		xmlFree(temp);
+	}
 
 	// Verify chapters matches range (1-3) or single number
 	int dash_count = 0;
@@ -957,19 +960,19 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	// Ensure only digits and '-'
 	if (non_digit_dash_found) {
 		fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n", \
-				out_count, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+				out_count, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 		badstring = 1;
 		// Ensure single '-' and '-' is not first or last character
 	} else if (dash_count > 1 || chapters[0] == '-' || chapters[xmlStrlen(chapters)] == '-') {
 		fprintf(stderr, "%d: Bad usage of '-' (%s) in \"%s\" tag <%s> line number: %ld\n", \
-				out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+				out_count, chapters, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 		badstring = 1;
 	} else {
 		// convert to longs for testing
 		int first = strtol((const char *) chapters, NULL, 10);
 		if (first > 98 || first < 1) {
 			fprintf(stderr, "%d: Chapter value outside range (1-98) (%s) in \"%s\" tag <%s> line number: %ld\n", \
-					out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+					out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 			badstring = 1;
 		}
 		// Deal with second digit if a single '-' was found
@@ -980,12 +983,12 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			if (first > second) {
 				printf("first: %d second: %d\n", first, second);
 				fprintf(stderr, "%d: Initial chapter is after final chapter (%s) in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+						out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 				badstring = 1;
 			}
 			if (second > 98 ) {
 				fprintf(stderr, "%d: Max chapter value of 98 exceeded (%s) in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, chapters, doc->URL, tag_name[8], xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+						out_count, chapters, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
 				badstring = 1;
 			}
 		}
@@ -996,7 +999,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	// Verify audio tracks (comma separated list)
 	if (audio[0] == ',' || audio[xmlStrlen(audio)] == ',') {
 		fprintf(stderr, "%d: Extra leading or trailing ',' (%s) in \"%s\" tag <%s> line number: %ld\n", \
-				out_count, audio, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+				out_count, audio, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
 	} else {
 		int bad_character = 0;
 		int comma_count = 0;
@@ -1004,7 +1007,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			if (audio[i] == ',') {
 				if ( audio[i-1] == ',' ) {
 					fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n", \
-							out_count, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+							out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
 					badstring = 1;
 					bad_character = 0;
 				}
@@ -1012,7 +1015,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			}
 			if (!isdigit(audio[i]) &&  audio[i] != ',') {
 				fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+						out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
 				bad_character = 1;
 				badstring = 1;
 			}
@@ -1048,7 +1051,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			free(track_strings);
 			if (track_out_of_range) {
 				fprintf(stderr, "%d: Audio track number too large in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, doc->URL, tag_name[9], xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+						out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
 			} else {
 				out_options = xmlStrncat(out_options, (const xmlChar *) " -a ", 4);
 				out_options = xmlStrncat(out_options, audio, xmlStrlen(audio));
@@ -1059,7 +1062,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	// Verify subtitle tracks (comma separated list) (this is a copy of the audio track verify
 	if (subtitle[0] == ',' || subtitle[xmlStrlen(subtitle)] == ',') {
 		fprintf(stderr, "%d: Extra leading or trailing ',' (%s) in \"%s\" tag <%s> line number: %ld\n", \
-				out_count, subtitle, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+				out_count, subtitle, doc->URL, tag_name[11], xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
 	} else {
 		int bad_character = 0;
 		int comma_count = 0;
@@ -1067,7 +1070,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			if (subtitle[i] == ',') {
 				if ( subtitle[i-1] == ',' ) {
 					fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n", \
-							out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+							out_count, doc->URL, tag_name[11], xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
 					badstring = 1;
 					bad_character = 0;
 				}
@@ -1075,7 +1078,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			}
 			if (!isdigit(subtitle[i]) &&  subtitle[i] != ',') {
 				fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+						out_count, doc->URL, tag_name[11], xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
 				bad_character = 1;
 				badstring = 1;
 			}
@@ -1109,7 +1112,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			free(track_strings);
 			if (track_out_of_range) {
 				fprintf(stderr, "%d: Subtitle track number too large in \"%s\" tag <%s> line number: %ld\n", \
-						out_count, doc->URL, tag_name[10], xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+						out_count, doc->URL, tag_name[11], xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
 			} else {
 				out_options = xmlStrncat(out_options, (const xmlChar *) " -s ", 4);
 				out_options = xmlStrncat(out_options, subtitle, xmlStrlen(subtitle));
@@ -1127,6 +1130,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	xmlFree(specific_name);
 	xmlFree(iso_filename);
 	xmlFree(dvdtitle);
+	xmlFree(crop);
 	xmlFree(chapters);
 	xmlFree(audio);
 	xmlFree(subtitle);
