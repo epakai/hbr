@@ -115,11 +115,12 @@ int main(int argc, char * argv[])
 
 	// check for request to generate new xml file
 	argp_parse (&gen_argp, argc, argv, ARGP_NO_ARGS|ARGP_IN_ORDER|ARGP_NO_EXIT|ARGP_SILENT, 0, &gen_arguments);
+
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
 		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1, gen_arguments.season ?: 1, \
 				gen_arguments.video_type, gen_arguments.source ?: "", gen_arguments.year ?: "", \
-				gen_arguments.crop ?: "0:0:0:0", gen_arguments.name ?: "", gen_arguments.format ?: "mkv", \
+				gen_arguments.crop ?: "0:0:0:0", gen_arguments.name ? gen_arguments.name : "", gen_arguments.format ?: "mkv", \
 				gen_arguments.basedir ?: "" );
 	} else if (gen_arguments.help == 0) {
 		// parse normal options
@@ -155,6 +156,7 @@ int main(int argc, char * argv[])
 			}
 		}
 		errno = 0;
+		//TODO if basedir is inaccessible try to create it
 		if ( access((char *) global_input_basedir, R_OK|X_OK ) == -1 ) {
 			perror ("main(): input_basedir was inaccessible");
 			xmlFreeDoc(xml_doc);
@@ -184,6 +186,7 @@ int main(int argc, char * argv[])
 			int outfile_number = get_outfile_from_episode(xml_doc, enc_arguments.episode);
 			i = outfile_number;
 			out_count = outfile_number;
+			//TODO have single episode generate preview as well
 		}
 		// encode all the episodes if loop parameters weren't modified above
 		for (; i <= out_count; i++) {
@@ -200,6 +203,12 @@ int main(int argc, char * argv[])
 			xmlChar *hb_command = xmlCharStrdup("HandBrakeCLI");
 			hb_command = xmlStrcat(hb_command, hb_options);
 			hb_command = xmlStrcat(hb_command, out_options);
+			
+			const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
+			const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
+			xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
+		
+			printf("Encoding: %d/%d: %s\n", i, out_count,filename);
 			if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
 				fprintf(stderr, "%d: Handbrake call failed in \"%s\" line number: %ld  was not encoded\n", \
@@ -208,9 +217,6 @@ int main(int argc, char * argv[])
 				xmlFree(hb_command);
 				continue;
 			}
-			const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
-			const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
-			xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 			// produce a thumbnail
 			if (enc_arguments.preview) {
 				xmlChar *ft_command = xmlCharStrdup("ffmpegthumbnailer");
@@ -219,6 +225,7 @@ int main(int argc, char * argv[])
 				ft_command = xmlStrncat(ft_command, (xmlChar *) "\" -o \"", 6);
 				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
 				ft_command = xmlStrncat(ft_command, (xmlChar *) ".png\" -s0 -q10", 14);
+				printf("Generating preview: %d/%d: %s\n", i, out_count,filename);
 				system((char *) ft_command);
 				xmlFree(ft_command);
 			}
@@ -255,6 +262,14 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 				gen_arguments->generate = atoi(arg);
 			}
 			break;
+		case 'f':
+			if (strncmp(arg, "mkv", 3) == 0) {
+				gen_arguments->format = arg;
+			}
+			if (strncmp(arg, "mp4", 3) == 0) {
+				gen_arguments->format = arg;
+			}
+			break;
 		case 's':
 			gen_arguments->source = arg;
 			break;
@@ -287,6 +302,7 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 			break;
 		case 'b':
 			gen_arguments->basedir = arg;
+			break;
 		default:
 			return ARGP_ERR_UNKNOWN;
 	}
@@ -1231,15 +1247,12 @@ int validate_file_string(xmlChar * file_string)
 
 int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
 {
-	printf("DEBUG: hb_command: %s (strlen:%d)\n", hb_command, xmlStrlen(hb_command));
 	// separate filename and construct log filename
 	const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
 	const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
 	xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 	xmlChar *log_filename = xmlStrdup(filename);
 	log_filename = xmlStrcat(log_filename, (const xmlChar *) ".log");
-	printf("DEBUG: filename: \"%s\" (strlen:%d)\n", filename, xmlStrlen(filename));
-	printf("DEBUG: log_filename: \"%s\" (strlen:%d)\n", log_filename, xmlStrlen(log_filename));
 	if ( access((char *) filename, F_OK ) == 0 ) {
 		if ( access((char *) filename, W_OK ) == 0 ) {
 			if (overwrite == 0) {

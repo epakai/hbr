@@ -14,7 +14,7 @@ $(PRGM_NAME): $(OBJECTS)
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-# Test generated templates are well formed
+# Test generated templates are well formed according to the DTD
 test-gen: hbr
 	./hbr -g 2 > .test-gen.xml
 	- xmllint --valid .test-gen.xml -o /dev/null
