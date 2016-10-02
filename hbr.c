@@ -35,7 +35,7 @@ xmlChar * global_input_basedir;
 // command line option handling
 static error_t parse_gen_opt(int key, char *arg, struct argp_state *);
 static error_t parse_enc_opt (int key, char *arg, struct argp_state *);
-void gen_xml(int outfiles_count, int title, int season, int video_type, const char *source, \
+void gen_xml(int outfiles_count, int title, int season, int video_type, int markers, const char *source, \
 		const char *year, const char *crop, const char *name, const char *format, const char *basedir);
 xmlChar* hb_options_string(xmlDocPtr doc);
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
@@ -67,6 +67,7 @@ static struct argp_option gen_options[] = {
 	{"name",     'n', "Name",         0, "Movie or series name", 1},
 	{"season",   'e', "NUM",          0, "Series season", 1},
 	{"basedir",  'b', "PATH",         0, "Base directory for input files", 1},
+	{"markers",  'm', 0,              0, "Add chapter markers", 1},
 	{"help",     '?', 0,              0, "Give this help list", 2},
 	{ 0, 0, 0, 0, 0, 0 }
 };
@@ -81,7 +82,7 @@ static struct argp_option enc_options[] = {
 };
 
 struct gen_arguments {
-	int generate, title, season, help, video_type;
+	int generate, title, season, help, video_type, markers;
 	char *source, *year, *crop, *name, *format, *basedir;
 };
 
@@ -105,6 +106,7 @@ int main(int argc, char * argv[])
 	gen_arguments.help = 0;
 	gen_arguments.title = 0;
 	gen_arguments.season = 0;
+	gen_arguments.markers = 0;
 	gen_arguments.video_type = -1;
 	gen_arguments.source = NULL;
 	gen_arguments.year = NULL;
@@ -119,9 +121,9 @@ int main(int argc, char * argv[])
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
 		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1, gen_arguments.season ?: 1, \
-				gen_arguments.video_type, gen_arguments.source ?: "", gen_arguments.year ?: "", \
+				gen_arguments.video_type, gen_arguments.markers, gen_arguments.source ?: "", gen_arguments.year ?: "", \
 				gen_arguments.crop ?: "0:0:0:0", gen_arguments.name ? gen_arguments.name : "", gen_arguments.format ?: "mkv", \
-				gen_arguments.basedir ?: "" );
+				gen_arguments.basedir ?: "");
 	} else if (gen_arguments.help == 0) {
 		// parse normal options
 		argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
@@ -142,10 +144,9 @@ int main(int argc, char * argv[])
 		xmlChar bad_chars[4];
 		bad_chars[0] = '\\';
 		bad_chars[1] = '`';
-		bad_chars[2] = '\'';
 		bad_chars[3] = '\"';
 		int i;
-		for (i = 0; i<4; i++) {
+		for (i = 0; i<3; i++) {
 			const xmlChar * temp;
 			if ((temp = xmlStrchr(global_input_basedir, bad_chars[i])) != NULL ){
 				fprintf(stderr, "Invalid character '%c' for global_input_basedir attribute in \"%s\" line number: ~%ld\n", \
@@ -205,7 +206,8 @@ int main(int argc, char * argv[])
 			const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
 			const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
 			xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
-		
+			
+			printf("DEBUG: hb_command: %s\n", hb_command);
 			printf("Encoding: %d/%d: %s\n", i, out_count,filename);
 			if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
 				xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
@@ -301,6 +303,9 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 		case 'b':
 			gen_arguments->basedir = arg;
 			break;
+		case 'm':
+			gen_arguments->markers =  1;
+			break;
 		default:
 			return ARGP_ERR_UNKNOWN;
 	}
@@ -373,7 +378,7 @@ xmlDocPtr parse_xml(char *infile)
 	return doc;
 }
 
-void gen_xml(int outfiles_count, int title, int season, int video_type, const char *source, const char *year, const char *crop, const char *name, const char *format, const char *basedir)
+void gen_xml(int outfiles_count, int title, int season, int video_type, int markers, const char *source, const char *year, const char *crop, const char *name, const char *format, const char *basedir)
 {
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	// printf("<!DOCTYPE handbrake_encode SYSTEM \"handbrake_encode.dtd\">\n");
@@ -390,6 +395,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 	printf("                            deinterlace (fast|slow|slower|bob|default|none) \"none\"\n");
 	printf("                            decomb (fast|bob|default|none) \"default\"\n");
 	printf("                            denoise (ultralight|light|medium|strong|default|none) \"none\"\n");
+	printf("                            markers (yes|no) \"no\"\n");
 	printf("                            input_basedir CDATA #IMPLIED>\n");
 	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, episode_number, specific_name?, crop?, chapters, audio, audio_names?, subtitle?)>\n");
 	printf("<!ELEMENT type (#PCDATA)>\n");
@@ -408,7 +414,13 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 	printf("<handbrake_encode>\n \t<handbrake_options \n" \
 			"\t\t\tformat=\"%s\"\n \t\t\tvideo_encoder=\"x264\"\n \t\t\tvideo_quality=\"18\"\n \t\t\taudio_encoder=\"fdk_aac\" \n" \
 			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n \t\t\tanamorphic=\"strict\"\n" \
-			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n \t\t\t/>\n", format, basedir);
+			"\t\t\tdeinterlace=\"none\"\n \t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n \t\t\tinput_basedir=\"%s\"\n", format, basedir);
+	if ( markers ) {
+		printf("\t\t\tmarkers=\"yes\"\n");
+	} else {
+		printf("\t\t\tmarkers=\"no\"\n");
+	}
+	printf("\t\t\t/>\n");
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
 		if ( video_type == 0) {
@@ -599,6 +611,12 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 			}
 		}
 		xmlFree(temp2);
+	}
+	xmlFree(temp);
+
+	temp = xmlGetNoNsProp(cur, (const xmlChar *) "markers");
+	if (xmlStrcmp(temp, (const xmlChar *) "yes") == 0 ) {
+		opt_str = xmlStrncat(opt_str, (const xmlChar *) " -m", 3);
 	}
 	xmlFree(temp);
 
@@ -1234,10 +1252,10 @@ long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *ch
 
 int validate_file_string(xmlChar * file_string)
 {
-	xmlChar bad_chars[6] = { '\\', '/', '`', '\'', '\"', '!'};
+	xmlChar bad_chars[6] = { '\\', '/', '`', '\"', '!'};
 
 	int i;
-	for (i = 0; i<6; i++) {
+	for (i = 0; i<5; i++) {
 		const xmlChar *temp;
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start
