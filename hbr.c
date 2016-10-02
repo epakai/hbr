@@ -156,7 +156,6 @@ int main(int argc, char * argv[])
 			}
 		}
 		errno = 0;
-		//TODO if basedir is inaccessible try to create it
 		if ( access((char *) global_input_basedir, R_OK|X_OK ) == -1 ) {
 			perror ("main(): input_basedir was inaccessible");
 			xmlFreeDoc(xml_doc);
@@ -186,7 +185,6 @@ int main(int argc, char * argv[])
 			int outfile_number = get_outfile_from_episode(xml_doc, enc_arguments.episode);
 			i = outfile_number;
 			out_count = outfile_number;
-			//TODO have single episode generate preview as well
 		}
 		// encode all the episodes if loop parameters weren't modified above
 		for (; i <= out_count; i++) {
@@ -224,8 +222,8 @@ int main(int argc, char * argv[])
 				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
 				ft_command = xmlStrncat(ft_command, (xmlChar *) "\" -o \"", 6);
 				ft_command = xmlStrncat(ft_command, filename, xmlStrlen(filename));
-				ft_command = xmlStrncat(ft_command, (xmlChar *) ".png\" -s0 -q10", 14);
-				printf("Generating preview: %d/%d: %s\n", i, out_count,filename);
+				ft_command = xmlStrncat(ft_command, (xmlChar *) ".png\" -s0 -q10 &>/dev/null", 14);
+				printf("Generating preview: %d/%d: %s.png\n", i, out_count, filename);
 				system((char *) ft_command);
 				xmlFree(ft_command);
 			}
@@ -433,7 +431,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type, const ch
 		printf("\t\t<name>%s</name>\n \t\t<year>%s</year>\n \t\t<season>%d</season>\n" \
 				"\t\t<episode_number></episode_number>\n \t\t<specific_name></specific_name>\n", name, year, season);
 
-		printf("\t\t<crop>%s</crop>", crop);
+		printf("\t\t<crop>%s</crop>\n", crop);
 		printf("\t\t<chapters></chapters>");
 		if (i == 0) {
 			printf("\t\t<!-- specified as a range \"1-3\" or single chapter \"3\" -->");
