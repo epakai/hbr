@@ -58,8 +58,6 @@ here:
     audio_quality - Only valid for mp3 and vorbis
                     Values are [0,10] for and [-2,10] for vorbis.
                     quality overrides bitrate
-    crop          - Amount to crop off each edge
-                    top:bottom:left:right
     anamorphic    - loose or strict
                     There is also a custom option not implemented in hbr
     deinterlace   - fast, slow, slower, bob, none
@@ -86,6 +84,8 @@ The user configures each outfile. Here are descriptions of each element:
     <episode_number>  - Episode, a number used only in series filename
     <specific_name>   - Freeform name like an episode title or specific
                         version of a movie
+    <crop>            - Amount to crop off each edge
+                        top:bottom:left:right
     <chapters>        - Chapters to encode, specified as a single number 
                         or range (i.e. 3 or 5-8)
     <audio>           - Audio tracks to encode, comma separated
