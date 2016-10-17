@@ -133,11 +133,11 @@ int main(int argc, char * argv[])
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
 		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
-			gen_arguments.season ?: 1, gen_arguments.video_type,
-			gen_arguments.markers, gen_arguments.source ?: "",
-			gen_arguments.year ?: "", gen_arguments.crop ?: "0:0:0:0",
-			gen_arguments.name ?: "", gen_arguments.format ?: "mkv",
-			gen_arguments.basedir ?: "", gen_arguments.episodes);
+				gen_arguments.season ?: 1, gen_arguments.video_type,
+				gen_arguments.markers, gen_arguments.source ?: "",
+				gen_arguments.year ?: "", gen_arguments.crop ?: "0:0:0:0",
+				gen_arguments.name ?: "", gen_arguments.format ?: "mkv",
+				gen_arguments.basedir ?: "", gen_arguments.episodes);
 	} else if (gen_arguments.help == 0) {
 		// parse normal options
 		argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
@@ -146,8 +146,8 @@ int main(int argc, char * argv[])
 		xmlNode *root_element = xmlDocGetRootElement(xml_doc);
 		if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
 			fprintf(stderr,
-				"Wrong document type: handbrake_encode element not found in \"%s\"",
-				xml_doc->URL);
+					"Wrong document type: handbrake_encode element not found in \"%s\"",
+					xml_doc->URL);
 			return 1;
 		}
 
