@@ -63,7 +63,8 @@ static char gen_args_doc[] = "-g NUM";
 static char enc_args_doc[] = "[XML FILE]";
 
 static struct argp_option gen_options[] = {
-	{"generate", 'g', "NUM",          0, "Generate xml file with NUM outfile sections", 0 },
+	{"episodes", 'l', "FILE",         0, "Episode list", 1},
+	{"generate", 'g', "NUM", OPTION_ARG_OPTIONAL, "Generate xml file with NUM outfile sections.\nMust be specified unless -l is provided.", 0 },
 	{"format",   'f', "NUM",          0, "Output container format", 0},
 	{"title",    't', "NUM",          0, "DVD Title number (for discs with a single title)", 0},
 	{"type",     'p', "series|movie", 0, "Type of video", 1},
@@ -74,8 +75,8 @@ static struct argp_option gen_options[] = {
 	{"season",   'e', "NUM",          0, "Series season", 1},
 	{"basedir",  'b', "PATH",         0, "Base directory for input files", 1},
 	{"markers",  'm', 0,              0, "Add chapter markers", 1},
-	{"episodes", 'l', "FILE",              0, "Episode list", 1},
 	{"help",     '?', 0,              0, "Give this help list", 2},
+	{"usage",    300, 0,  OPTION_HIDDEN, "Give this help list", 2},
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
@@ -91,7 +92,7 @@ static struct argp_option enc_options[] = {
 struct gen_arguments {
 	int generate, title, season, help, video_type, markers;
 	char *source, *year, *crop, *name, *format, *basedir, *episodes;
-};
+}; 
 
 struct enc_arguments {
 	char *args[1];
@@ -270,6 +271,7 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
 	char prog_name[] = "hbr";
 	switch (key) {
+		case 300:
 		case '?':
 			gen_arguments->help = 1;
 			argp_help(&enc_argp, stdout, ARGP_HELP_SHORT_USAGE, prog_name);
@@ -281,9 +283,17 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, prog_name);
 			exit(0);
 			break;
+		case 'l':
+			gen_arguments->episodes = arg;
+			gen_arguments->generate = 1;
+			break;
 		case 'g':
-			if ( atoi(arg) > 0 ) {
-				gen_arguments->generate = atoi(arg);
+			if(arg != NULL) {
+				if ( atoi(arg) > 0 ) {
+					gen_arguments->generate = atoi(arg);
+				}
+			} else {
+					gen_arguments->generate = 1;
 			}
 			break;
 		case 'f':
@@ -329,9 +339,6 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 			break;
 		case 'm':
 			gen_arguments->markers =  1;
-			break;
-		case 'l':
-			gen_arguments->episodes = arg;
 			break;
 		default:
 			return ARGP_ERR_UNKNOWN;
@@ -405,6 +412,8 @@ xmlDocPtr parse_xml(char *infile)
 	return doc;
 }
 
+
+
 void gen_xml(int outfiles_count, int title, int season, int video_type,
 		int markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
@@ -414,22 +423,56 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 		int number;
 		char *name;
 	};
-	struct episode *episode_array = malloc(30 * sizeof(struct episode));
+	int max_count = 30;
+	struct episode *episode_array = malloc(max_count * sizeof(struct episode));
 	int episode_list_count = 0;
 	FILE *el_file;
 	if (episodes != NULL) {
 		errno = 0;
 		el_file = fopen(episodes, "r");
 		if (el_file != NULL)  {
-			// read episodes file into an array
+			char * buf = malloc(200*sizeof(char));
+			while (fgets(buf, 200, el_file) != NULL && episode_list_count < max_count) {
+				buf[strcspn(buf, "\n")] = 0;
+				int n = 0;
+				char ep_number[5] = "\0";
+				if(isdigit(buf[n])) {
+					while (isdigit(buf[n]) && n <= 5) {
+						ep_number[n] = buf[n];
+						n++;
+					}
+				} else {
+					fprintf(stderr, "No episode number found on line: %d", episode_list_count+1);
+				}
+				ep_number[n+1] = '\0';
+				n++;
+				episode_array[episode_list_count].number = atoi(ep_number);
+				
+				episode_array[episode_list_count].name = 
+					malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
+				if (episode_array[episode_list_count].name != NULL) {
+					strncpy(episode_array[episode_list_count].name, buf+n, strnlen(buf+n, 200)+1 );
+				} else {
+					fprintf(stderr, "Failed malloc call for episode name");
+				}
+				if ( episode_list_count == max_count - 1 ) {
+					struct episode *temp;
+					if( (temp = realloc(episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
+						episode_array = temp;
+					}
+				}
+				episode_list_count++;
+			}
+			free(buf);
 		} else {
+			fprintf(stderr, "\"%s\" : ", episodes);
 			perror("Failed to open episode list");
-			fprintf(stderr, ": %s\n", episodes);
+			return;
 		}
 		fclose(el_file);
+		outfiles_count = episode_list_count;
 	}
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	// printf("<!DOCTYPE handbrake_encode SYSTEM \"handbrake_encode.dtd\">\n");
 	printf("<!DOCTYPE handbrake_encode [\n");
 	printf("<!ELEMENT handbrake_encode (handbrake_options, outfile+)>\n");
 	printf("<!ELEMENT handbrake_options EMPTY>\n");
@@ -497,11 +540,16 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 					"\t\t<!-- movie filename: \"<name> (<year>)\" -->\n");
 		}
 		printf("\t\t<name>%s</name>\n \t\t<year>%s</year>\n"
-				"\t\t<season>%d</season>\n"
-				"\t\t<episode_number></episode_number>\n"
-				"\t\t<specific_name></specific_name>\n",
+				"\t\t<season>%d</season>\n",
 				name, year, season);
-
+		if (episodes != NULL){
+			printf("\t\t<episode_number>%d</episode_number>\n"
+				"\t\t<specific_name>%s</specific_name>\n",
+				episode_array[i].number, episode_array[i].name);
+		} else {
+		printf("\t\t<episode_number></episode_number>\n"
+				"\t\t<specific_name></specific_name>\n");
+		}
 		printf("\t\t<crop>%s</crop>\n", crop);
 		printf("\t\t<chapters></chapters>");
 		if (i == 0) {
@@ -518,8 +566,10 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 		printf("\n\t</outfile>\n");
 	}
 	printf("</handbrake_encode>\n");
-
-	//TODO loop through episode_array and free all names
+	
+	for( i = 0; i < episode_list_count; i++) {
+		free(episode_array[i].name);
+	}
 	free(episode_array);
 	return;
 }

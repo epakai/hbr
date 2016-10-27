@@ -12,14 +12,22 @@ You may also specify a specific episode from the xml file to be encoded.
 
     hbr show.xml -e 8
 
-In order to generate an xml file, run hbr with the -g option. Some tags
+In order to generate an xml file, run hbr with the -g or -l option. Some tags
 and options can be prefilled by the generator. See hbr --help for a list.
-Output of hbr -g is to stdout. Redirect it to a file.
+Generator output of hbr is to stdout. Redirect it to a file.
+
+This generates a file with 12 outfile sections: 
 
     hbr -g 12 --format=mkv --basedir=/video/iso > show.xml
 
-This generates a file with 12 outfile sections. Edit this manually and
-then feed it back into hbr to begin encoding.
+Generation can also use an episode list in a separate file. 
+Each line of the episode list file is a episode number, then a space or tab 
+followed by the episode name. Subsequent episodes start on a new line.
+
+    hbr -l episode_list --format=mkv --basedir/video/iso > show.xml
+
+After generation you should edit the output manually and then feed it back
+into hbr to begin encoding.
 
 ============================================================================
 This is a basic description of the workflow hbr is designed around:
@@ -66,7 +74,8 @@ here:
 
 Since it is tedious to fill these out the -g option can be combined
 with a number of other options to fill out elements that might be common
-across multiple <outfile> elements.
+across multiple <outfile> elements. See the output of hbr --help for a 
+full list of options.
 
 The user configures each outfile. Here are descriptions of each element:
 
