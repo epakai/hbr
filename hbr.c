@@ -64,8 +64,9 @@ static char enc_args_doc[] = "[XML FILE]";
 
 static struct argp_option gen_options[] = {
 	{"episodes", 'l', "FILE",         0, "Episode list", 1},
-	{"generate", 'g', "NUM", OPTION_ARG_OPTIONAL, "Generate xml file with NUM outfile sections.\nMust be specified unless -l is provided.", 0 },
-	{"format",   'f', "NUM",          0, "Output container format", 0},
+	{"generate", 'g', "NUM", OPTION_ARG_OPTIONAL,
+		"Generate xml file with NUM outfile sections.\nMust be specified unless -l is provided.", 0 },
+	{"format",   'f', "mkv|mp4",      0, "Output container format", 0},
 	{"title",    't', "NUM",          0, "DVD Title number (for discs with a single title)", 0},
 	{"type",     'p', "series|movie", 0, "Type of video", 1},
 	{"source",   's', "FILE",         0, "Source filename (DVD iso file)", 0},
@@ -92,7 +93,7 @@ static struct argp_option enc_options[] = {
 struct gen_arguments {
 	int generate, title, season, help, video_type, markers;
 	char *source, *year, *crop, *name, *format, *basedir, *episodes;
-}; 
+};
 
 struct enc_arguments {
 	char *args[1];
@@ -288,7 +289,7 @@ static error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 			gen_arguments->generate = 1;
 			break;
 		case 'g':
-			if(arg != NULL) {
+			if (arg != NULL) {
 				if ( atoi(arg) > 0 ) {
 					gen_arguments->generate = atoi(arg);
 				}
@@ -412,8 +413,6 @@ xmlDocPtr parse_xml(char *infile)
 	return doc;
 }
 
-
-
 void gen_xml(int outfiles_count, int title, int season, int video_type,
 		int markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
@@ -436,29 +435,47 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 				buf[strcspn(buf, "\n")] = 0;
 				int n = 0;
 				char ep_number[5] = "\0";
-				if(isdigit(buf[n])) {
-					while (isdigit(buf[n]) && n <= 5) {
+				if (isdigit(buf[n])) {
+					while (isdigit(buf[n]) && n < 5) {
 						ep_number[n] = buf[n];
 						n++;
 					}
 				} else {
-					fprintf(stderr, "No episode number found on line: %d", episode_list_count+1);
+					int i;
+					for ( i = 0; i < episode_list_count; i++) {
+						free(episode_array[i].name);
+					}
+					free(buf);
+					free(episode_array);
+					fclose(el_file);
+
+					fprintf(stderr, "No episode number found on line: %d\n", episode_list_count+1);
+					return;
 				}
 				ep_number[n+1] = '\0';
 				n++;
 				episode_array[episode_list_count].number = atoi(ep_number);
 				
-				episode_array[episode_list_count].name = 
+				episode_array[episode_list_count].name =
 					malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
 				if (episode_array[episode_list_count].name != NULL) {
 					strncpy(episode_array[episode_list_count].name, buf+n, strnlen(buf+n, 200)+1 );
 				} else {
-					fprintf(stderr, "Failed malloc call for episode name");
+					int i;
+					for ( i = 0; i < episode_list_count; i++) {
+						free(episode_array[i].name);
+					}
+					free(buf);
+					free(episode_array);
+					fclose(el_file);
+					fprintf(stderr, "Failed malloc call for episode name.\n");
+					return;
 				}
 				if ( episode_list_count == max_count - 1 ) {
 					struct episode *temp;
-					if( (temp = realloc(episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
+					if ( (temp = realloc(episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
 						episode_array = temp;
+						max_count += 20;
 					}
 				}
 				episode_list_count++;
@@ -567,7 +584,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 	}
 	printf("</handbrake_encode>\n");
 	
-	for( i = 0; i < episode_list_count; i++) {
+	for ( i = 0; i < episode_list_count; i++) {
 		free(episode_array[i].name);
 	}
 	free(episode_array);
@@ -1049,7 +1066,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	errno = 0;
 	if ( access((char *) full_path, R_OK) == -1 ) {
 		fprintf(stderr, "%s", full_path);
-		perror ("out_options_string(): Input file was inaccessible");
+		perror (" out_options_string(): Input file was inaccessible");
 		badstring = 1;
 	}
 	xmlFree(full_path);
