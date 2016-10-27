@@ -51,7 +51,6 @@ xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count);
 int call_handbrake(xmlChar *hb_command, int out_count, int overwrite);
 int hb_fork(xmlChar *hb_command, xmlChar *log_filename,
 		xmlChar *filename, int out_count);
-void call_mkvpropedit(xmlChar *filename, xmlDocPtr xml_doc, int i);
 
 /*
  * ARGP --help documentation
@@ -204,7 +203,7 @@ int main(int argc, char * argv[])
 		// Handle -e option to encode a single episode
 		i = 1;
 		if (enc_arguments.episode >= 0) {
-			// adjust parameters for following loop
+			// adjust parameters for following loop so it runs once
 			int outfile_number = get_outfile_from_episode(xml_doc, enc_arguments.episode);
 			i = outfile_number;
 			out_count = outfile_number;
