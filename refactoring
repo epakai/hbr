@@ -1,0 +1,104 @@
+One area I consider to be an issue is error checking is very spread out
+between the XML and argument generation code. This is in part because XML
+isn't capable of doing in depth validation, but it is very easy to have it
+verify types or possibilities from subsets. The main issue lies in the fact
+that the split between XML and in code validation is not precise so it is
+not apparent where it is incomplete or could be improved.
+
+The first goal should be to define the split precisely and ensure input
+validation is handled completely with good errors.
+
+I think the code breaks down into three main areas with the functions I
+currently associate with each section.
+
+1) Generating XML from arguments/input
+
+    a) static error_t parse_gen_opt();
+    
+        This is reasonably encapsulated, but I think it could benefit by
+        encapsulating all the arguments in a struct and moving the default
+        arguments from main into #DEFINES that are local to the generation
+        code.
+    
+    b) void gen_xml();
+
+        Straightforward prints out the xml, with loops for repeated
+        portions and conditional statements for all comments.  The ugly
+        part of this function is the episode list reading code.  It needs
+        to be broken out at a minimum and probably rewritten now that the
+        requirements are understood.
+
+2) Reading XML
+
+    a) xmlDocPtr parse_xml();
+
+        Good, boilerplate from libxml to parse the document in and error
+        on any failures.
+
+    b) xmlChar* xpath_get_outfile_child_content();
+    c) long int xpath_get_outfile_line_number();
+    d) xmlNode* xpath_get_outfile();
+    e) int outfile_count();
+    f) int get_outfile_from_episode();
+
+        All these functions create a new xml context each time as well as
+        duplicating the libxml support code needed to set up their
+        operation. It might be better to create a document object and
+        maintain the context through the program's life. Some of these
+        functions might be consolidated as well.
+
+3) Generating Handbrake options and calling handbrake
+    
+    a) int main()
+
+        Setting default arguments here looks messy. Can argp handle this?
+        I don't know why I'm not handing gen_xml the struct of arguments
+        and letting it handle the defaults.
+        Lots of error checking and input validation needs to be moved 
+        to relevant functions.
+        Seems like the code yanking the filename from the hb_command 
+        is backwards. Perhaps the filename should get stored prior to this.
+        Move the thumbnail generation to a simple function call.
+        Overall goals: shorten main a lot, try to keep it to straight 
+        function calls and very little control flow.
+        
+    b) static error_t parse_enc_opt ();
+
+        No problem. Keep it so arguments only apply to non-handbrake
+        specific choices about running.
+
+    c) xmlChar* hb_options_string();
+    d) xmlChar* out_options_string();
+
+        Break out error checking for each option into it's own function.
+        Intertwined options might use a single function.
+        Basic structure should be
+            get option from xml
+            test if valid
+            concatenate with current opt_str
+    
+    e) int validate_bit_rate();
+
+        Helper for hb_options_string, but should still be segregated with
+        the other error checking.
+
+    f) int validate_file_string();
+
+        Seems simple and usable. main is still doing some of it's own
+        validation for the input base directory that could be combined here
+        with a simple flag to indicate if passed string is a path or just
+        filename.
+
+        
+    g) int call_handbrake();
+
+        Seems alright. Logic is a bit deep. Maybe do individual access
+        checking and errors instead of nesting so it's more obvious where
+        an error occurs.
+
+    h) int hb_fork();
+        
+        Same problem with deep logic. Not sure why I'm checking writable
+        for the current directory in this function and for the log filename
+        in call_handbrake(). Seems redundant. So simplify branches and make
+        their errors closer to the condition checking.
