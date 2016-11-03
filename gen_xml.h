@@ -51,8 +51,19 @@ struct gen_arguments {
 	char *source, *year, *crop, *name, *format, *basedir, *episodes;
 };
 
+struct episode {
+	int number;
+	char * name;
+};
+
 /* parse options related to xml generation */
 error_t parse_gen_opt(int key, char *arg, struct argp_state *);
+
+/* Read an episode list into memory */
+int read_episode_list(const char *episode_filename, struct episode **episode_array);
+
+/* iterate over the episode list freeing each struct and the list itelf */
+void free_episode_array(struct episode **episode_array, int count);
 
 /* Generate xml skeleton for hbr */
 void gen_xml(int outfiles_count, int title, int season, int video_type,

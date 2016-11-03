@@ -21,6 +21,7 @@ test-gen: hbr
 	xmllint --valid .test-gen.xml -o /dev/null
 	rm .test-gen.xml
 
+# Some static analysis and code formatting checks
 code-analysis: clang-analyzer cppcheck vera
 
 clang-analyzer:
@@ -38,4 +39,4 @@ install: hbr
 	cp hbr /usr/local/bin/hbr
 
 clean:
-	- rm *.o *.gch hbr
+	- rm -f *.o *.gch *.plist .test-gen.xml hbr
