@@ -48,124 +48,101 @@ xmlDocPtr parse_xml(char *infile)
 	xmlFreeParserCtxt(ctxt);
 	return doc;
 }
-
-xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
+xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *search_xpath)
 {
-	xmlChar *content;
 	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
 	if (xpath_context == NULL) {
 		fprintf(stderr, "Unable to create XPath context\n");
 		return NULL;
 	} else {
-		// build xpath like: "/handbrake_encode/outfile[3]/child"
-		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
-		xmlChar out_count_string[33];
-		snprintf((char *) out_count_string, 33, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
-		outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
-
-		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
+		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(search_xpath, xpath_context);
 		if (outfile_obj == NULL) {
-			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
+			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", search_xpath);
 			xmlXPathFreeContext(xpath_context);
-			xmlFree(outfile_xpath);
+			xmlFree(search_xpath);
 			return NULL;
 		}
-		//copy content so we can free the XPath Object
+		xmlXPathFreeContext(xpath_context);
+		return outfile_obj;
+	}
+}
+
+xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
+{
+	// build xpath like: "/handbrake_encode/outfile[3]/child"
+	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
+	xmlChar out_count_string[35];
+	snprintf((char *) out_count_string, 33, "%d", out_count);
+	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
+	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
+	outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
+
+	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
+	xmlFree(outfile_xpath);
+	if (outfile_obj != NULL) {
+		// get child's content
 		xmlChar *temp = xmlNodeGetContent((xmlNode *) outfile_obj->nodesetval->nodeTab[0]);
-		content = xmlStrdup(temp);
+		// copy content so we can free the XPath Object
+		xmlChar *content = xmlStrdup(temp);
 		xmlFree(temp);
 		xmlXPathFreeObject(outfile_obj);
-		// free other libxml structures
-		xmlFree(outfile_xpath);
-		xmlXPathFreeContext(xpath_context);
+		return content;
+	} else {
+		return NULL;
 	}
-	return content;
 }
 
 xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count)
 {
-	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	xmlXPathObjectPtr outfile_obj;
-
-	if (xpath_context == NULL) {
-		fprintf(stderr, "Unable to create XPath context\n");
-		return NULL;
+	// build xpath like: "/handbrake_encode/outfile[3]"
+	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
+	xmlChar out_count_string[33];
+	snprintf((char *) out_count_string, 33, "%d", out_count);
+	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
+	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]", 1);
+	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
+	// free other libxml structures
+	xmlFree(outfile_xpath);
+	if (outfile_obj != NULL) {
+		xmlNodePtr outfile_node = outfile_obj->nodesetval->nodeTab[0];
+		xmlXPathFreeObject(outfile_obj);
+		return outfile_node;
 	} else {
-		// build xpath like: "/handbrake_encode/outfile[3]"
-		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
-		xmlChar out_count_string[33];
-		snprintf((char *) out_count_string, 33, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]", 1);
-
-		outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if (outfile_obj == NULL) {
-			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlXPathFreeContext(xpath_context);
-			return NULL;
-		}
-		// free other libxml structures
-		xmlFree(outfile_xpath);
+		return NULL;
 	}
-
-	xmlXPathFreeContext(xpath_context);
-	xmlNodePtr outfile_node = outfile_obj->nodesetval->nodeTab[0];
-	xmlXPathFreeObject(outfile_obj);
-	return outfile_node;
 }
 
 long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
 {
-	//find the bad line number
-	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	long int  line_number;
-	if (xpath_context == NULL) {
-		fprintf(stderr, "Unable to create XPath context\n");
-		line_number = -1;
-	} else {
-		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
-		xmlChar out_count_string[33];
-		snprintf((char *) out_count_string, 33, "%d", out_count);
-		outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-		outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
-		outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
+	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
+	xmlChar out_count_string[33];
+	snprintf((char *) out_count_string, 33, "%d", out_count);
+	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
+	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
+	outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
 
-		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if (outfile_obj == NULL) {
-			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlXPathFreeContext(xpath_context);
-			return 0;
-		}
-		line_number = xmlGetLineNo(outfile_obj->nodesetval->nodeTab[0]);
+	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
+	xmlFree(outfile_xpath);
+	if (outfile_obj != NULL) {
+		int	line_number = xmlGetLineNo(outfile_obj->nodesetval->nodeTab[0]);
 		xmlXPathFreeObject(outfile_obj);
-		xmlFree(outfile_xpath);
+		return line_number;
+	} else {
+		return -1;
 	}
-	xmlXPathFreeContext(xpath_context);
-	return line_number;
 }
 
 int outfile_count(xmlDocPtr doc)
 {
-	xmlXPathContextPtr xpath_context = xmlXPathNewContext(doc);
-	if (xpath_context == NULL) {
-		fprintf(stderr, "outfile_count() Unable to create XPath context\n");
-		return -1;
-	} else {
-		xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
-		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(outfile_xpath, xpath_context);
-		if (outfile_obj == NULL) {
-			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", outfile_xpath);
-			xmlFree(outfile_xpath);
-			xmlXPathFreeContext(xpath_context);
-			return -1;
-		}
-		xmlFree(outfile_xpath);
-		xmlXPathFreeContext(xpath_context);
+	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
+	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
+	xmlFree(outfile_xpath);
+	if (outfile_obj != NULL) {
 		int count = outfile_obj->nodesetval->nodeNr;
 		xmlXPathFreeObject(outfile_obj);
 		return count;
+	} else {
+		return -1;
 	}
 }
 

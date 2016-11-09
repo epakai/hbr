@@ -63,7 +63,7 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *);
 int read_episode_list(const char *episode_filename, struct episode **episode_array);
 
 /* iterate over the episode list freeing each struct and the list itelf */
-void free_episode_array(struct episode **episode_array, int count);
+void free_episode_array(struct episode *episode_array, int count);
 
 /* Generate xml skeleton for hbr */
 void gen_xml(int outfiles_count, int title, int season, int video_type,

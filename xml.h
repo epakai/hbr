@@ -24,6 +24,7 @@
 
 xmlDocPtr parse_xml(char *);
 
+xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *search_xpath);
 xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child);
 xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count);
 long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child);

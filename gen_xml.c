@@ -92,78 +92,68 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 int read_episode_list(const char *episode_filename, struct episode **episode_array)
 {
 	int max_count = 30;
-	*episode_array = malloc(max_count * sizeof(struct episode));
 	int episode_list_count = 0;
 	FILE *el_file;
 	errno = 0;
 	el_file = fopen(episode_filename, "r");
-	if (el_file != NULL)  {
-		char * buf = malloc(200*sizeof(char));
-		while (fgets(buf, 200, el_file) != NULL && episode_list_count < max_count) {
-			buf[strcspn(buf, "\n")] = 0;
-			int n = 0;
-			char ep_number[5] = "\0";
-			if (isdigit(buf[n])) {
-				while (isdigit(buf[n]) && n < 5) {
-					ep_number[n] = buf[n];
-					n++;
-				}
-			} else {
-				int i;
-				for ( i = 0; i < episode_list_count; i++) {
-					free((*episode_array)[i].name);
-				}
-				free(buf);
-				free(*episode_array);
-				fclose(el_file);
-
-				fprintf(stderr, "No episode number found on line: %d\n", episode_list_count+1);
-				return 0;
-			}
-			ep_number[n+1] = '\0';
-			n++;
-			(*episode_array)[episode_list_count].number = atoi(ep_number);
-
-			(*episode_array)[episode_list_count].name =
-				malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
-			if ((*episode_array)[episode_list_count].name != NULL) {
-				strncpy((*episode_array)[episode_list_count].name, buf+n, strnlen(buf+n, 200)+1 );
-			} else {
-				int i;
-				for ( i = 0; i < episode_list_count; i++) {
-					free((*episode_array)[i].name);
-				}
-				free(buf);
-				free(*episode_array);
-				fclose(el_file);
-				fprintf(stderr, "Failed malloc call for episode name.\n");
-				return 0;
-			}
-			if ( episode_list_count == max_count - 1 ) {
-				struct episode *temp;
-				if ( (temp = realloc(*episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
-					*episode_array = temp;
-					max_count += 20;
-				}
-			}
-			episode_list_count++;
-		}
-		free(buf);
-	} else {
+	if (el_file == NULL)  {
 		fprintf(stderr, "\"%s\" : ", episode_filename);
 		perror("Failed to open episode list");
 		return 0;
 	}
+	*episode_array = malloc(max_count * sizeof(struct episode));
+	char * buf = malloc(200*sizeof(char));
+	while (fgets(buf, 200, el_file) != NULL && episode_list_count < max_count) {
+		buf[strcspn(buf, "\n")] = 0;
+		int n = 0;
+		char ep_number[5] = "\0";
+		while (isdigit(buf[n]) && n < 5) {
+			ep_number[n] = buf[n];
+			n++;
+		}
+		if (n == 0) {
+			free_episode_array(*episode_array, episode_list_count);
+			free(buf);
+			fclose(el_file);
+			fprintf(stderr, "No episode number found on line: %d\n", episode_list_count+1);
+			return 0;
+		}
+		ep_number[n+1] = '\0';
+		n++;
+		(*episode_array)[episode_list_count].number = atoi(ep_number);
+
+		(*episode_array)[episode_list_count].name =
+			malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
+		if ((*episode_array)[episode_list_count].name != NULL) {
+			strncpy((*episode_array)[episode_list_count].name, buf+n, strnlen(buf+n, 200)+1 );
+		} else {
+			free_episode_array(*episode_array, episode_list_count);
+			free(buf);
+			fclose(el_file);
+			fprintf(stderr, "Failed malloc call for episode name.\n");
+			return 0;
+		}
+		if ( episode_list_count == max_count - 1 ) {
+			struct episode *temp;
+			if ( (temp = realloc(*episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
+				*episode_array = temp;
+				max_count += 20;
+			}
+		}
+		episode_list_count++;
+	}
+	free(buf);
 	fclose(el_file);
 	return episode_list_count;
 }
 
-void free_episode_array(struct episode **episode_array, int count) {
+void free_episode_array(struct episode *episode_array, int count) {
 	int i;
 	for ( i = 0; i < count; i++) {
-		free((*episode_array)[i].name);
+		free(episode_array[i].name);
 	}
-	free(*episode_array);
+	free(episode_array);
+	episode_array = NULL;
 }
 
 void gen_xml(int outfiles_count, int title, int season, int video_type,
@@ -174,12 +164,14 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 	struct episode *episode_array = NULL;
 	if (episodes != NULL) {
 		outfiles_count = read_episode_list(episodes, &episode_array);
-	}
-	if (outfiles_count <= 0) {
-		if (episodes != NULL) {
-			free_episode_array(&episode_array, outfiles_count);
+		if (outfiles_count <= 0) {
+			fprintf(stderr, "Failed to parse episode list.\n");
+			return;
 		}
-		fprintf(stderr, "Failed to parse episode list.\n");
+	}
+	if (outfiles_count <= 0 || outfiles_count > 999) {
+		fprintf(stderr, "Invalid number of outfile sections: "
+				"%d (should be between 1 and 999).\n", outfiles_count);
 		return;
 	}
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -278,7 +270,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 	printf("</handbrake_encode>\n");
 	
 	if (episodes != NULL) {
-		free_episode_array(&episode_array, outfiles_count);
+		free_episode_array(episode_array, outfiles_count);
 	}
 	
 	return;
