@@ -24,10 +24,10 @@
 
 xmlDocPtr parse_xml(char *);
 
-xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *search_xpath);
-xmlChar* xpath_get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child);
-xmlNode* xpath_get_outfile(xmlDocPtr doc, int out_count);
-long int xpath_get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child);
+xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *xpath_expr);
+xmlChar* get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child);
+xmlNode* get_outfile(xmlDocPtr doc, int out_count);
+long int get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child);
 int outfile_count(xmlDocPtr doc);
 int get_outfile_from_episode(xmlDocPtr doc, int episode_number);
 

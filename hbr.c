@@ -97,6 +97,9 @@ int main(int argc, char * argv[])
 	argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
 	// parse xml document to tree
 	xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
+	if(xml_doc == NULL) {
+		return 1;
+	}
 	xmlNode *root_element = xmlDocGetRootElement(xml_doc);
 	if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
 		fprintf(stderr,
@@ -166,7 +169,7 @@ int main(int argc, char * argv[])
 		xmlChar *out_options = NULL;
 		out_options = out_options_string(xml_doc, i);
 		if ( out_options[0] == '\0'){
-			xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
+			xmlNode* outfile_node = get_outfile(xml_doc, i);
 			fprintf(stderr,
 					"%d: Bad outfile element in \"%s\" line number: "
 					"%ld  was not encoded\n",
@@ -186,7 +189,7 @@ int main(int argc, char * argv[])
 		printf("DEBUG: hb_command: %s\n", hb_command);
 		printf("Encoding: %d/%d: %s\n", i, out_count, filename);
 		if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
-			xmlNode* outfile_node = xpath_get_outfile(xml_doc, i);
+			xmlNode* outfile_node = get_outfile(xml_doc, i);
 			fprintf(stderr,
 					"%d: Handbrake call failed in \"%s\" line number: "
 					"%ld  was not encoded\n",
@@ -513,19 +516,19 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 		(xmlChar *) "audio",
 		(xmlChar *) "subtitle"};
 
-	type = xpath_get_outfile_child_content(doc, out_count, tag_name[0]);
-	name = xpath_get_outfile_child_content(doc, out_count, tag_name[1]);
-	year = xpath_get_outfile_child_content(doc, out_count, tag_name[2]);
-	season = xpath_get_outfile_child_content(doc, out_count, tag_name[3]);
-	episode_number = xpath_get_outfile_child_content(doc, out_count, tag_name[4]);
-	specific_name = xpath_get_outfile_child_content(doc, out_count, tag_name[5]);
+	type = get_outfile_child_content(doc, out_count, tag_name[0]);
+	name = get_outfile_child_content(doc, out_count, tag_name[1]);
+	year = get_outfile_child_content(doc, out_count, tag_name[2]);
+	season = get_outfile_child_content(doc, out_count, tag_name[3]);
+	episode_number = get_outfile_child_content(doc, out_count, tag_name[4]);
+	specific_name = get_outfile_child_content(doc, out_count, tag_name[5]);
 
-	iso_filename = xpath_get_outfile_child_content(doc, out_count, tag_name[6]);
-	dvdtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[7]);
-	crop = xpath_get_outfile_child_content(doc, out_count, tag_name[8]);
-	chapters = xpath_get_outfile_child_content(doc, out_count, tag_name[9]);
-	audio = xpath_get_outfile_child_content(doc, out_count, tag_name[10]);
-	subtitle = xpath_get_outfile_child_content(doc, out_count, tag_name[11]);
+	iso_filename = get_outfile_child_content(doc, out_count, tag_name[6]);
+	dvdtitle = get_outfile_child_content(doc, out_count, tag_name[7]);
+	crop = get_outfile_child_content(doc, out_count, tag_name[8]);
+	chapters = get_outfile_child_content(doc, out_count, tag_name[9]);
+	audio = get_outfile_child_content(doc, out_count, tag_name[10]);
+	subtitle = get_outfile_child_content(doc, out_count, tag_name[11]);
 
 	// Test all tag contents for bad characters
 	xmlChar *validate_array[] = {type, name, year, season, episode_number, specific_name,
@@ -537,7 +540,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			fprintf(stderr, "%d: Invalid character '%c' in \"%s\" tag "
 					"<%s> line number: %ld\n",
 					out_count, validate_array[i][ch], doc->URL, tag_name[i],
-					xpath_get_outfile_line_number(doc, out_count, tag_name[i]) );
+					get_outfile_line_number(doc, out_count, tag_name[i]) );
 			badstring = 1;
 		}
 	}
@@ -554,7 +557,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	if ( name_len == 0 ) {
 		fprintf(stderr, "%d: Empty name in \"%s\" tag <%s> line number: %ld\n",
 				out_count, doc->URL, tag_name[1],
-				xpath_get_outfile_line_number(doc, out_count, tag_name[1]) );
+				get_outfile_line_number(doc, out_count, tag_name[1]) );
 		badstring = 1;
 	}
 	out_options = xmlStrncat(out_options, name, name_len);
@@ -575,7 +578,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			} else {
 				fprintf(stderr, "%d: Invalid season in \"%s\" tag <%s> line number: %ld\n",
 						out_count, doc->URL, tag_name[3],
-						xpath_get_outfile_line_number(doc, out_count, tag_name[3]) );
+						get_outfile_line_number(doc, out_count, tag_name[3]) );
 				badstring = 1;
 			}
 		}
@@ -598,7 +601,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				fprintf(stderr, "%d: Invalid episode number in \"%s\" tag "
 						"<%s> line number: %ld\n",
 						out_count, doc->URL, tag_name[4],
-						xpath_get_outfile_line_number(doc, out_count, tag_name[4]) );
+						get_outfile_line_number(doc, out_count, tag_name[4]) );
 				badstring = 1;
 			}
 		}
@@ -631,7 +634,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				fprintf(stderr,
 						"%d: Invalid year in \"%s\" tag <%s> line number: %ld\n",
 						out_count, doc->URL, tag_name[2],
-						xpath_get_outfile_line_number(doc, out_count, tag_name[2]) );
+						get_outfile_line_number(doc, out_count, tag_name[2]) );
 				badstring = 1;
 			}
 		}
@@ -654,7 +657,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	} else {
 		fprintf(stderr, "%d: Invalid type in \"%s\" tag <%s> line number: %ld\n",
 				out_count, doc->URL, tag_name[0],
-				xpath_get_outfile_line_number(doc, out_count, tag_name[0]) );
+				get_outfile_line_number(doc, out_count, tag_name[0]) );
 		badstring = 1;
 	}
 
@@ -690,7 +693,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	} else {
 		fprintf(stderr, "%d: Invalid dvdtitle in \"%s\" tag <%s> line number: %ld\n",
 				out_count, doc->URL, tag_name[7],
-				xpath_get_outfile_line_number(doc, out_count, tag_name[7]) );
+				get_outfile_line_number(doc, out_count, tag_name[7]) );
 		badstring = 1;
 	}
 
@@ -726,13 +729,13 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				fprintf(stderr, "%d: Invalid crop (non-digits) "
 						"'%s:%s:%s:%s' in \"%s\" line number: %ld\n",
 						out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3],
-						doc->URL, xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+						doc->URL, get_outfile_line_number(doc, out_count, tag_name[8]) );
 			}
 		} else {
 			fprintf(stderr, "%d: Invalid crop (values too large) "
 					"'%s:%s:%s:%s' in \"%s\" line number: %ld\n",
 					out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3],
-					doc->URL, xpath_get_outfile_line_number(doc, out_count, tag_name[8]) );
+					doc->URL, get_outfile_line_number(doc, out_count, tag_name[8]) );
 		}
 		xmlFree(temp);
 	}
@@ -753,13 +756,13 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	if (non_digit_dash_found) {
 		fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n",
 				out_count, doc->URL, tag_name[9],
-				xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+				get_outfile_line_number(doc, out_count, tag_name[9]) );
 		badstring = 1;
 		// Ensure single '-' and '-' is not first or last character
 	} else if (dash_count > 1 || chapters[0] == '-' || chapters[xmlStrlen(chapters)] == '-') {
 		fprintf(stderr, "%d: Bad usage of '-' (%s) in \"%s\" tag <%s> line number: %ld\n",
 				out_count, chapters, doc->URL, tag_name[9],
-				xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+				get_outfile_line_number(doc, out_count, tag_name[9]) );
 		badstring = 1;
 	} else {
 		// convert to longs for testing
@@ -768,7 +771,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			fprintf(stderr, "%d: Chapter value outside range (1-98) "
 					"(%s) in \"%s\" tag <%s> line number: %ld\n",
 					out_count, chapters, doc->URL, tag_name[8],
-					xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+					get_outfile_line_number(doc, out_count, tag_name[9]) );
 			badstring = 1;
 		}
 		// Deal with second digit if a single '-' was found
@@ -782,14 +785,14 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 				fprintf(stderr, "%d: Initial chapter is after final chapter "
 						"(%s) in \"%s\" tag <%s> line number: %ld\n",
 						out_count, chapters, doc->URL, tag_name[8],
-						xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+						get_outfile_line_number(doc, out_count, tag_name[9]) );
 				badstring = 1;
 			}
 			if (second > 98 ) {
 				fprintf(stderr, "%d: Max chapter value of 98 exceeded "
 						"(%s) in \"%s\" tag <%s> line number: %ld\n",
 						out_count, chapters, doc->URL, tag_name[9],
-						xpath_get_outfile_line_number(doc, out_count, tag_name[9]) );
+						get_outfile_line_number(doc, out_count, tag_name[9]) );
 				badstring = 1;
 			}
 		}
@@ -804,7 +807,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 					"%d: Extra leading or trailing ',' (%s) in \"%s\" tag "
 					"<%s> line number: %ld\n",
 					out_count, audio, doc->URL, tag_name[10],
-					xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+					get_outfile_line_number(doc, out_count, tag_name[10]) );
 		} else {
 			int bad_character = 0;
 			int comma_count = 0;
@@ -814,7 +817,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 						fprintf(stderr,
 								"%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n",
 								out_count, doc->URL, tag_name[10],
-								xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+								get_outfile_line_number(doc, out_count, tag_name[10]) );
 						badstring = 1;
 						bad_character = 0;
 					}
@@ -824,7 +827,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 					fprintf(stderr,
 							"%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n",
 							out_count, doc->URL, tag_name[10],
-							xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+							get_outfile_line_number(doc, out_count, tag_name[10]) );
 					bad_character = 1;
 					badstring = 1;
 				}
@@ -862,7 +865,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 							"%d: Audio track number too large in "
 							"\"%s\" tag <%s> line number: %ld\n",
 							out_count, doc->URL, tag_name[10],
-							xpath_get_outfile_line_number(doc, out_count, tag_name[10]) );
+							get_outfile_line_number(doc, out_count, tag_name[10]) );
 				} else {
 					out_options = xmlStrncat(out_options, (const xmlChar *) " -a ", 4);
 					out_options = xmlStrncat(out_options, audio, xmlStrlen(audio));
@@ -877,7 +880,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 			fprintf(stderr, "%d: Extra leading or trailing ',' (%s) in \"%s\" tag "
 					"<%s> line number: %ld\n",
 					out_count, subtitle, doc->URL, tag_name[11],
-					xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
+					get_outfile_line_number(doc, out_count, tag_name[11]) );
 		} else {
 			int bad_character = 0;
 			int comma_count = 0;
@@ -887,7 +890,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 						fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag "
 								"<%s> line number: %ld\n",
 								out_count, doc->URL, tag_name[11],
-								xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
+								get_outfile_line_number(doc, out_count, tag_name[11]) );
 						badstring = 1;
 						bad_character = 0;
 					}
@@ -897,7 +900,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 					fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag "
 							"<%s> line number: %ld\n",
 							out_count, doc->URL, tag_name[11],
-							xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
+							get_outfile_line_number(doc, out_count, tag_name[11]) );
 					bad_character = 1;
 					badstring = 1;
 				}
@@ -933,7 +936,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 					fprintf(stderr, "%d: Subtitle track number too large "
 							"in \"%s\" tag <%s> line number: %ld\n",
 							out_count, doc->URL, tag_name[11],
-							xpath_get_outfile_line_number(doc, out_count, tag_name[11]) );
+							get_outfile_line_number(doc, out_count, tag_name[11]) );
 				} else {
 					out_options = xmlStrncat(out_options, (const xmlChar *) " -s ", 4);
 					out_options = xmlStrncat(out_options, subtitle, xmlStrlen(subtitle));
