@@ -21,9 +21,9 @@
 /**
  * @brief Parses the xml file. Validates xml against the DTD.
  *
- * @param infile path for xml file
+ * @param infile path for xml file.
  *
- * @return Document tree object pointer. Must be freed by caller.
+ * @return Document tree object pointer. NULL on failure. Must be freed by caller.
  */
 xmlDocPtr parse_xml(char *infile)
 {
@@ -61,9 +61,9 @@ xmlDocPtr parse_xml(char *infile)
  * @brief Evaluates XPath expression.
  *
  * @param doc The document to be evaluated against.
- * @param xpath_expr XPath 1.0 expression
+ * @param xpath_expr XPath 1.0 expression.
  *
- * @return  Result of evaluation. Must be freed by caller.
+ * @return  Result of evaluation. NULL if no match. Must be freed by caller.
  */
 xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *xpath_expr)
 {
@@ -87,11 +87,11 @@ xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *xpath_expr)
 /**
  * @brief Gets the content of an outfile's child element.
  *
- * @param doc
- * @param out_count
- * @param child
+ * @param doc The document to be searched.
+ * @param out_count Outfile to match (1-indexed).
+ * @param child Element to return contents of.
  *
- * @return 
+ * @return Contents of child element. NULL if outfile or child is invalid. Must be freed by caller.
  */
 xmlChar* get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
 {
@@ -118,6 +118,14 @@ xmlChar* get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
 	}
 }
 
+/**
+ * @brief Gets Nth outfile.
+ *
+ * @param doc The document to be searched.
+ * @param out_count Outfile to return (1-indexed).
+ *
+ * @return Outfile object. NULL if not found. Must be freed by caller.
+ */
 xmlNode* get_outfile(xmlDocPtr doc, int out_count)
 {
 	// build xpath like: "/handbrake_encode/outfile[3]"
@@ -138,6 +146,15 @@ xmlNode* get_outfile(xmlDocPtr doc, int out_count)
 	}
 }
 
+/**
+ * @brief Finds the line number for the Nth outfile's child element.
+ *
+ * @param doc The document to be searched.
+ * @param out_count Outfile to return (1-indexed).
+ * @param child Element to return line number of.
+ *
+ * @return Line number of matching element. Returns -1 if no match found.
+ */
 long int get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
 {
 	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile[");
@@ -158,6 +175,13 @@ long int get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
 	}
 }
 
+/**
+ * @brief Counts number of outfile sections in the document.
+ *
+ * @param doc The document to be searched.
+ *
+ * @return Number of outfile sections in the document.
+ */
 int outfile_count(xmlDocPtr doc)
 {
 	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
@@ -172,6 +196,14 @@ int outfile_count(xmlDocPtr doc)
 	}
 }
 
+/**
+ * @brief Find first outfile with matching episode number.
+ *
+ * @param doc The document to be searched.
+ * @param episode_number Episode number to match.
+ *
+ * @return Index of the first matching outfile. Returns -1 if no match.
+ */
 int get_outfile_from_episode(xmlDocPtr doc, int episode_number)
 {
 	int out_count = outfile_count(doc);
