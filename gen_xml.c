@@ -19,6 +19,15 @@
 
 #include "gen_xml.h"
 
+/**
+ * @brief Argp Parse options for xml generation.
+ *
+ * @param key Key value associated with each object.
+ * @param arg Value for the key being passed.
+ * @param state Argp state for the parser
+ *
+ * @return Error status.
+ */
 error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 {
 	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
@@ -89,6 +98,17 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 	return 0;
 }
 
+/**
+ * @brief Builds an array of episode numbers and titles from a file
+ * One line per episode with episode number, a single non-digit separator,
+ * and the episode title.
+ *
+ * @param episode_filename Path to the episode list.
+ * @param episode_array Address of a struct episode pointer. Caller should
+ * call free_episode_array() once use is complete.
+ *
+ * @return The number of episodes stored in episode_array
+ */
 int read_episode_list(const char *episode_filename, struct episode **episode_array)
 {
 	int max_count = 30;
@@ -147,6 +167,12 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
 	return episode_list_count;
 }
 
+/**
+ * @brief Frees episode_array allocated by read_episode_list()
+ *
+ * @param episode_array episode_array to be freed.
+ * @param count Number of struct episodes in the episode_array
+ */
 void free_episode_array(struct episode *episode_array, int count) {
 	int i;
 	for ( i = 0; i < count; i++) {
@@ -156,6 +182,23 @@ void free_episode_array(struct episode *episode_array, int count) {
 	episode_array = NULL;
 }
 
+/**
+ * @brief Generates xml to standard output based on various options
+ *
+ * @param outfiles_count Number of outfile sections to generate.
+ * Ignored if episodes argument is given.
+ * @param title DVD title number
+ * @param season Season number
+ * @param video_type Indicate a movie or series
+ * @param markers Chapter markers
+ * @param source Source filename (iso file)
+ * @param year Year published
+ * @param crop Crop amount (T:B:L:R)
+ * @param name General title for a series or movie
+ * @param format Output file format
+ * @param basedir Location for source file
+ * @param episodes Path for episode list file. Overides outfiles_count.
+ */
 void gen_xml(int outfiles_count, int title, int season, int video_type,
 		int markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
@@ -164,7 +207,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 	struct episode *episode_array = NULL;
 	if (episodes != NULL) {
 		outfiles_count = read_episode_list(episodes, &episode_array);
-		if (outfiles_count <= 0) {
+		if (outfiles_count == 0) {
 			fprintf(stderr, "Failed to parse episode list.\n");
 			return;
 		}

@@ -8,17 +8,11 @@ not apparent where it is incomplete or could be improved.
 The first goal should be to define the split precisely and ensure input
 validation is handled completely with good errors.
 
+Document all functions with doxygen style comments
+
 I think the code breaks down into three main areas with the functions I
 currently associate with each section.
 
-1) Generating XML from arguments/input
-
-    a) static error_t parse_gen_opt();
-    
-        This is reasonably encapsulated, but I think it could benefit by
-        encapsulating all the arguments in a struct and moving the default
-        arguments from main into #DEFINES that are local to the generation
-        code.
     
     b) void gen_xml();
 

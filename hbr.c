@@ -97,7 +97,7 @@ int main(int argc, char * argv[])
 	argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
 	// parse xml document to tree
 	xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
-	if(xml_doc == NULL) {
+	if (xml_doc == NULL) {
 		return 1;
 	}
 	xmlNode *root_element = xmlDocGetRootElement(xml_doc);
