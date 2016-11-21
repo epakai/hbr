@@ -22,6 +22,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for NULL, stderr, stdout, etc
 #include <stdlib.h>                     // for atoi, exit
+#include <string.h>                     // for strtok, strnlen
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 #include <libxml/xpath.h>
 #include "gen_xml.h"                    // for gen_arguments, gen_argp, etc

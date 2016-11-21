@@ -22,7 +22,6 @@
 
 #include <argp.h>
 #include <stdlib.h>
-#include <string.h>
 
 static const char gen_doc[] = "handbrake runner -- generates a xml template "
 "with NUM outfile sections, or one outfile per line in an episode list.";

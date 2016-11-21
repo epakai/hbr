@@ -18,6 +18,10 @@
  */
 
 #include "gen_xml.h"
+#include <ctype.h>                      // for isdigit
+#include <errno.h>                      // for errno
+#include <stdio.h>                      // for printf, fprintf, fclose, etc
+#include <string.h>                     // for strncmp, strnlen, strcspn, etc
 
 /**
  * @brief Argp Parse options for xml generation.
