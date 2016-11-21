@@ -17,15 +17,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <argp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <argp.h>                       // for argp_help, argp_parse, etc
+#include <ctype.h>                      // for isdigit
+#include <errno.h>                      // for errno
+#include <stdio.h>                      // for NULL, stderr, stdout, etc
+#include <stdlib.h>                     // for atoi, exit
+#include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 #include <libxml/xpath.h>
-
-#include "gen_xml.h"
-#include "xml.h"
+#include "gen_xml.h"                    // for gen_arguments, gen_argp, etc
+#include "xml.h"                        // parse_xml, outfile_count, etc
 
 const char *argp_program_version = "hbr 1.0";
 const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
@@ -39,7 +39,7 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *);
 xmlChar* hb_options_string(xmlDocPtr doc);
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 int validate_file_string(xmlChar * file_string);
-int validate_bit_rate(int bitrate, int minimum, int maximum);
+int valid_bit_rate(int bitrate, int minimum, int maximum);
 int call_handbrake(xmlChar *hb_command, int out_count, int overwrite);
 int hb_fork(xmlChar *hb_command, xmlChar *log_filename,
 		xmlChar *filename, int out_count);
@@ -221,6 +221,15 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+/**
+ * @brief Argp Parse options for general hbr use
+ *
+ * @param key Key value associated with each object.
+ * @param arg Value for the key being passed.
+ * @param state Argp state for the parser
+ *
+ * @return Error status.
+ */
 static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 {
 	struct enc_arguments *enc_arguments = (struct enc_arguments *) state->input;
@@ -374,8 +383,8 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 			// Only tests subset of bit rates for vorbis/mp3 (vorbis can go a bit higher)
 			int bitrate = strtol((char *) temp3, NULL, 10);
 			// test firs char of audio encoder and for valid bit rate
-			if ( ((temp[0] == 'm' || temp[0] == 'c') && validate_bit_rate(bitrate, 32, 320))
-					|| (temp[0] == 'v' && validate_bit_rate(bitrate, 192, 1344)) ){
+			if ( ((temp[0] == 'm' || temp[0] == 'c') && valid_bit_rate(bitrate, 32, 320))
+					|| (temp[0] == 'v' && valid_bit_rate(bitrate, 192, 1344)) ){
 				opt_str = xmlStrncat(opt_str, (const xmlChar *) " -B ", 4);
 				opt_str = xmlStrncat(opt_str, temp3, xmlStrlen(temp3) );
 			} else {
@@ -396,23 +405,23 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 			int good_bitrate = 0;
 			if ( ((xmlStrcmp(temp, (const xmlChar *) "av_aac") == 0)
 						|| (xmlStrcmp(temp, (const xmlChar *) "copy:aac") == 0))
-					&& validate_bit_rate(bitrate, 192, 1536 )) {
+					&& valid_bit_rate(bitrate, 192, 1536 )) {
 				good_bitrate = 1;
 			}
 			if ( ((xmlStrcmp(temp, (const xmlChar *) "fdk_aac") == 0)
 						|| (xmlStrcmp(temp, (const xmlChar *) "copy:dtshd") == 0)
 						|| (xmlStrcmp(temp, (const xmlChar *) "copy") == 0)
 						|| (xmlStrcmp(temp, (const xmlChar *) "copy:dts") == 0))
-					&& validate_bit_rate(bitrate, 160, 1344 )) {
+					&& valid_bit_rate(bitrate, 160, 1344 )) {
 				good_bitrate = 1;
 			}
 			if ( ((xmlStrcmp(temp, (const xmlChar *) "ac3") == 0)
 						|| ( xmlStrcmp(temp, (const xmlChar *) "copy:ac3") == 0))
-					&& validate_bit_rate(bitrate, 224, 640)) {
+					&& valid_bit_rate(bitrate, 224, 640)) {
 				good_bitrate = 1;
 			}
 			if ( xmlStrcmp(temp, (const xmlChar *) "fdk_haac") == 0
-					&& validate_bit_rate(bitrate, 80, 256)) {
+					&& valid_bit_rate(bitrate, 80, 256)) {
 				good_bitrate = 1;
 			}
 			if ( xmlStrncmp(temp, (const xmlChar *) "flac", 4) == 0) {
@@ -476,7 +485,16 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 	return opt_str;
 }
 
-int validate_bit_rate(int bitrate, int minimum, int maximum)
+/**
+ * @brief Ensure bitrate is one of the preset values
+ *
+ * @param bitrate bitrate for audio
+ * @param minimum set range for valid bitrate (depending on codec)
+ * @param maximum set range for valid bitrate (depending on codec)
+ *
+ * @return boolean status, 1 is valid, 0 is invalid
+ */
+int valid_bit_rate(int bitrate, int minimum, int maximum)
 {
 	// list is slightly reordered to put common rates first
 	int valid_bitrates[] = { 128, 160, 192, 224, 256, 320,
@@ -962,6 +980,13 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	return out_options;
 }
 
+/**
+ * @brief Test if file_string contains certain characters
+ *
+ * @param file_string path to be tested
+ *
+ * @return 0 if valid, offset of bad character if invalid
+ */
 int validate_file_string(xmlChar * file_string)
 {
 	xmlChar bad_chars[6] = { '\\', '/', '`', '\"', '!'};
@@ -989,9 +1014,9 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
 		if ( access((char *) filename, W_OK ) == 0 ) {
 			if (overwrite == 0) {
 				char c;
+				printf("File: \"%s\" already exists.\n", filename);
+				printf("Run hbr with '-y' option to automatically overwrite.\n");
 				do{
-					printf("File: \"%s\" already exists.\n", filename);
-					printf("Run hbr with '-y' option to automatically overwrite.\n");
 					printf("Do you want to overwrite? (y/n) ");
 					scanf(" %c", &c);
 					c = toupper(c);

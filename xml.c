@@ -38,13 +38,13 @@ xmlDocPtr parse_xml(char *infile)
 	}
 	// parse the file, activating the DTD validation option
 	doc = xmlCtxtReadFile(ctxt, infile, NULL, XML_PARSE_DTDVALID);
-	// check if parsing suceeded
+	// check if parsing succeeded
 	if (doc == NULL) {
 		fprintf(stderr, "Failed to parse %s\n", infile);
 		xmlFreeParserCtxt(ctxt);
 		return NULL;
 	} else {
-		// check if validation suceeded
+		// check if validation succeeded
 		if (ctxt->valid == 0) {
 			fprintf(stderr, "Failed to validate %s\n", infile);
 			xmlFreeParserCtxt(ctxt);

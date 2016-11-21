@@ -22,32 +22,10 @@ currently associate with each section.
         to be broken out at a minimum and probably rewritten now that the
         requirements are understood.
 
-2) Reading XML
-
-    a) xmlDocPtr parse_xml();
-
-        Good, boilerplate from libxml to parse the document in and error
-        on any failures.
-
-    b) xmlChar* xpath_get_outfile_child_content();
-    c) long int xpath_get_outfile_line_number();
-    d) xmlNode* xpath_get_outfile();
-    e) int outfile_count();
-    f) int get_outfile_from_episode();
-
-        All these functions create a new xml context each time as well as
-        duplicating the libxml support code needed to set up their
-        operation. It might be better to create a document object and
-        maintain the context through the program's life. Some of these
-        functions might be consolidated as well.
-
 3) Generating Handbrake options and calling handbrake
     
     a) int main()
 
-        Setting default arguments here looks messy. Can argp handle this?
-        I don't know why I'm not handing gen_xml the struct of arguments
-        and letting it handle the defaults.
         Lots of error checking and input validation needs to be moved 
         to relevant functions.
         Seems like the code yanking the filename from the hb_command 
@@ -56,11 +34,6 @@ currently associate with each section.
         Overall goals: shorten main a lot, try to keep it to straight 
         function calls and very little control flow.
         
-    b) static error_t parse_enc_opt ();
-
-        No problem. Keep it so arguments only apply to non-handbrake
-        specific choices about running.
-
     c) xmlChar* hb_options_string();
     d) xmlChar* out_options_string();
 
