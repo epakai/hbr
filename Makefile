@@ -19,14 +19,16 @@ install: hbr
 	cp hbr /usr/local/bin/hbr
 
 clean:
-	- rm -f *.o *.gch *.plist .test-gen.xml hbr doxyfile.inc doxygen_sqlite3.db
-	- rm -r html latex
+	- rm -f *.o *.gch *.plist .test-gen.xml hbr doxyfile.inc doxygen_sqlite3.db README.md
+	- rm -r html
 
 doxyfile.inc: Makefile
 	echo INPUT = ./ > doxyfile.inc
-	echo FILE_PATTERNS= *.h $(SOURCE) >> doxyfile.inc
+	echo PROJECT_NAME = $(PRGM_NAME) >> doxyfile.inc
+	echo FILE_PATTERNS = *.h $(SOURCE) *.md >> doxyfile.inc
 
 docs: doxyfile.inc $(SOURCE)
+	markdown README > README.md
 	doxygen doxyfile.mk
 
 # Test generated templates are well formed according to the DTD

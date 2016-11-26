@@ -29,7 +29,7 @@
 #include "xml.h"                        // parse_xml, outfile_count, etc
 
 const char *argp_program_version = "hbr 1.0";
-const char *argp_program_bug_address = "<joshua.honeycutt@gmail.com>";
+const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
 
 int global_mkv = 1;
 xmlChar * global_input_basedir;
@@ -54,8 +54,9 @@ static struct argp_option enc_options[] = {
 	{"episode",   'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
 	{"preview",   'p', 0,      0, "generate a preview image for each output file", 1},
 	{"overwrite", 'y', 0,      0, "overwrite encoded files without confirmation", 1},
-	{"help",     '?', 0,              0, "Give this help list", 2},
-	{"usage",    '@', 0,  OPTION_HIDDEN, "Give this help list", 2},
+	{"version",   'V', 0,      0, "prints program version", 1},
+	{"help",      '?', 0,              0, "Give this help list", 2},
+	{"usage",     '@', 0,  OPTION_HIDDEN, "Give this help list", 2},
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
@@ -250,6 +251,7 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 			printf("\nUsage: hbr %s [OPTION...]\n", gen_args_doc);
 			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, prog_name);
 			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, prog_name);
+			printf("Report bugs to %s\n", argp_program_bug_address);
 			exit(0);
 			break;
 		case 'e':
@@ -257,6 +259,10 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 			break;
 		case 'y':
 			enc_arguments->overwrite =  1;
+			break;
+		case 'V':
+			printf("%s\n", argp_program_version);
+			exit(0);
 			break;
 		case 'p':
 			enc_arguments->preview =  1;
@@ -271,6 +277,7 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 		case ARGP_KEY_END:
 			if (state->arg_num < 1) {
 				/* Not enough arguments. */
+				printf("Usage: hbr %s [OPTION...]\n", gen_args_doc);
 				argp_usage (state);
 			}
 			break;
