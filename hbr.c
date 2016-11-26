@@ -60,9 +60,14 @@ static struct argp_option enc_options[] = {
 };
 
 
+/**
+ * @brief Arguments for hbr. Handled by argp.
+ */
 struct enc_arguments {
-	char *args[1];
-	int episode, overwrite, preview;
+	char *args[1];  /**< Single argument for the input xml file. */
+	int episode;    /**< Specifies a particular episode number to be encoded. */
+	int overwrite;  /**< Default to overwriting previous encodes. */
+	int preview;    /**< Generate preview image using ffmpegthumbnailer. */
 };
 
 static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,

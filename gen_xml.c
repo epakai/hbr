@@ -94,7 +94,7 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 			gen_arguments->basedir = arg;
 			break;
 		case 'm':
-			gen_arguments->markers =  1;
+			gen_arguments->markers =  true;
 			break;
 		default:
 			return ARGP_ERR_UNKNOWN;
@@ -204,7 +204,7 @@ void free_episode_array(struct episode *episode_array, int count) {
  * @param episodes Path for episode list file. Overides outfiles_count.
  */
 void gen_xml(int outfiles_count, int title, int season, int video_type,
-		int markers, const char *source, const char *year,
+		bool markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
 		const char *basedir, const char *episodes)
 {

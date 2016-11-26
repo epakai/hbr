@@ -1,0 +1,4 @@
+@INCLUDE = doxyfile.inc
+EXTRACT_ALL = yes
+EXTRACT_PRIVATE = yes
+EXTRACT_STATIC = yes

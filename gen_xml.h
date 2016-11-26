@@ -22,6 +22,7 @@
 
 #include <argp.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 static const char gen_doc[] = "handbrake runner -- generates a xml template "
 "with NUM outfile sections, or one outfile per line in an episode list.";
@@ -45,14 +46,30 @@ static const struct argp_option gen_options[] = {
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
+/**
+ * @brief Arguments related to xml generation. Handled by argp.
+ */
 struct gen_arguments {
-	int generate, title, season, video_type, markers;
-	char *source, *year, *crop, *name, *format, *basedir, *episodes;
+	int generate;    /**< Number of outfile sections to generate. */
+	int title;       /**< DVD title number. */
+	int season;      /**< Season number. */
+	int video_type;  /**< Type of video (series or movie). */
+	bool markers;    /**< Toggle chapter markers*/
+	char *source;    /**< Source filename. */
+	char *year;      /**< Release year. */
+	char *crop;      /**< Crop amount in pixels formatted as top:bottom:left:right */
+	char *name;      /**< Movie or series name. */
+	char *format;    /**< Output container (mkv or mp4). */
+	char *basedir;   /**< Base directory for input files. */
+	char *episodes;  /**< Filename for list of episodes. */
 };
 
+/**
+ * @brief Episode structure used to build episode list when -l option is used.
+ */
 struct episode {
-	int number;
-	char * name;
+	int number;      /**< Episode number. */
+	char * name;     /**< Episode name. */
 };
 
 /* parse options related to xml generation */
@@ -66,7 +83,7 @@ void free_episode_array(struct episode *episode_array, int count);
 
 /* Generate xml skeleton for hbr */
 void gen_xml(int outfiles_count, int title, int season, int video_type,
-		int markers, const char *source, const char *year,
+		bool markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
 		const char *basedir, const char *episodes);
 
