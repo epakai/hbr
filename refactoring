@@ -14,14 +14,6 @@ I think the code breaks down into three main areas with the functions I
 currently associate with each section.
 
     
-    b) void gen_xml();
-
-        Straightforward prints out the xml, with loops for repeated
-        portions and conditional statements for all comments.  The ugly
-        part of this function is the episode list reading code.  It needs
-        to be broken out at a minimum and probably rewritten now that the
-        requirements are understood.
-
 3) Generating Handbrake options and calling handbrake
     
     a) int main()

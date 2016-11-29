@@ -22,6 +22,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for NULL, stderr, stdout, etc
 #include <stdlib.h>                     // for atoi, exit
+#include <stdbool.h>
 #include <string.h>                     // for strtok, strnlen
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 #include <libxml/xpath.h>
@@ -41,9 +42,8 @@ xmlChar* hb_options_string(xmlDocPtr doc);
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 int validate_file_string(xmlChar * file_string);
 int valid_bit_rate(int bitrate, int minimum, int maximum);
-int call_handbrake(xmlChar *hb_command, int out_count, int overwrite);
-int hb_fork(xmlChar *hb_command, xmlChar *log_filename,
-		xmlChar *filename, int out_count);
+int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite);
+int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count);
 
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an "
 "xml file with all encoded files placed in current directory";
@@ -67,7 +67,7 @@ static struct argp_option enc_options[] = {
 struct enc_arguments {
 	char *args[1];  /**< Single argument for the input xml file. */
 	int episode;    /**< Specifies a particular episode number to be encoded. */
-	int overwrite;  /**< Default to overwriting previous encodes. */
+	bool overwrite;  /**< Default to overwriting previous encodes. */
 	int preview;    /**< Generate preview image using ffmpegthumbnailer. */
 };
 
@@ -76,11 +76,19 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
 
 /*************************************************/
 
+/**
+ * @brief
+ *
+ * @param argc
+ * @param argv[]
+ *
+ * @return
+ */
 int main(int argc, char * argv[])
 {
 	struct enc_arguments enc_arguments;
 	enc_arguments.episode = -1;
-	enc_arguments.overwrite = 0;
+	enc_arguments.overwrite = false;
 	enc_arguments.preview = 0;
 	struct gen_arguments gen_arguments = {-1, 0, 0, -1, 0,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL};
@@ -258,7 +266,7 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 			enc_arguments->episode = atoi(arg);
 			break;
 		case 'y':
-			enc_arguments->overwrite =  1;
+			enc_arguments->overwrite =  true;
 			break;
 		case 'V':
 			printf("%s\n", argp_program_version);
@@ -287,6 +295,13 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 	return 0;
 }
 
+/**
+ * @brief Build HandBrakeCLI general arguments
+ *
+ * @param doc XML document to read values from
+ *
+ * @return String of command line arguments
+ */
 xmlChar* hb_options_string(xmlDocPtr doc)
 {
 	xmlNode *root_element = xmlDocGetRootElement(doc);
@@ -524,6 +539,15 @@ int valid_bit_rate(int bitrate, int minimum, int maximum)
 	return 0;
 }
 
+/**
+ * @brief Build HandBrakeCLI arguments specific to each outfile
+ *
+ * @param doc XML document to read values from
+ * @param out_count Indicates which outfile to generate options from
+ *
+ *
+ * @return String of command line arguments
+ */
 xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 {
 	// output filename stuff
@@ -1015,7 +1039,16 @@ int validate_file_string(xmlChar * file_string)
 	return 0;
 }
 
-int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
+/**
+ * @brief Handle the logic around calling handbrake
+ *
+ * @param hb_command String containing complete call to HandBrakeCLI with all arguments
+ * @param out_count Which outfile section is being encoded
+ * @param overwrite Overwrite existing files
+ *
+ * @return error status from hb_fork(), 0 is success
+ */
+int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite)
 {
 	// separate filename and construct log filename
 	const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
@@ -1025,7 +1058,7 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
 	log_filename = xmlStrcat(log_filename, (const xmlChar *) ".log");
 	if ( access((char *) filename, F_OK ) == 0 ) {
 		if ( access((char *) filename, W_OK ) == 0 ) {
-			if (overwrite == 0) {
+			if (!overwrite) {
 				char c;
 				printf("File: \"%s\" already exists.\n", filename);
 				printf("Run hbr with '-y' option to automatically overwrite.\n");
@@ -1039,14 +1072,14 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
 					xmlFree(log_filename);
 					return 1;
 				}else {
-					int r = hb_fork(hb_command, log_filename, filename, out_count);
+					int r = hb_fork(hb_command, log_filename, out_count);
 					xmlFree(filename);
 					xmlFree(log_filename);
 					return r;
 				}
-			} else if (overwrite == 1) {
+			} else if (overwrite) {
 				// call handbrake (overwrite file)
-				int r = hb_fork(hb_command, log_filename, filename, out_count);
+				int r = hb_fork(hb_command, log_filename, out_count);
 				xmlFree(filename);
 				xmlFree(log_filename);
 				return r;
@@ -1058,13 +1091,22 @@ int call_handbrake(xmlChar *hb_command, int out_count, int overwrite)
 			return 1;
 		}
 	}
-	int r = hb_fork(hb_command, log_filename, filename, out_count);
+	int r = hb_fork(hb_command, log_filename, out_count);
 	xmlFree(filename);
 	xmlFree(log_filename);
 	return r;
 }
 
-int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int out_count)
+/**
+ * @brief Test write access, fork and exec, redirect output for logging
+ *
+ * @param hb_command String containing complete call to HandBrakeCLI with all arguments
+ * @param log_filename Filename to log to
+ * @param out_count Which outfile section is being encoded
+ *
+ * @return 1 on error, 0 on success
+ */
+int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count)
 {
 	// check if current working directory is writeable
 	char *cwd = getcwd(NULL, 0);
@@ -1078,7 +1120,6 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, xmlChar *filename, int o
 			// test pipe was opened
 			if (pipe(hb_err)<0){
 				fclose(logfile);
-				xmlFree(filename);
 				xmlFree(log_filename);
 				return 1;
 			} else {
