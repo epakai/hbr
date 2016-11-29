@@ -1,20 +1,20 @@
 handbrake runner (hbr)                      https://github.com/epakai/hbr
 ====================== 
 
-This is a tool for automating the running of HandBrakeCLI and
-allowing for encodes to be easily re-run with modified settings.
+This is a tool for automating HandBrakeCLI runs. The goal is to allow for
+encodes to be re-run with modified settings.
 
 Usage is to specify an xml file for all relevant settings.
 
     hbr show.xml
 
-You may also specify a specific episode from the xml file to be encoded.
+You may also specify a specific episode from the xml file to encode.
 
     hbr show.xml -e 8
 
-In order to generate an xml file, run hbr with the -g or -l option. Some tags
-and options can be prefilled by the generator. See hbr --help for a list.
-Generator output of hbr is to stdout. Redirect it to a file.
+To generate an xml file, run hbr with the -g or -l option. Some tags
+and options can be P refilled by the generator. See hbr --help for a list.
+Generator output of hbr is to standard output. Redirect it to a file.
 
 This generates a file with 12 outfile sections: 
 
@@ -22,21 +22,20 @@ This generates a file with 12 outfile sections:
 
 Generation can also use an episode list in a separate file. 
 Each line of the episode list file is a episode number, then a space or tab 
-followed by the episode name. Subsequent episodes start on a new line.
+followed by the episode name. Each episode starts on a new line.
 
     hbr -l episode_list --format=mkv --basedir/video/iso > show.xml
 
-After generation you should edit the output manually and then feed it back
-into hbr to begin encoding.
+Once you generate the xml edit it to complete all fields.
 
 ============================================================================
 
-This is a basic description of the workflow hbr is designed around:
+This is a basic description of the expected work flow for hbr:
 
-User has an iso or dvd and knows how to find which titles, chapters,
-audio tracks, etc. they want to be in their encode. We will base this
-example on primarily manual editing of the xml file. Given 6 episodes
-to encode the user would run:
+User has an iso or dvd and knows how to find which titles, chapters, audio
+tracks, etc. they want to be in their encode. We will base this example
+on manual editing of the xml file. Given 6 episodes to encode the user
+would run:
 
     hbr -g 6 > show_title.xml
 
@@ -44,8 +43,7 @@ This produces an xml file with a <handbrake_options> element with default
 values and 6 <outfile> elements. <handbrake_options> includes settings 
 that effect each encode. Each <outfile> is specific to one encode.
 
-For the <handbrake_options> element there are many attributes described
-here:
+Descriptions of the attributes of the the <handbrake_options> element:
 
     format        - must be mkv or mp4
     video_encoder - may be x264, x265, mpeg4, mpeg2, VP8, or theora
@@ -73,17 +71,15 @@ here:
     input_basedir - Path that specifies where to find <iso_filename>
                     for each <outfile>
 
-Since it is tedious to fill these out the -g option can be combined
-with a number of other options to fill out elements that might be common
-across multiple <outfile> elements. See the output of hbr --help for a 
-full list of options.
+Since it is tedious to fill these out comiben the -g option with other
+options to fill out common elements across <outfile> elements.
+See the output of hbr --help for a full list of options.
 
 The user configures each outfile. Here are descriptions of each element:
 
-    <type>            - series or movie
-                        Affects which elements below are used for naming
-    <iso_filename>    - The input file or device. This is combined with
-                        input_basedir from <handbrake_options>
+    <type>            - series or movie, Affects the output filename
+    <iso_filename>    - The input file or device. Combined with input_basedir
+                        from <handbrake_options>: 
     <dvdtitle>        - A single dvd title number
     <name>            - Freeform Series or Movie name
     <year>              - Year, four digit year used only in Movie filename
@@ -98,11 +94,11 @@ The user configures each outfile. Here are descriptions of each element:
     <audio>           - Audio tracks to encode, comma separated
     <subtitle>        - Subtitle tracks to encode, comma separated
 
-Once the xml specification file is complete hbr can be run. Files are
-output in the current working directory. hbr should produce the 
-encoded video files as well as a log file with HandBrakeCLI's output.
+Once the xml specification file is complete run hbr. Files are output in
+the current working directory. hbr should produce the encoded video files
+as well as a log file with HandBrakeCLI's output.
 
     hbr ./show_title.xml
 
-Output file names are based on Plex's media preparation guidelines:
+Output file names use Plex's media preparation guidelines:
 https://support.plex.tv/hc/en-us/categories/200028098-Media-Preparation
