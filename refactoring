@@ -27,6 +27,14 @@ currently associate with each section.
         function calls and very little control flow.
         
     c) xmlChar* hb_options_string();
+		Breakdown:
+			get a pointer to the handbrake_options element
+			fetch potential option strings
+			parse for errors
+			append HandBrakeCLI option to a string
+			Errors result in error printout to stderr and the option being excluded
+				(change errors to reflect it has been excluded)
+
     d) xmlChar* out_options_string();
 
         Break out error checking for each option into it's own function.

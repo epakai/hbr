@@ -7,6 +7,8 @@ DEPS = gen_xml.h xml.h
 INCLUDES = `xml2-config --cflags`
 LFLAGS = `xml2-config --libs`
 
+.PHONY: install clean docs test-gen code-analysis clang-analyzer cppcheck vera pmccabe codespell
+
 default: hbr test-gen
 
 $(PRGM_NAME): $(OBJECTS)
