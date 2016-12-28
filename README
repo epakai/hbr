@@ -13,7 +13,7 @@ You may also specify a specific episode from the xml file to encode.
     hbr show.xml -e 8
 
 To generate an xml file, run hbr with the -g or -l option. Some tags
-and options can be P refilled by the generator. See hbr --help for a list.
+and options can be prefilled by the generator. See hbr --help for a list.
 Generator output of hbr is to standard output. Redirect it to a file.
 
 This generates a file with 12 outfile sections: 
