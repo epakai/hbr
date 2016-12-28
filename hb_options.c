@@ -76,9 +76,11 @@ xmlChar* hb_format(xmlNode *options)
 		if (xmlStrcmp(temp, (const xmlChar *) "mkv") == 0){
 			xmlFree(temp);
 			return xmlCharStrdup(" -f av_mkv");
-		} else {
+		} else if (xmlStrcmp(temp, (const xmlChar *) "mp4") == 0){
 			xmlFree(temp);
 			return xmlCharStrdup(" -f av_mp4");
+		} else {
+			return NULL;
 		}
 	} else {
 		return NULL;
@@ -94,12 +96,12 @@ xmlChar* hb_format(xmlNode *options)
  */
 xmlChar* hb_video_encoder(xmlNode *options)
 {
-	xmlChar *temp = xmlCharStrdup(" -e ");
-	xmlChar *temp2 = xmlGetNoNsProp(options, (const xmlChar *) "video_encoder");
-	if (temp2[0] != '\0') {
-		temp = xmlStrncat(temp, temp2, xmlStrlen(temp2));
-		xmlFree(temp2);
-		return temp;
+	xmlChar *arg = xmlCharStrdup(" -e ");
+	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "video_encoder");
+	if (temp[0] != '\0') {
+		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
+		xmlFree(temp);
+		return arg;
 	} else {
 		return NULL;
 	}

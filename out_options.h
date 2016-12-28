@@ -27,8 +27,24 @@
 #include "xml.h"
 #include "hb_options.h"
 
+struct tag {
+	xmlChar *content;
+	xmlChar *tag_name;
+};
+
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 int validate_file_string(xmlChar * file_string);
 
+xmlChar* out_series_output(struct tag *name, struct tag *season,
+		struct tag *episode_number, struct tag *specific_name,
+		xmlDocPtr doc, int out_count);
+xmlChar* out_movie_output(struct tag *name, struct tag *year,
+		struct tag *specific_name, xmlDocPtr doc, int out_count);
+xmlChar* out_input(struct tag *iso_filename, xmlDocPtr doc, int out_count);
+xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count);
+xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count);
+xmlChar* out_chapters(struct tag *chapters, xmlDocPtr doc, int out_count);
+xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count);
+xmlChar* out_subtitle(struct tag *subtitle, xmlDocPtr doc, int out_count);
 
 #endif

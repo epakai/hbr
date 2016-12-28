@@ -26,28 +26,6 @@ currently associate with each section.
         Overall goals: shorten main a lot, try to keep it to straight 
         function calls and very little control flow.
         
-    d) xmlChar* out_options_string();
-
-        Break out error checking for each option into it's own function.
-        Intertwined options might use a single function.
-        Basic structure should be
-            get option from xml
-            test if valid
-            concatenate with current opt_str
-    
-    e) int validate_bit_rate();
-
-        Helper for hb_options_string, but should still be segregated with
-        the other error checking.
-
-    f) int validate_file_string();
-
-        Seems simple and usable. main is still doing some of it's own
-        validation for the input base directory that could be combined here
-        with a simple flag to indicate if passed string is a path or just
-        filename.
-
-        
     g) int call_handbrake();
 
         Seems alright. Logic is a bit deep. Maybe do individual access

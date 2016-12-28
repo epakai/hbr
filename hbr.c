@@ -122,43 +122,12 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	//Verify input_basedir
-	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, (const xmlChar *) "handbrake_options")) {
-		cur = cur->next;
-	}
-	xmlChar * input_basedir = get_input_basedir(xml_doc);
-	xmlChar bad_chars[4];
-	bad_chars[0] = '\\';
-	bad_chars[1] = '`';
-	bad_chars[2] = '\"';
-	int i;
-	for (i = 0; i<3; i++) {
-		const xmlChar * temp;
-		if ((temp = xmlStrchr(input_basedir, bad_chars[i])) != NULL ){
-			fprintf(stderr, "Invalid character '%c' for input_basedir attribute in "
-					"\"%s\" line number: ~%ld\n",
-					input_basedir[temp-input_basedir],
-					xml_doc->URL, xmlGetLineNo(cur)-1);
-			xmlFreeDoc(xml_doc);
-			xmlFree(input_basedir);
-			return 1;
-		}
-	}
-	errno = 0;
-	if ( access((char *) input_basedir, R_OK|X_OK ) == -1 ) {
-		perror ("main(): input_basedir was inaccessible");
-		xmlFreeDoc(xml_doc);
-		xmlFree(input_basedir);
-		return 1;
-	}
-
 	//assemble call to HandBrakeCLI
 	xmlChar *hb_options = NULL;
 	hb_options = hb_options_string(xml_doc);
 	if ( hb_options[0] == '\0'){
 		fprintf(stderr,
-				"Unknown error: handbrake_options was empty after parsing \"%s\".\n",
+				"handbrake_options was empty after parsing \"%s\".\n",
 				xml_doc->URL);
 		xmlFree(hb_options);
 		xmlFreeDoc(xml_doc);
@@ -170,7 +139,7 @@ int main(int argc, char * argv[])
 	if (out_count < 1) {
 		fprintf(stderr, "No valid outfiles found in \"%s\"\n", xml_doc->URL);
 	}
-	i = 1; // start at outfile 1
+	int i = 1; // start at outfile 1
 	// Handle -e option to encode a single episode
 	if (enc_arguments.episode >= 0) {
 		// adjust parameters for following loop so it runs once
@@ -180,9 +149,8 @@ int main(int argc, char * argv[])
 	}
 	// encode all the episodes if loop parameters weren't modified above
 	for (; i <= out_count; i++) {
-		xmlChar *out_options = NULL;
-		out_options = out_options_string(xml_doc, i);
-		if ( out_options[0] == '\0'){
+		xmlChar *out_options = out_options_string(xml_doc, i);
+		if ( out_options == NULL){
 			xmlNode* outfile_node = get_outfile(xml_doc, i);
 			fprintf(stderr,
 					"%d: Bad outfile element in \"%s\" line number: "
@@ -241,7 +209,6 @@ int main(int argc, char * argv[])
 	}
 	xmlFreeDoc(xml_doc);
 	xmlFree(hb_options);
-	xmlFree(input_basedir);
 	xmlCleanupParser();
 
 	return 0;
