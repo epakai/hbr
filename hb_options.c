@@ -37,62 +37,33 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 
 	// allocate and initialize options string
 	xmlChar *opt_str = xmlCharStrdup("\0");
-	xmlChar *temp;
+	xmlChar *options[11];
 
-	temp = hb_format(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_video_encoder(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_video_quality(cur, doc);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_audio_encoder(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_audio_quality(cur, doc);
-	if (temp != NULL) {
-		opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	} else {
-		xmlFree(temp);
-		temp = hb_audio_bitrate(cur, doc);
-		opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
+	options[0] = hb_format(cur);
+	options[1] = hb_video_encoder(cur);
+	options[2] = hb_video_quality(cur, doc);
+	options[3] = hb_audio_encoder(cur);
+	options[4] = hb_audio_quality(cur, doc);
+	options[5] = hb_audio_bitrate(cur, doc);
+	options[6] = hb_markers(cur);
+	options[7] = hb_anamorphic(cur);
+	options[8] = hb_deinterlace(cur);
+	options[9] = hb_decomb(cur);
+	options[10] = hb_denoise(cur);
+	int i;
+	for ( i = 0; i < 11; i++ ) {
+		if ( options[i] != NULL ) {
+			opt_str = xmlStrcat(opt_str, (const xmlChar *) options[i]);
+			xmlFree(options[i]);
+		}
 	}
-	xmlFree(temp);
-
-	temp = hb_markers(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_anamorphic(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
-
-	temp = hb_deinterlace(cur);
-	if (temp != NULL) {
-		opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	} else {
-		xmlFree(temp);
-		temp = hb_decomb(cur);
-		opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	}
-	xmlFree(temp);
-
-	temp = hb_denoise(cur);
-	opt_str = xmlStrcat(opt_str, (const xmlChar *) temp);
-	xmlFree(temp);
 
 	opt_str = xmlStrncat(opt_str, (const xmlChar *) " ", 1);
 	return opt_str;
 }
 
 /**
- * @brief return handbrake option for file format
+ * @brief return handbrake option for file format (-f)
  *
  * @param options handbrake_options pointer
  *
@@ -115,7 +86,7 @@ xmlChar* hb_format(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for video encoder
+ * @brief return handbrake option for video encoder (-e)
  *
  * @param options handbrake_options pointer
  *
@@ -135,7 +106,7 @@ xmlChar* hb_video_encoder(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for video quality
+ * @brief return handbrake option for video quality (-q)
  *
  * @param options handbrake_options pointer
  * @param doc xml document, for error indicating
@@ -192,7 +163,7 @@ good_quality:
 }
 
 /**
- * @brief return handbrake option for audio encoder
+ * @brief return handbrake option for audio encoder (-E)
  *
  * @param options handbrake_options pointer
  *
@@ -212,7 +183,7 @@ xmlChar* hb_audio_encoder(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for audio quality
+ * @brief return handbrake option for audio quality (-Q)
  *
  * @param options handbrake_options pointer
  * @param doc xml document, for error indicating
@@ -262,7 +233,7 @@ invalid_bitrate:
 }
 
 /**
- * @brief return handbrake option for audio bitrate
+ * @brief return handbrake option for audio bitrate (-B)
  *
  * @param options handbrake_options pointer
  * @param doc xml document, for error indicating
@@ -326,7 +297,7 @@ good_bitrate:
 }
 
 /**
- * @brief return handbrake option for markers
+ * @brief return handbrake option for markers (-m)
  *
  * @param options handbrake_options pointer
  *
@@ -347,7 +318,7 @@ xmlChar* hb_markers(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for anamorphic
+ * @brief return handbrake option for anamorphic (--strict-anamorphic or --loose-anamorphic)
  *
  * @param options handbrake_options pointer
  *
@@ -369,7 +340,7 @@ xmlChar* hb_anamorphic(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for deinterlacing
+ * @brief return handbrake option for deinterlacing (-d)
  *
  * @param options handbrake_options pointer
  *
@@ -392,7 +363,7 @@ xmlChar* hb_deinterlace(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for decombing
+ * @brief return handbrake option for decombing (-5)
  *
  * @param options handbrake_options pointer
  *
@@ -415,7 +386,7 @@ xmlChar* hb_decomb(xmlNode *options)
 }
 
 /**
- * @brief return handbrake option for denoising
+ * @brief return handbrake option for denoising (-8)
  *
  * @param options handbrake_options pointer
  *

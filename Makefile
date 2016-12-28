@@ -1,9 +1,9 @@
 PRGM_NAME = hbr
 CC = gcc
 CFLAGS =-g -Wall -Wextra
-SOURCE  = hb_options.c gen_xml.c xml.c hbr.c 
-OBJECTS = hb_options.o gen_xml.o xml.o hbr.o
-DEPS = hb_options.h gen_xml.h xml.h
+SOURCE  = out_options.c hb_options.c gen_xml.c xml.c hbr.c 
+OBJECTS = out_options.o hb_options.o gen_xml.o xml.o hbr.o
+DEPS = out_options.h hb_options.h gen_xml.h xml.h
 INCLUDES = `xml2-config --cflags`
 LFLAGS = `xml2-config --libs`
 
