@@ -60,56 +60,76 @@ int main (int argc, char **argv) {
 		fprintf(stderr, "CUnit registry failed to initialize\n");
 		return CU_get_error();
 	}
-
-	CU_pSuite gen_xml_suite = CU_add_suite("gen_xml", init_gen_xml, clean_gen_xml);
-	CU_add_test(gen_xml_suite, "test of gen_xml.c: parse_gen_opt()", test_parse_gen_opt); 
-	CU_add_test(gen_xml_suite, "test of gen_xml.c: read_episode_list()", test_read_episode_list);
-	CU_add_test(gen_xml_suite, "test of gen_xml.c: free_episode_array()", test_free_episode_array); 
-	CU_add_test(gen_xml_suite, "test of gen_xml.c: gen_xml()", test_gen_xml); 
-
-	CU_pSuite hb_options_suite = CU_add_suite("hb_options", init_hb_options, clean_hb_options);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_options_string()", test_hb_options_string);
-	CU_add_test(hb_options_suite, "test of hb_options.c: get_format()", test_get_format);
-	CU_add_test(hb_options_suite, "test of hb_options.c: get_input_basedir()", test_get_input_basedir);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_format()", test_hb_format);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_video_encoder()", test_hb_video_encoder);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_video_quality()", test_hb_video_quality);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_encoder()", test_hb_audio_encoder);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_quality()", test_hb_audio_quality);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_bitrate()", test_hb_audio_bitrate);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_crop()", test_hb_crop);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_markers()", test_hb_markers);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_anamorphic()", test_hb_anamorphic);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_deinterlace()", test_hb_deinterlace);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_decomb()", test_hb_decomb);
-	CU_add_test(hb_options_suite, "test of hb_options.c: hb_denoise()", test_hb_denoise);
-	CU_add_test(hb_options_suite, "test of hb_options.c: valid_bit_rate()", test_valid_bit_rate);
-
-
-	CU_pSuite out_options_suite = CU_add_suite("out_options", init_out_options, clean_out_options);
-	CU_add_test(out_options_suite, "test of out_options.c: out_options_string", test_out_options_string);
-	CU_add_test(out_options_suite, "test of out_options.c: validate_file_string", test_validate_file_string);
-	CU_add_test(out_options_suite, "test of out_options.c: out_series_output", test_out_series_output);
-	CU_add_test(out_options_suite, "test of out_options.c: out_movie_output", test_out_movie_output);
-	CU_add_test(out_options_suite, "test of out_options.c: out_input", test_out_input);
-	CU_add_test(out_options_suite, "test of out_options.c: out_dvdtitle", test_out_dvdtitle);
-	CU_add_test(out_options_suite, "test of out_options.c: out_crop", test_out_crop);
-	CU_add_test(out_options_suite, "test of out_options.c: out_chapters", test_out_chapters);
-	CU_add_test(out_options_suite, "test of out_options.c: out_audio", test_out_audio);
-	CU_add_test(out_options_suite, "test of out_options.c: out_subtitle", test_out_subtitle);
-
-
+	// Create test suites
 	CU_pSuite xml_suite = CU_add_suite("xml", init_xml, clean_xml);
-	CU_add_test(xml_suite, "test of xml.c: parse_xml", test_parse_xml);
-	CU_add_test(xml_suite, "test of xml.c: xpath_get_object", test_xpath_get_object);
-	CU_add_test(xml_suite, "test of xml.c: get_outfile_child_content", test_get_outfile_child_content);
-	CU_add_test(xml_suite, "test of xml.c: get_outfile", test_get_outfile);
-	CU_add_test(xml_suite, "test of xml.c: get_outfile_line_number", test_get_outfile_line_number);
-	CU_add_test(xml_suite, "test of xml.c: get_outfile_from_episode", test_get_outfile_from_episode);
+	CU_pSuite gen_xml_suite = CU_add_suite("gen_xml", init_gen_xml, clean_gen_xml);
+	CU_pSuite hb_options_suite = CU_add_suite("hb_options", init_hb_options, clean_hb_options);
+	CU_pSuite out_options_suite = CU_add_suite("out_options", init_out_options, clean_out_options);
+	if ( gen_xml_suite == NULL || hb_options_suite == NULL ||
+			xml_suite == NULL || out_options_suite == NULL ) {
+		fprintf(stderr, "Failing adding a tets suite\n");
+		goto exit;
+	}
+
+	// Add tests to xml_suite
+	if ( NULL == CU_add_test(xml_suite, "test of xml.c: parse_xml", test_parse_xml) ||
+			NULL == CU_add_test(xml_suite, "test of xml.c: xpath_get_object", test_xpath_get_object) ||
+			NULL == CU_add_test(xml_suite, "test of xml.c: get_outfile_child_content", test_get_outfile_child_content) ||
+			NULL == CU_add_test(xml_suite, "test of xml.c: get_outfile", test_get_outfile) ||
+			NULL == CU_add_test(xml_suite, "test of xml.c: get_outfile_line_number", test_get_outfile_line_number) ||
+			NULL == CU_add_test(xml_suite, "test of xml.c: get_outfile_from_episode", test_get_outfile_from_episode) ) {
+		fprintf(stderr, "Failed adding test to xml_suite\n");
+		goto exit;
+	}
+
+	// Add tests to gen_xml_suite
+	if ( NULL == CU_add_test(gen_xml_suite, "test of gen_xml.c: parse_gen_opt()", test_parse_gen_opt) || 
+			NULL == CU_add_test(gen_xml_suite, "test of gen_xml.c: read_episode_list()", test_read_episode_list) ||
+			NULL == CU_add_test(gen_xml_suite, "test of gen_xml.c: free_episode_array()", test_free_episode_array) || 
+			NULL == CU_add_test(gen_xml_suite, "test of gen_xml.c: gen_xml()", test_gen_xml) ) {
+		fprintf(stderr, "Failed adding test to gen_xml_suite\n");
+		goto exit;
+	}
+
+	// Add tests to hb_options_suite
+	if ( NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_options_string()", test_hb_options_string) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: get_format()", test_get_format) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: get_input_basedir()", test_get_input_basedir) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_format()", test_hb_format) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_video_encoder()", test_hb_video_encoder) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_video_quality()", test_hb_video_quality) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_encoder()", test_hb_audio_encoder) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_quality()", test_hb_audio_quality) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_audio_bitrate()", test_hb_audio_bitrate) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_crop()", test_hb_crop) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_markers()", test_hb_markers) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_anamorphic()", test_hb_anamorphic) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_deinterlace()", test_hb_deinterlace) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_decomb()", test_hb_decomb) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: hb_denoise()", test_hb_denoise) ||
+			NULL == CU_add_test(hb_options_suite, "test of hb_options.c: valid_bit_rate()", test_valid_bit_rate) ) {
+		fprintf(stderr, "Failed adding test to hb_options_suite\n");
+		goto exit;
+	}
+
+	// Add tests to out_options_suite
+	if ( NULL == CU_add_test(out_options_suite, "test of out_options.c: out_options_string", test_out_options_string) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: validate_file_string", test_validate_file_string) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_series_output", test_out_series_output) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_movie_output", test_out_movie_output) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_input", test_out_input) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_dvdtitle", test_out_dvdtitle) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_crop", test_out_crop) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_chapters", test_out_chapters) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_audio", test_out_audio) ||
+			NULL == CU_add_test(out_options_suite, "test of out_options.c: out_subtitle", test_out_subtitle) ) {
+		fprintf(stderr, "Failed adding test to out_options_suite\n");
+		goto exit;
+	}
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
-	CU_cleanup_registry();
+exit:	CU_cleanup_registry();
 
 	return CU_get_error();
 }
