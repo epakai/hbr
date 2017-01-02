@@ -1,18 +1,22 @@
 PRGM_NAME = hbr
 CC = gcc
 CFLAGS =-g -Wall -Wextra
-SOURCE  = out_options.c hb_options.c gen_xml.c xml.c hbr.c 
-OBJECTS = out_options.o hb_options.o gen_xml.o xml.o hbr.o
+SOURCE  = out_options.c hb_options.c gen_xml.c xml.c
+OBJECTS = out_options.o hb_options.o gen_xml.o xml.o
 DEPS = out_options.h hb_options.h gen_xml.h xml.h
-INCLUDES = `xml2-config --cflags`
-LFLAGS = `xml2-config --libs`
+INCLUDES = `xml2-config --cflags` `pkg-config --cflags cunit`
+LFLAGS = `xml2-config --libs` `pkg-config --libs cunit`
 
 .PHONY: install clean docs test-gen code-analysis clang-analyzer cppcheck vera pmccabe codespell
 
-default: hbr test-gen
+default: hbr test-gen test_hbr
 
-$(PRGM_NAME): $(OBJECTS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o $(PRGM_NAME) $(OBJECTS)
+hbr: $(OBJECTS) hbr.o
+	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o $(PRGM_NAME) hbr.o $(OBJECTS)
+
+# Build CUnit test suite
+test_hbr: $(OBJECTS) test_hbr.o
+	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o test_hbr test_hbr.o $(OBJECTS)
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
@@ -21,7 +25,7 @@ install: hbr
 	cp hbr /usr/local/bin/hbr
 
 clean:
-	- rm -f *.o *.gch *.plist .test-gen.xml hbr doxyfile.inc doxygen_sqlite3.db README.md
+	- rm -f *.o *.gch *.plist .test-gen.xml hbr test_hbr doxyfile.inc doxygen_sqlite3.db README.md
 	- rm -r html
 
 doxyfile.inc: Makefile
@@ -32,6 +36,10 @@ doxyfile.inc: Makefile
 docs: doxyfile.inc $(SOURCE)
 	markdown README > README.md
 	doxygen doxyfile.mk
+
+# Run CUnit test suite
+test: test_hbr
+	./test_hbr
 
 # Test generated templates are well formed according to the DTD
 test-gen: hbr
