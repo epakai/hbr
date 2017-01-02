@@ -46,7 +46,6 @@ static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an
 static char enc_args_doc[] = "<XML FILE>";
 
 static struct argp_option enc_options[] = {
-	{"in",        'i', "FILE", 0, "handbrake_encode XML File", 0},
 	{"debug",     'd', 0,      0, "print the commands to be run instead of executing", 1},
 	{"episode",   'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
 	{"preview",   'p', 0,      0, "generate a preview image for each output file", 1},

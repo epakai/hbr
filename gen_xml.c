@@ -278,10 +278,10 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 			printf("\t<outfile>\n \t\t<type></type>");
 		}
 		if (i == 0) {
-			printf("<!-- type may be series or movie -->");
+			printf("\t\t<!-- type may be series or movie -->");
 		}
-		printf("\n\t\t\t<iso_filename>%s</iso_filename>\n", source);
-		printf("\t\t\t<dvdtitle>%d</dvdtitle>\n", title);
+		printf("\n\t\t<iso_filename>%s</iso_filename>\n", source);
+		printf("\t\t<dvdtitle>%d</dvdtitle>\n", title);
 		if (i == 0) {
 			printf("\t\t<!-- filename depends on outfile type -->\n"
 					"\t\t<!-- series filename: "
@@ -306,7 +306,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 		}
 		printf("\n\t\t<audio></audio>");
 		if (i == 0) {
-			printf("\t\t\t<!-- comma separated list of audio tracks -->");
+			printf("\t\t<!-- comma separated list of audio tracks -->");
 		}
 		printf("\n\t\t<subtitle></subtitle>");
 		if (i == 0) {
