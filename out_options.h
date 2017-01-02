@@ -27,9 +27,12 @@
 #include "xml.h"
 #include "hb_options.h"
 
+/**
+ * @brief Contains tag contents and tag name
+ */
 struct tag {
-	xmlChar *content;
-	xmlChar *tag_name;
+	xmlChar *content;  /**< Content of a tag */
+	xmlChar *tag_name; /**< Name of the tag */
 };
 
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
