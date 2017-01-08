@@ -238,7 +238,7 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 	printf("          deinterlace (fast|slow|slower|bob|default|none) \"none\"\n");
 	printf("          decomb (fast|bob|default|none) \"default\"\n");
 	printf("          denoise (ultralight|light|medium|strong|default|none) \"none\"\n");
-	printf("          markers (yes|no) \"no\"\n");
+	printf("          markers (yes|no) \"yes\"\n");
 	printf("          input_basedir CDATA #IMPLIED>\n");
 	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, "
 			"episode_number, specific_name?, crop?, chapters, audio, audio_names?, subtitle?)>\n");

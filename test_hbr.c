@@ -9,51 +9,51 @@
 
 int init_gen_xml(void) { return 0; }
 int clean_gen_xml(void) { return 0; }
-void test_parse_gen_opt(void) {}
-void test_read_episode_list(void) {}
-void test_free_episode_array(void) {}
-void test_gen_xml(void) {}
+void test_parse_gen_opt(void) { CU_ASSERT(0); }
+void test_read_episode_list(void) { CU_ASSERT(0); }
+void test_free_episode_array(void) { CU_ASSERT(0); }
+void test_gen_xml(void) { CU_ASSERT(0); }
 
 int init_hb_options(void) { return 0; }
 int clean_hb_options(void) { return 0; }
-void test_hb_options_string(void) {}
-void test_get_format(void) {}
-void test_get_input_basedir(void) {}
-void test_hb_format(void) {}
-void test_hb_video_encoder(void) {}
-void test_hb_video_quality(void) {}
-void test_hb_audio_encoder(void) {}
-void test_hb_audio_quality(void) {}
-void test_hb_audio_bitrate(void) {}
-void test_hb_crop(void) {}
-void test_hb_markers(void) {}
-void test_hb_anamorphic(void) {}
-void test_hb_deinterlace(void) {}
-void test_hb_decomb(void) {}
-void test_hb_denoise(void) {}
-void test_valid_bit_rate(void) {}
+void test_hb_options_string(void) { CU_ASSERT(0); }
+void test_get_format(void) { CU_ASSERT(0); }
+void test_get_input_basedir(void) { CU_ASSERT(0); }
+void test_hb_format(void) { CU_ASSERT(0); }
+void test_hb_video_encoder(void) { CU_ASSERT(0); }
+void test_hb_video_quality(void) { CU_ASSERT(0); }
+void test_hb_audio_encoder(void) { CU_ASSERT(0); }
+void test_hb_audio_quality(void) { CU_ASSERT(0); }
+void test_hb_audio_bitrate(void) { CU_ASSERT(0); }
+void test_hb_crop(void) { CU_ASSERT(0); }
+void test_hb_markers(void) { CU_ASSERT(0); }
+void test_hb_anamorphic(void) { CU_ASSERT(0); }
+void test_hb_deinterlace(void) { CU_ASSERT(0); }
+void test_hb_decomb(void) { CU_ASSERT(0); }
+void test_hb_denoise(void) { CU_ASSERT(0); }
+void test_valid_bit_rate(void) { CU_ASSERT(0); }
 
 int init_out_options(void) { return 0; }
 int clean_out_options(void) { return 0; }
-void test_out_options_string(void) {}
-void test_validate_file_string(void) {}
-void test_out_series_output(void) {}
-void test_out_movie_output(void) {}
-void test_out_input(void) {}
-void test_out_dvdtitle(void) {}
-void test_out_crop(void) {}
-void test_out_chapters(void) {}
-void test_out_audio(void) {}
-void test_out_subtitle(void) {}
+void test_out_options_string(void) { CU_ASSERT(0); }
+void test_validate_file_string(void) { CU_ASSERT(0); }
+void test_out_series_output(void) { CU_ASSERT(0); }
+void test_out_movie_output(void) { CU_ASSERT(0); }
+void test_out_input(void) { CU_ASSERT(0); }
+void test_out_dvdtitle(void) { CU_ASSERT(0); }
+void test_out_crop(void) { CU_ASSERT(0); }
+void test_out_chapters(void) { CU_ASSERT(0); }
+void test_out_audio(void) { CU_ASSERT(0); }
+void test_out_subtitle(void) { CU_ASSERT(0); }
 
 int init_xml(void) { return 0; }
 int clean_xml(void) { return 0; }
-void test_parse_xml(void) {}
-void test_xpath_get_object(void) {}
-void test_get_outfile_child_content(void) {}
-void test_get_outfile(void) {}
-void test_get_outfile_line_number(void) {}
-void test_get_outfile_from_episode(void) {}
+void test_parse_xml(void) { CU_ASSERT(0); }
+void test_xpath_get_object(void) { CU_ASSERT(0); }
+void test_get_outfile_child_content(void) { CU_ASSERT(0); }
+void test_get_outfile(void) { CU_ASSERT(0); }
+void test_get_outfile_line_number(void) { CU_ASSERT(0); }
+void test_get_outfile_from_episode(void) { CU_ASSERT(0); }
 
 int main (int argc, char **argv) {
 	if (CU_initialize_registry() != CUE_SUCCESS ) {

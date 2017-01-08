@@ -124,10 +124,7 @@ int main(int argc, char * argv[])
 	//assemble call to HandBrakeCLI
 	xmlChar *hb_options = NULL;
 	hb_options = hb_options_string(xml_doc);
-	if ( hb_options[0] == '\0'){
-		fprintf(stderr,
-				"handbrake_options was empty after parsing \"%s\".\n",
-				xml_doc->URL);
+	if ( hb_options == NULL){
 		xmlFree(hb_options);
 		xmlFreeDoc(xml_doc);
 		return 1;

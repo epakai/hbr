@@ -52,10 +52,15 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 	options[10] = hb_denoise(cur);
 	int i;
 	for ( i = 0; i < 11; i++ ) {
-		if ( options[i] != NULL ) {
-			opt_str = xmlStrcat(opt_str, (const xmlChar *) options[i]);
-			xmlFree(options[i]);
+		if ( options[i] == NULL ) {
+			fprintf(stderr,
+					"Error while building handbrake options for \"%s\".\n",
+					doc->URL);
+
+			return NULL;
 		}
+		opt_str = xmlStrcat(opt_str, (const xmlChar *) options[i]);
+		xmlFree(options[i]);
 	}
 
 	opt_str = xmlStrncat(opt_str, (const xmlChar *) " ", 1);
@@ -67,22 +72,21 @@ xmlChar* hb_options_string(xmlDocPtr doc)
  *
  * @param options handbrake_options pointer
  *
- * @return command line option string starting with a space
+ * @return command line option string starting with a space, NULL on failure
  */
 xmlChar* hb_format(xmlNode *options)
 {
 	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "format");
-	if (temp[0] != '\0') {
-		if (xmlStrcmp(temp, (const xmlChar *) "mkv") == 0){
-			xmlFree(temp);
-			return xmlCharStrdup(" -f av_mkv");
-		} else if (xmlStrcmp(temp, (const xmlChar *) "mp4") == 0){
-			xmlFree(temp);
-			return xmlCharStrdup(" -f av_mp4");
-		} else {
-			return NULL;
-		}
+	// format is constrained by the XML DTD to be "mkv" or "mp4"
+	if (xmlStrcmp(temp, (const xmlChar *) "mkv") == 0){
+		xmlFree(temp);
+		return xmlCharStrdup(" -f av_mkv");
+	} else if (xmlStrcmp(temp, (const xmlChar *) "mp4") == 0){
+		xmlFree(temp);
+		return xmlCharStrdup(" -f av_mp4");
 	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options format attribute\n");
 		return NULL;
 	}
 }
@@ -98,11 +102,17 @@ xmlChar* hb_video_encoder(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -e ");
 	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "video_encoder");
-	if (temp[0] != '\0') {
+	if (xmlStrcmp(temp, (const xmlChar *) "x264") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "mpeg4") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "mpeg2") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "VP8") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "theora") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
 	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options video_encoder attribute\n");
 		return NULL;
 	}
 }
@@ -119,7 +129,9 @@ xmlChar* hb_video_quality(xmlNode *options, xmlDocPtr doc)
 {
 	xmlChar *quality_string;
 	if ((quality_string = xmlGetNoNsProp(options, (const xmlChar *) "video_quality"))[0] == '\0') {
-		return NULL;
+		xmlFree(quality_string);
+		// Empty string lets Handbrake pick the default
+		return xmlCharStrdup("");
 	}
 	
 	xmlChar *encoder = hb_video_encoder(options);
@@ -175,11 +187,26 @@ xmlChar* hb_audio_encoder(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -E ");
 	xmlChar *encoder = xmlGetNoNsProp(options, (const xmlChar *) "audio_encoder");
-	if (encoder[0] != '\0') {
+	if (xmlStrcmp(encoder, (const xmlChar *) "av_aac") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "fdk_aac") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "fdk_haac") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy:aac") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "ac3") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy:ac3") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy:dts") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy:dtshd") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "mp3") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy:mp3") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "vorbis") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "flac16") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "flac24") == 0 ||
+			xmlStrcmp(encoder, (const xmlChar *) "copy") == 0 ) {
 		arg = xmlStrncat(arg, encoder, xmlStrlen(encoder));
 		xmlFree(encoder);
 		return arg;
 	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options audio_encoder attribute\n");
 		return NULL;
 	}
 }
@@ -199,7 +226,8 @@ xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
 	if (quality[0] == '\0') {
 		xmlFree(arg);
 		xmlFree(quality);
-		return NULL;
+		// Empty string lets Handbrake pick the default
+		return xmlCharStrdup("");
 	}
 	xmlChar *codec = hb_audio_encoder(options);
 	if (xmlStrcmp(codec, (const xmlChar *) " -E mp3") == 0
@@ -249,7 +277,8 @@ xmlChar* hb_audio_bitrate(xmlNode *options, xmlDocPtr doc)
 	if (bitrate[0] == '\0') {
 		xmlFree(arg);
 		xmlFree(bitrate);
-		return NULL;
+		// Empty string lets Handbrake pick the default
+		return xmlCharStrdup("");
 	}
 	int br = strtol((char *) bitrate, NULL, 10);
 	xmlChar *codec = hb_audio_encoder(options);
@@ -312,7 +341,12 @@ xmlChar* hb_markers(xmlNode *options)
 	if (xmlStrcmp(temp, (const xmlChar *) "yes") == 0 ) {
 		xmlFree(temp);
 		return xmlCharStrdup(" -m");
+	} else if (xmlStrcmp(temp, (const xmlChar *) "no") == 0 ) {
+		xmlFree(temp);
+		return xmlCharStrdup("");
 	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options markers attribute\n");
 		xmlFree(temp);
 		return NULL;
 	}
@@ -332,13 +366,15 @@ xmlChar* hb_anamorphic(xmlNode *options)
 	if (xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
 		xmlFree(temp);
 		return xmlStrdup((const xmlChar *) " --strict-anamorphic");
-	}
-	if (xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
+	} else if (xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
 		xmlFree(temp);
 		return xmlStrdup((const xmlChar *) " --loose-anamorphic");
+	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options anamorphic attribute\n");
+		xmlFree(temp);
+		return NULL;
 	}
-	xmlFree(temp);
-	return NULL;
 }
 
 /**
@@ -352,15 +388,25 @@ xmlChar* hb_deinterlace(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -d ");
 	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "deinterlace");
-
-	if (temp[0] == '\0' || temp[0] == 'n') {
-		xmlFree(arg);
-		xmlFree(temp);
-		return NULL;
-	} else {
+	
+	if (xmlStrcmp(temp, (const xmlChar *) "fast") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "slow") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "slower") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "bob") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
+	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+		xmlFree(arg);
+		xmlFree(temp);
+		return xmlCharStrdup("");
+	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options deinterlace attribute\n");
+		xmlFree(arg);
+		xmlFree(temp);
+		return NULL;
 	}
 }
 
@@ -376,14 +422,22 @@ xmlChar* hb_decomb(xmlNode *options)
 	xmlChar *arg = xmlCharStrdup(" -5 ");
 	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "decomb");
 
-	if (temp[0] == '\0' || temp[0] == 'n') {
-		xmlFree(arg);
-		xmlFree(temp);
-		return NULL;
-	} else {
+	if (xmlStrcmp(temp, (const xmlChar *) "fast") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "bob") == 0 ||
+			xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
+	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+		xmlFree(arg);
+		xmlFree(temp);
+		return xmlCharStrdup("");
+	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options decomb attribute\n");
+		xmlFree(arg);
+		xmlFree(temp);
+		return NULL;
 	}
 }
 
@@ -399,14 +453,24 @@ xmlChar* hb_denoise(xmlNode *options)
 	xmlChar *arg = xmlCharStrdup(" -8 ");
 	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "denoise");
 
-	if (temp[0] == '\0' || temp[0] == 'n') {
-		xmlFree(arg);
-		xmlFree(temp);
-		return NULL;
-	} else {
+	if (xmlStrcmp(temp, (const xmlChar *) "ultralight") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "light") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "medium") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "strong") == 0 ||
+		xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
+	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+		xmlFree(arg);
+		xmlFree(temp);
+		return xmlCharStrdup("");
+	} else {
+		// This condition shouldn't be reached unless the DTD is modified
+		fprintf(stderr, "Invalid handbrake_options denoise attribute\n");
+		xmlFree(arg);
+		xmlFree(temp);
+		return NULL;
 	}
 }
 
