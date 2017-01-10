@@ -91,17 +91,17 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	options[5] = out_audio(&audio, doc, out_count);
 	options[6] = out_subtitle(&subtitle, doc, out_count);
 	
-	// stop if there is no input or output filename (all others have defaults)
-	if (options[0] == NULL || options[1] == NULL ) {
-		for (i=2; i<7; i++) {
-			if (options[i] != NULL) {
-				xmlFree(options[i]);
-			}
-		}
-		return NULL;
-	}
-
+	// concatenate then free each option
 	for (i = 0; i<7; i++) {
+		// fail on error
+		if (options[i] == NULL) {
+			for (i=0; i<7; i++) {
+				if (options[i] != NULL) {
+					xmlFree(options[i]);
+				}
+			}
+			return NULL;
+		}
 		out_options = xmlStrcat(out_options, options[i]);
 		xmlFree(options[i]);
 	}
@@ -365,8 +365,8 @@ xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count)
  */
 xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count)
 {
-	if (crop == '\0') {
-		return NULL;
+	if (xmlStrcmp(crop->content, (const xmlChar *) "") == 0) {
+		return xmlCharStrdup("");
 	}
 	xmlChar *token_string = xmlStrdup(crop->content);
 	char *crop_str[5];
@@ -492,7 +492,7 @@ xmlChar* out_chapters(struct tag *chapters, xmlDocPtr doc, int out_count)
 xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count)
 {
 	if (audio->content[0] == '\0') {
-		return NULL;
+		return xmlCharStrdup("");
 	}
 	if (audio->content[0] == ',' || audio->content[xmlStrlen(audio->content)] == ',') {
 		fprintf(stderr,
@@ -577,7 +577,7 @@ xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count)
 xmlChar* out_subtitle(struct tag *subtitle, xmlDocPtr doc, int out_count)
 {
 	if (subtitle->content[0] == '\0') {
-		return NULL;
+		return xmlCharStrdup("");
 	}
 	if (subtitle->content[0] == ',' || subtitle->content[xmlStrlen(subtitle->content)] == ',') {
 		fprintf(stderr, "%d: Extra leading or trailing ',' (%s) in \"%s\" tag "
