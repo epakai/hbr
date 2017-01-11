@@ -44,7 +44,7 @@ test: test_hbr
 # Test generated templates are well formed according to the DTD
 test-gen: hbr
 	./$(PRGM_NAME) -g 2 > .test-gen.xml
-	xmllint --valid .test-gen.xml -o /dev/null
+	xmllint --dtdvalid hbr.dtd .test-gen.xml -o /dev/null
 	- rm .test-gen.xml
 
 # Some static analysis, code formatting checks, and spellcheck

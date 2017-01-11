@@ -73,9 +73,9 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	// full string of options
 	xmlChar *out_options = xmlCharStrdup("\0");
 	xmlChar *options[7];
-	if ( xmlStrcmp(type.content, (const xmlChar *) "series") == 0 ){
+	if ( xmlStrcmp(type.content, BAD_CAST "series") == 0 ){
 		options[0] = out_series_output(&name, &season, &episode_number, &specific_name, doc, out_count);
-	} else if ( xmlStrcmp(type.content, (const xmlChar *) "movie") == 0 ){
+	} else if ( xmlStrcmp(type.content, BAD_CAST "movie") == 0 ){
 		options[0] = out_movie_output(&name, &year, &specific_name, doc, out_count);
 	} else {
 		fprintf(stderr, "%d: Invalid type in \"%s\" tag <%s> line number: %ld\n",
@@ -155,7 +155,7 @@ xmlChar* out_series_output(struct tag *name, struct tag *season,
 	xmlChar *cwd = (xmlChar *) getcwd(NULL, 0);
 	arg = xmlStrcat(arg, cwd);
 	xmlFree(cwd);
-	arg = xmlStrcat(arg, (const xmlChar *) "/");
+	arg = xmlStrcat(arg, BAD_CAST "/");
 
 	// Verify <name> is non-empty
 	int name_len = xmlStrlen(name->content);
@@ -166,15 +166,15 @@ xmlChar* out_series_output(struct tag *name, struct tag *season,
 		return NULL;
 	}
 	arg = xmlStrncat(arg, name->content, name_len);
-	arg = xmlStrncat(arg, (const xmlChar *) " - ", 3);
+	arg = xmlStrncat(arg, BAD_CAST " - ", 3);
 	// add season if episode also exists
 	// Season is a one or two digit number, left padded with a 0 if one digit
 	if (season->content[0] != '\0' && episode_number->content[0] != '\0') {
 		if (xmlStrlen(season->content) <= 2 && isdigit(season->content[0])
 				&& (isdigit(season->content[1]) || season->content[1] == '\0')) {
-			arg = xmlStrncat(arg, (const xmlChar *) "s", 1);
+			arg = xmlStrncat(arg, BAD_CAST "s", 1);
 			if (xmlStrlen(season->content) == 1){
-				arg = xmlStrncat(arg, (const xmlChar *) "0", 1);
+				arg = xmlStrncat(arg, BAD_CAST "0", 1);
 			}
 			arg = xmlStrncat(arg, season->content, xmlStrlen(season->content));
 		} else {
@@ -190,15 +190,15 @@ xmlChar* out_series_output(struct tag *name, struct tag *season,
 		if ( isdigit(episode_number->content[i]) && i < 3) {
 			continue;
 		} else if ( episode_number->content[i] == '\0' && i > 0) {
-			arg = xmlStrncat(arg, (const xmlChar *) "e", 1);
+			arg = xmlStrncat(arg, BAD_CAST "e", 1);
 			if (i == 1) {
-				arg = xmlStrncat(arg, (const xmlChar *) "00", 2);
+				arg = xmlStrncat(arg, BAD_CAST "00", 2);
 			}
 			if (i == 2) {
-				arg = xmlStrncat(arg, (const xmlChar *) "0", 1);
+				arg = xmlStrncat(arg, BAD_CAST "0", 1);
 			}
 			arg = xmlStrncat(arg, episode_number->content, xmlStrlen(episode_number->content));
-			arg = xmlStrncat(arg, (const xmlChar *) " - ", 3);
+			arg = xmlStrncat(arg, BAD_CAST " - ", 3);
 			break;
 		} else {
 			fprintf(stderr, "%d: Invalid episode number in \"%s\" tag "
@@ -217,13 +217,13 @@ xmlChar* out_series_output(struct tag *name, struct tag *season,
 		xmlFree(arg);
 		arg = temp_arg;
 	}
-	arg = xmlStrncat(arg, (const xmlChar *) ".", 1);
+	arg = xmlStrncat(arg, BAD_CAST ".", 1);
 
 	xmlChar *format = get_format(doc);
-	arg = xmlStrncat(arg, (const xmlChar *) format, 3);
+	arg = xmlStrncat(arg, BAD_CAST format, 3);
 	xmlFree(format);
 
-	arg = xmlStrncat(arg, (const xmlChar *) "\"", 1);
+	arg = xmlStrncat(arg, BAD_CAST "\"", 1);
 	return arg;
 }
 
@@ -245,7 +245,7 @@ xmlChar* out_movie_output(struct tag *name, struct tag *year,
 	xmlChar *cwd = (xmlChar *) getcwd(NULL, 0);
 	arg = xmlStrcat(arg, cwd);
 	xmlFree(cwd);
-	arg = xmlStrcat(arg, (const xmlChar *) "/");
+	arg = xmlStrcat(arg, BAD_CAST "/");
 	
 	// Verify <name> is non-empty
 	int name_len = xmlStrlen(name->content);
@@ -261,9 +261,9 @@ xmlChar* out_movie_output(struct tag *name, struct tag *year,
 		if ( isdigit(year->content[i]) && i < 4) {
 			continue;
 		} else if ( year->content[i] == '\0' && i == 4) {
-			arg = xmlStrncat(arg, (const xmlChar *) " (", 2);
+			arg = xmlStrncat(arg, BAD_CAST " (", 2);
 			arg = xmlStrncat(arg, year->content, xmlStrlen(year->content));
-			arg = xmlStrncat(arg, (const xmlChar *) ")", 1);
+			arg = xmlStrncat(arg, BAD_CAST ")", 1);
 		} else {
 			fprintf(stderr,
 					"%d: Invalid year in \"%s\" tag <%s> line number: %ld\n",
@@ -273,7 +273,7 @@ xmlChar* out_movie_output(struct tag *name, struct tag *year,
 		}
 	}
 	if (specific_name->content[0] != '\0') {
-		arg = xmlStrncat(arg, (const xmlChar *) " - ", 3);
+		arg = xmlStrncat(arg, BAD_CAST " - ", 3);
 		arg = xmlStrncat(arg, specific_name->content, xmlStrlen(specific_name->content));
 	}
 	if (xmlStrlen(arg) > 249){
@@ -282,13 +282,13 @@ xmlChar* out_movie_output(struct tag *name, struct tag *year,
 		xmlFree(arg);
 		arg = temp_arg;
 	}
-	arg = xmlStrncat(arg, (const xmlChar *) ".", 1);
+	arg = xmlStrncat(arg, BAD_CAST ".", 1);
 	
 	xmlChar *format = get_format(doc);
-	arg = xmlStrncat(arg, (const xmlChar *) format, 3);
+	arg = xmlStrncat(arg, BAD_CAST format, 3);
 	xmlFree(format);
 	
-	arg = xmlStrncat(arg, (const xmlChar *) "\"", 1);
+	arg = xmlStrncat(arg, BAD_CAST "\"", 1);
 	return arg;
 }
 
@@ -310,7 +310,7 @@ xmlChar* out_input(struct tag *iso_filename, xmlDocPtr doc, int out_count)
 	// check input filename exists or error
 	xmlChar* full_path = xmlStrdup(input_basedir);
 	if (input_basedir[ib_length-1] != '/') {
-		full_path = xmlStrncat(full_path, (const xmlChar *) "/", 1);
+		full_path = xmlStrncat(full_path, BAD_CAST "/", 1);
 	}
 	xmlFree(input_basedir);
 
@@ -325,7 +325,7 @@ xmlChar* out_input(struct tag *iso_filename, xmlDocPtr doc, int out_count)
 	}
 	arg = xmlStrncat(arg, full_path, xmlStrlen(full_path));
 	xmlFree(full_path);
-	arg = xmlStrncat(arg, (const xmlChar *) "\"", 1);
+	arg = xmlStrncat(arg, BAD_CAST "\"", 1);
 	return arg;
 }
 
@@ -365,7 +365,7 @@ xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count)
  */
 xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count)
 {
-	if (xmlStrcmp(crop->content, (const xmlChar *) "") == 0) {
+	if (xmlStrcmp(crop->content, BAD_CAST "") == 0) {
 		return xmlCharStrdup("");
 	}
 	xmlChar *token_string = xmlStrdup(crop->content);
@@ -456,7 +456,7 @@ xmlChar* out_chapters(struct tag *chapters, xmlDocPtr doc, int out_count)
 		if (dash_count == 1) {
 			int second;
 			//substring starts with -, increment pointer once
-			const xmlChar *temp = xmlStrstr(chapters->content, (const xmlChar *) "-") + 1;
+			const xmlChar *temp = xmlStrstr(chapters->content, BAD_CAST "-") + 1;
 			second = strtol((const char *) temp, NULL, 10);
 			if (first > second) {
 				printf("first: %d second: %d\n", first, second);

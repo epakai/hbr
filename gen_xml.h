@@ -23,6 +23,7 @@
 #include <argp.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <libxml/tree.h>
 
 static const char gen_doc[] = "handbrake runner -- generates a xml template "
 "with NUM outfile sections, or one outfile per line in an episode list.";
@@ -72,20 +73,18 @@ struct episode {
 	char * name;     /**< Episode name. */
 };
 
-/* parse options related to xml generation */
 error_t parse_gen_opt(int key, char *arg, struct argp_state *);
 
-/* Read an episode list into memory */
 int read_episode_list(const char *episode_filename, struct episode **episode_array);
 
-/* iterate over the episode list freeing each struct and the list itelf */
 void free_episode_array(struct episode *episode_array, int count);
 
-/* Generate xml skeleton for hbr */
-void gen_xml(int outfiles_count, int title, int season, int video_type,
+xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		bool markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
 		const char *basedir, const char *episodes);
+
+void print_xml(xmlDocPtr doc);
 
 static const struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc,
 	gen_doc, NULL, 0, 0};

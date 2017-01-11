@@ -100,7 +100,7 @@ xmlChar* get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
 	xmlChar out_count_string[35];
 	snprintf((char *) out_count_string, 33, "%d", out_count);
 	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
+	outfile_xpath = xmlStrncat(outfile_xpath, BAD_CAST "]/", 2);
 	outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
@@ -133,7 +133,7 @@ xmlNode* get_outfile(xmlDocPtr doc, int out_count)
 	xmlChar out_count_string[33];
 	snprintf((char *) out_count_string, 33, "%d", out_count);
 	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]", 1);
+	outfile_xpath = xmlStrncat(outfile_xpath, BAD_CAST "]", 1);
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
@@ -161,7 +161,7 @@ long int get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
 	xmlChar out_count_string[33];
 	snprintf((char *) out_count_string, 33, "%d", out_count);
 	outfile_xpath = xmlStrncat(outfile_xpath, out_count_string, xmlStrlen(out_count_string));
-	outfile_xpath = xmlStrncat(outfile_xpath, (const xmlChar *) "]/", 2);
+	outfile_xpath = xmlStrncat(outfile_xpath, BAD_CAST "]/", 2);
 	outfile_xpath = xmlStrncat(outfile_xpath, child, xmlStrlen(child));
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);

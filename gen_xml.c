@@ -22,6 +22,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for printf, fprintf, fclose, etc
 #include <string.h>                     // for strncmp, strnlen, strcspn, etc
+#include <libxml/xmlsave.h>
 
 /**
  * @brief Argp Parse options for xml generation.
@@ -125,10 +126,15 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
 		perror("Failed to open episode list");
 		return 0;
 	}
+
 	*episode_array = malloc(max_count * sizeof(struct episode));
 	char * buf = malloc(200*sizeof(char));
 	while (fgets(buf, 200, el_file) != NULL && episode_list_count < max_count) {
-		buf[strcspn(buf, "\n")] = 0;
+		// null terminate each line
+		buf[strcspn(buf, "\n")] = '\0';
+
+		// Check for digit string, null terminate it
+		// convert to integer for the episode number
 		int n = 0;
 		char ep_number[5] = "\0";
 		while (isdigit(buf[n]) && n < 5) {
@@ -145,7 +151,8 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
 		ep_number[n+1] = '\0';
 		n++;
 		(*episode_array)[episode_list_count].number = atoi(ep_number);
-
+		
+		// store the rest of the string as the episode name
 		(*episode_array)[episode_list_count].name =
 			malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
 		if ((*episode_array)[episode_list_count].name != NULL) {
@@ -157,6 +164,7 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
 			fprintf(stderr, "Failed malloc call for episode name.\n");
 			return 0;
 		}
+		// Allocate more space if episodes is about to exceed max_count
 		if ( episode_list_count == max_count - 1 ) {
 			struct episode *temp;
 			if ( (temp = realloc(*episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
@@ -177,7 +185,8 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
  * @param episode_array episode_array to be freed.
  * @param count Number of struct episodes in the episode_array
  */
-void free_episode_array(struct episode *episode_array, int count) {
+void free_episode_array(struct episode *episode_array, int count)
+{
 	int i;
 	for ( i = 0; i < count; i++) {
 		free(episode_array[i].name);
@@ -203,7 +212,7 @@ void free_episode_array(struct episode *episode_array, int count) {
  * @param basedir Location for source file
  * @param episodes Path for episode list file. Overides outfiles_count.
  */
-void gen_xml(int outfiles_count, int title, int season, int video_type,
+xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		bool markers, const char *source, const char *year,
 		const char *crop, const char *name, const char *format,
 		const char *basedir, const char *episodes)
@@ -213,112 +222,120 @@ void gen_xml(int outfiles_count, int title, int season, int video_type,
 		outfiles_count = read_episode_list(episodes, &episode_array);
 		if (outfiles_count == 0) {
 			fprintf(stderr, "Failed to parse episode list.\n");
-			return;
+			return NULL;
 		}
 	}
 	if (outfiles_count <= 0 || outfiles_count > 999) {
 		fprintf(stderr, "Invalid number of outfile sections: "
-				"%d (should be between 1 and 999).\n", outfiles_count);
-		return;
+				"%d (should be a value of 1 to 999).\n", outfiles_count);
+		return NULL;
 	}
-	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	printf("<!DOCTYPE handbrake_encode [\n");
-	printf("<!ELEMENT handbrake_encode (handbrake_options, outfile+)>\n");
-	printf("<!ELEMENT handbrake_options EMPTY>\n");
-	printf("<!ATTLIST handbrake_options");
-	printf("          format (mp4|mkv) \"mkv\"\n");
-	printf("          video_encoder (x264|mpeg4|mpeg2|VP8|theora) \"x264\"\n");
-	printf("          video_quality CDATA \"18\"\n");
-	printf("          audio_encoder (av_aac|fdk_aac|fdk_haac|"
-			"copy:aac|ac3|copy:ac3|copy:dts|copy:dtshd|mp3|"
-			"copy:mp3|vorbis|flac16|flac24|copy) \"fdk_aac\"\n");
-	printf("          audio_bitrate CDATA #IMPLIED\n");
-	printf("          audio_quality CDATA #IMPLIED\n");
-	printf("          anamorphic (loose|strict) \"strict\"\n");
-	printf("          deinterlace (fast|slow|slower|bob|default|none) \"none\"\n");
-	printf("          decomb (fast|bob|default|none) \"default\"\n");
-	printf("          denoise (ultralight|light|medium|strong|default|none) \"none\"\n");
-	printf("          markers (yes|no) \"yes\"\n");
-	printf("          input_basedir CDATA #IMPLIED>\n");
-	printf("<!ELEMENT outfile (type, iso_filename, dvdtitle, name, year, season, "
-			"episode_number, specific_name?, crop?, chapters, audio, audio_names?, subtitle?)>\n");
-	printf("<!ELEMENT type (#PCDATA)>\n");
-	printf("<!ELEMENT iso_filename (#PCDATA)>\n");
-	printf("<!ELEMENT dvdtitle (#PCDATA)>\n");
-	printf("<!ELEMENT name (#PCDATA)>\n");
-	printf("<!ELEMENT year (#PCDATA)>\n");
-	printf("<!ELEMENT season (#PCDATA)>\n");
-	printf("<!ELEMENT episode_number (#PCDATA)>\n");
-	printf("<!ELEMENT specific_name (#PCDATA)>\n");
-	printf("<!ELEMENT crop (#PCDATA)>\n");
-	printf("<!ELEMENT chapters (#PCDATA)>\n");
-	printf("<!ELEMENT audio (#PCDATA)>\n");
-	printf("<!ELEMENT subtitle (#PCDATA)>\n");
-	printf("]>\n");
-	printf("<handbrake_encode>\n \t<handbrake_options \n"
-			"\t\t\tformat=\"%s\"\n \t\t\tvideo_encoder=\"x264\"\n"
-			"\t\t\tvideo_quality=\"18\"\n \t\t\taudio_encoder=\"fdk_aac\" \n"
-			"\t\t\taudio_bitrate=\"192\" \n \t\t\taudio_quality=\"\"\n"
-			"\t\t\tanamorphic=\"strict\"\n \t\t\tdeinterlace=\"none\"\n"
-			"\t\t\tdecomb=\"default\"\n \t\t\tdenoise=\"none\"\n"
-			"\t\t\tinput_basedir=\"%s\"\n", format, basedir);
-	if ( markers ) {
-		printf("\t\t\tmarkers=\"yes\"\n");
+	
+	xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
+	xmlNodePtr root = xmlNewNode(NULL, BAD_CAST "handbrake_encode");
+	xmlDocSetRootElement(doc, root);
+	//xmlNodePtr doctype = xmlNewChild(root, NULL, BAD_CAST "!DOCTYPE", NULL);
+	//xmlNewProp(doctype, BAD_CAST "handbrake_encode", NULL);
+	//xmlNewProp(doctype, BAD_CAST "SYSTEM", NULL);
+	//xmlNewProp(doctype, BAD_CAST "\"handbrake_encode.dtd\"", NULL);
+	
+	// create handbrake_options with defaults
+	xmlNodePtr opt_node = xmlNewChild(root, NULL, BAD_CAST "handbrake_options", NULL);
+	xmlNewProp(opt_node, BAD_CAST "format", BAD_CAST format);
+	xmlNewProp(opt_node, BAD_CAST "video_encoder", BAD_CAST "x264");
+	xmlNewProp(opt_node, BAD_CAST "video_quality", BAD_CAST "18");
+	xmlNewProp(opt_node, BAD_CAST "audio_encoder", BAD_CAST "fdk_aac");
+	xmlNewProp(opt_node, BAD_CAST "audio_bitrate", BAD_CAST "192");
+	xmlNewProp(opt_node, BAD_CAST "audio_quality", BAD_CAST "");
+	xmlNewProp(opt_node, BAD_CAST "anamorphic", BAD_CAST "strict");
+	xmlNewProp(opt_node, BAD_CAST "deinterlace", BAD_CAST "none");
+	xmlNewProp(opt_node, BAD_CAST "decomb", BAD_CAST "default");
+	xmlNewProp(opt_node, BAD_CAST "denoise", BAD_CAST "none");
+	xmlNewProp(opt_node, BAD_CAST "input_basedir", BAD_CAST basedir);
+	if (markers) {
+		xmlNewProp(opt_node, BAD_CAST "markers", BAD_CAST "yes");
 	} else {
-		printf("\t\t\tmarkers=\"no\"\n");
+		xmlNewProp(opt_node, BAD_CAST "markers", BAD_CAST "no");
 	}
-	printf("\t\t\t/>\n");
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
+		xmlNodePtr outfile_node = xmlNewChild(root, NULL, BAD_CAST "outfile", NULL);
+
+		if (i == 0) {
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " type may be series or movie "));
+		}
 		if ( video_type == 0) {
-			printf("\t<outfile>\n \t\t<type>movie</type>");
+			xmlNewChild(outfile_node, NULL, BAD_CAST "type", BAD_CAST "movie");
 		} else if ( video_type == 1) {
-			printf("\t<outfile>\n \t\t<type>series</type>");
+			xmlNewChild(outfile_node, NULL, BAD_CAST "type", BAD_CAST "series");
 		} else {
-			printf("\t<outfile>\n \t\t<type></type>");
+			xmlNewChild(outfile_node, NULL, BAD_CAST "type", NULL);
 		}
+		xmlNewChild(outfile_node, NULL, BAD_CAST "iso_filename", BAD_CAST source);
+		char title_s[3];
+		snprintf(title_s, 3, "%d", title);
+		xmlNewChild(outfile_node, NULL, BAD_CAST "dvdtitle", BAD_CAST title_s);
 		if (i == 0) {
-			printf("\t\t<!-- type may be series or movie -->");
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " filename depends on outfile type "));
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+						" series filename: <name> - s<season>e<episode_number> - <specific_name> "));
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " movie filename: <name> (<year>) "));
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+						" Replace characters '&<>' in name with their xml entities &amp; &lt; &gt; "));
 		}
-		printf("\n\t\t<iso_filename>%s</iso_filename>\n", source);
-		printf("\t\t<dvdtitle>%d</dvdtitle>\n", title);
-		if (i == 0) {
-			printf("\t\t<!-- filename depends on outfile type -->\n"
-					"\t\t<!-- series filename: "
-					"\"<name> - s<season>e<episode_number> - <specific_name>\" -->\n"
-					"\t\t<!-- movie filename: \"<name> (<year>)\" -->\n");
-		}
-		printf("\t\t<name>%s</name>\n \t\t<year>%s</year>\n"
-				"\t\t<season>%d</season>\n",
-				name, year, season);
+		xmlNewTextChild(outfile_node, NULL, BAD_CAST "name", BAD_CAST name);
+		xmlNewChild(outfile_node, NULL, BAD_CAST "year", BAD_CAST year);
+		char season_s[3];
+		snprintf(season_s, 3, "%d", season);
+		xmlNewChild(outfile_node, NULL, BAD_CAST "season", BAD_CAST season_s);
 		if (episodes != NULL){
-			printf("\t\t<episode_number>%d</episode_number>\n"
-				"\t\t<specific_name>%s</specific_name>\n",
-				episode_array[i].number, episode_array[i].name);
+			char ep_num_s[5];
+			snprintf(ep_num_s, 5, "%d", episode_array[i].number);
+			xmlChar *specific_name = xmlCharStrdup(episode_array[i].name);
+			xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", BAD_CAST ep_num_s);
+			if (i == 0) {
+				xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+							" Replace characters '&<>' in specific_name with their xml entities &amp; &lt; &gt; "));
+			}
+			xmlNewTextChild(outfile_node, NULL, BAD_CAST "specific_name", specific_name);
+			xmlFree(specific_name);
 		} else {
-		printf("\t\t<episode_number></episode_number>\n"
-				"\t\t<specific_name></specific_name>\n");
+			xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", NULL);
+			if (i == 0) {
+				xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+							" Replace characters '&<>' in specific_name with their xml entities &amp; &lt; &gt; "));
+			}
+			xmlNewChild(outfile_node, NULL, BAD_CAST "specific_name", NULL);
 		}
-		printf("\t\t<crop>%s</crop>\n", crop);
-		printf("\t\t<chapters></chapters>");
+		xmlNewChild(outfile_node, NULL, BAD_CAST "crop", BAD_CAST crop);
 		if (i == 0) {
-			printf("\t\t<!-- specified as a range \"1-3\" or single chapter \"3\" -->");
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+						" chapters specified as a range \"1-3\" or single chapters \"3\" "));
 		}
-		printf("\n\t\t<audio></audio>");
+		xmlNewChild(outfile_node, NULL, BAD_CAST "chapters", NULL);
 		if (i == 0) {
-			printf("\t\t<!-- comma separated list of audio tracks -->");
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " comma separated list of audio tracks "));
 		}
-		printf("\n\t\t<subtitle></subtitle>");
+		xmlNewChild(outfile_node, NULL, BAD_CAST "audio", NULL);
 		if (i == 0) {
-			printf("\t\t<!-- comma separated list of subtitle tracks -->");
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " comma separated list of subtitle tracks "));
 		}
-		printf("\n\t</outfile>\n");
+		xmlNewChild(outfile_node, NULL, BAD_CAST "subtitle", NULL);
 	}
-	printf("</handbrake_encode>\n");
 	
+
 	if (episodes != NULL) {
 		free_episode_array(episode_array, outfiles_count);
 	}
 	
-	return;
+	return doc;
+}
+
+void print_xml(xmlDocPtr doc)
+{
+	xmlSaveCtxtPtr save_ctxt = xmlSaveToFd(1, "UTF-8", XML_SAVE_FORMAT | XML_SAVE_NO_EMPTY );
+	xmlSaveDoc(save_ctxt, doc);
+	xmlSaveClose(save_ctxt);
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
 }

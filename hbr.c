@@ -98,12 +98,15 @@ int main(int argc, char * argv[])
 
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
-		gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
+		xmlDocPtr doc = gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
 				gen_arguments.season ?: 1, gen_arguments.video_type,
 				gen_arguments.markers, gen_arguments.source ?: "",
 				gen_arguments.year ?: "", gen_arguments.crop ?: "0:0:0:0",
 				gen_arguments.name ?: "", gen_arguments.format ?: "mkv",
 				gen_arguments.basedir ?: "", gen_arguments.episodes);
+		if (doc != NULL) {
+			print_xml(doc);
+		}
 		return 0;
 	}
 	// parse normal options
@@ -114,7 +117,7 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 	xmlNode *root_element = xmlDocGetRootElement(xml_doc);
-	if (xmlStrcmp(root_element->name, (const xmlChar *) "handbrake_encode")) {
+	if (xmlStrcmp(root_element->name, BAD_CAST "handbrake_encode")) {
 		fprintf(stderr,
 				"Wrong document type: handbrake_encode element not found in \"%s\"",
 				xml_doc->URL);
@@ -160,8 +163,8 @@ int main(int argc, char * argv[])
 		hb_command = xmlStrcat(hb_command, hb_options);
 		hb_command = xmlStrcat(hb_command, out_options);
 
-		const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
-		const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
+		const xmlChar *filename_start = xmlStrstr(hb_command, BAD_CAST "-o")+4;
+		const xmlChar *filename_end = xmlStrstr(filename_start, BAD_CAST "\"");
 		xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 		
 		printf("%c[1m", 27);
@@ -284,11 +287,11 @@ static error_t parse_enc_opt (int key, char *arg, struct argp_state *state)
 int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite)
 {
 	// separate filename and construct log filename
-	const xmlChar *filename_start = xmlStrstr(hb_command, (const xmlChar *) "-o")+4;
-	const xmlChar *filename_end = xmlStrstr(filename_start, (const xmlChar *) "\"");
+	const xmlChar *filename_start = xmlStrstr(hb_command, BAD_CAST "-o")+4;
+	const xmlChar *filename_end = xmlStrstr(filename_start, BAD_CAST "\"");
 	xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 	xmlChar *log_filename = xmlStrdup(filename);
-	log_filename = xmlStrcat(log_filename, (const xmlChar *) ".log");
+	log_filename = xmlStrcat(log_filename, BAD_CAST ".log");
 	if ( access((char *) filename, F_OK ) == 0 ) {
 		if ( access((char *) filename, W_OK ) == 0 ) {
 			if (!overwrite) {

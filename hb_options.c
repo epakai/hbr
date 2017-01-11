@@ -31,7 +31,7 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, (const xmlChar *) "handbrake_options")) {
+	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
@@ -59,11 +59,11 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 
 			return NULL;
 		}
-		opt_str = xmlStrcat(opt_str, (const xmlChar *) options[i]);
+		opt_str = xmlStrcat(opt_str, BAD_CAST options[i]);
 		xmlFree(options[i]);
 	}
 
-	opt_str = xmlStrncat(opt_str, (const xmlChar *) " ", 1);
+	opt_str = xmlStrncat(opt_str, BAD_CAST " ", 1);
 	return opt_str;
 }
 
@@ -76,12 +76,12 @@ xmlChar* hb_options_string(xmlDocPtr doc)
  */
 xmlChar* hb_format(xmlNode *options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "format");
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "format");
 	// format is constrained by the XML DTD to be "mkv" or "mp4"
-	if (xmlStrcmp(temp, (const xmlChar *) "mkv") == 0){
+	if (xmlStrcmp(temp, BAD_CAST "mkv") == 0){
 		xmlFree(temp);
 		return xmlCharStrdup(" -f av_mkv");
-	} else if (xmlStrcmp(temp, (const xmlChar *) "mp4") == 0){
+	} else if (xmlStrcmp(temp, BAD_CAST "mp4") == 0){
 		xmlFree(temp);
 		return xmlCharStrdup(" -f av_mp4");
 	} else {
@@ -101,12 +101,12 @@ xmlChar* hb_format(xmlNode *options)
 xmlChar* hb_video_encoder(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -e ");
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "video_encoder");
-	if (xmlStrcmp(temp, (const xmlChar *) "x264") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "mpeg4") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "mpeg2") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "VP8") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "theora") == 0 ) {
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "video_encoder");
+	if (xmlStrcmp(temp, BAD_CAST "x264") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "mpeg4") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "mpeg2") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "VP8") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "theora") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
@@ -128,7 +128,7 @@ xmlChar* hb_video_encoder(xmlNode *options)
 xmlChar* hb_video_quality(xmlNode *options, xmlDocPtr doc)
 {
 	xmlChar *quality_string;
-	if ((quality_string = xmlGetNoNsProp(options, (const xmlChar *) "video_quality"))[0] == '\0') {
+	if ((quality_string = xmlGetNoNsProp(options, BAD_CAST "video_quality"))[0] == '\0') {
 		xmlFree(quality_string);
 		// Empty string lets Handbrake pick the default
 		return xmlCharStrdup("");
@@ -145,19 +145,19 @@ xmlChar* hb_video_quality(xmlNode *options, xmlDocPtr doc)
 	}
 	long quality = strtol((char *) quality_string, NULL, 10);
 	if ( 0 <= quality && quality <=63 ) {
-		if ( xmlStrncmp(encoder, (const xmlChar *) " -e VP8", 7) == 0 ||
-				xmlStrncmp(encoder, (const xmlChar *) " -e theora", 10) == 0) {
+		if ( xmlStrncmp(encoder, BAD_CAST " -e VP8", 7) == 0 ||
+				xmlStrncmp(encoder, BAD_CAST " -e theora", 10) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 0 <= quality && quality <=51 ) {
-		if ( xmlStrncmp(encoder, (const xmlChar *) " -e x264", 8) == 0) {
+		if ( xmlStrncmp(encoder, BAD_CAST " -e x264", 8) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 1 <= quality && quality <=31 ) {
-		if ( xmlStrncmp(encoder, (const xmlChar *) " -e mpeg4", 9) == 0 ||
-				xmlStrncmp(encoder, (const xmlChar *) " -e mpeg2", 9) == 0) {
+		if ( xmlStrncmp(encoder, BAD_CAST " -e mpeg4", 9) == 0 ||
+				xmlStrncmp(encoder, BAD_CAST " -e mpeg2", 9) == 0) {
 			goto good_quality;
 		}
 	}
@@ -186,21 +186,21 @@ good_quality:
 xmlChar* hb_audio_encoder(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -E ");
-	xmlChar *encoder = xmlGetNoNsProp(options, (const xmlChar *) "audio_encoder");
-	if (xmlStrcmp(encoder, (const xmlChar *) "av_aac") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "fdk_aac") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "fdk_haac") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy:aac") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "ac3") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy:ac3") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy:dts") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy:dtshd") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "mp3") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy:mp3") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "vorbis") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "flac16") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "flac24") == 0 ||
-			xmlStrcmp(encoder, (const xmlChar *) "copy") == 0 ) {
+	xmlChar *encoder = xmlGetNoNsProp(options, BAD_CAST "audio_encoder");
+	if (xmlStrcmp(encoder, BAD_CAST "av_aac") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "fdk_aac") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "fdk_haac") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy:aac") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "ac3") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy:ac3") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy:dts") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy:dtshd") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "mp3") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy:mp3") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "vorbis") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "flac16") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "flac24") == 0 ||
+			xmlStrcmp(encoder, BAD_CAST "copy") == 0 ) {
 		arg = xmlStrncat(arg, encoder, xmlStrlen(encoder));
 		xmlFree(encoder);
 		return arg;
@@ -222,7 +222,7 @@ xmlChar* hb_audio_encoder(xmlNode *options)
 xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
 {
 	xmlChar *arg = xmlCharStrdup(" -Q ");
-	xmlChar *quality = xmlGetNoNsProp(options, (const xmlChar *) "audio_quality");
+	xmlChar *quality = xmlGetNoNsProp(options, BAD_CAST "audio_quality");
 	if (quality[0] == '\0') {
 		xmlFree(arg);
 		xmlFree(quality);
@@ -230,8 +230,8 @@ xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
 		return xmlCharStrdup("");
 	}
 	xmlChar *codec = hb_audio_encoder(options);
-	if (xmlStrcmp(codec, (const xmlChar *) " -E mp3") == 0
-			|| xmlStrcmp(codec, (const xmlChar *) " -E vorbis") == 0) {
+	if (xmlStrcmp(codec, BAD_CAST " -E mp3") == 0
+			|| xmlStrcmp(codec, BAD_CAST " -E vorbis") == 0) {
 		float a_quality = strtof((char *) quality, NULL);
 		char temp[5];
 		if (codec[4] == 'm') { //mp3
@@ -245,7 +245,7 @@ xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
 		} else {
 			goto invalid_bitrate;
 		}
-		arg = xmlStrncat(arg, (const xmlChar *) temp, 5);
+		arg = xmlStrncat(arg, BAD_CAST temp, 5);
 		xmlFree(quality);
 		xmlFree(codec);
 		return arg;
@@ -273,7 +273,7 @@ invalid_bitrate:
 xmlChar* hb_audio_bitrate(xmlNode *options, xmlDocPtr doc)
 {
 	xmlChar *arg = xmlCharStrdup(" -B ");
-	xmlChar *bitrate = xmlGetNoNsProp(options, (const xmlChar *) "audio_bitrate");
+	xmlChar *bitrate = xmlGetNoNsProp(options, BAD_CAST "audio_bitrate");
 	if (bitrate[0] == '\0') {
 		xmlFree(arg);
 		xmlFree(bitrate);
@@ -282,33 +282,33 @@ xmlChar* hb_audio_bitrate(xmlNode *options, xmlDocPtr doc)
 	}
 	int br = strtol((char *) bitrate, NULL, 10);
 	xmlChar *codec = hb_audio_encoder(options);
-	if ( ((xmlStrcmp(codec, (const xmlChar *) " -E mp3") == 0)
-			|| (xmlStrcmp(codec, (const xmlChar *) " -E copy:mp3") == 0))
+	if ( ((xmlStrcmp(codec, BAD_CAST " -E mp3") == 0)
+			|| (xmlStrcmp(codec, BAD_CAST " -E copy:mp3") == 0))
 			&& valid_bit_rate(br, 32, 320)) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, (const xmlChar *) " -E av_aac") == 0)
-				|| (xmlStrcmp(codec, (const xmlChar *) " -E copy:aac") == 0))
+	if ( ((xmlStrcmp(codec, BAD_CAST " -E av_aac") == 0)
+				|| (xmlStrcmp(codec, BAD_CAST " -E copy:aac") == 0))
 			&& valid_bit_rate(br, 192, 1536 )) {
 		goto good_bitrate;
 	}
-	if ( (xmlStrcmp(codec, (const xmlChar *) " -E vorbis") == 0)
+	if ( (xmlStrcmp(codec, BAD_CAST " -E vorbis") == 0)
 			&& valid_bit_rate(br, 192, 1344)) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, (const xmlChar *) " -E fdk_aac") == 0)
-				|| (xmlStrcmp(codec, (const xmlChar *) " -E copy:dtshd") == 0)
-				|| (xmlStrcmp(codec, (const xmlChar *) " -E copy") == 0)
-				|| (xmlStrcmp(codec, (const xmlChar *) " -E copy:dts") == 0))
+	if ( ((xmlStrcmp(codec, BAD_CAST " -E fdk_aac") == 0)
+				|| (xmlStrcmp(codec, BAD_CAST " -E copy:dtshd") == 0)
+				|| (xmlStrcmp(codec, BAD_CAST " -E copy") == 0)
+				|| (xmlStrcmp(codec, BAD_CAST " -E copy:dts") == 0))
 			&& valid_bit_rate(br, 160, 1344 )) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, (const xmlChar *) " -E ac3") == 0)
-				|| ( xmlStrcmp(codec, (const xmlChar *) " -E copy:ac3") == 0))
+	if ( ((xmlStrcmp(codec, BAD_CAST " -E ac3") == 0)
+				|| ( xmlStrcmp(codec, BAD_CAST " -E copy:ac3") == 0))
 			&& valid_bit_rate(br, 224, 640)) {
 		goto good_bitrate;
 	}
-	if ( (xmlStrcmp(codec, (const xmlChar *) " -E fdk_haac") == 0)
+	if ( (xmlStrcmp(codec, BAD_CAST " -E fdk_haac") == 0)
 			&& valid_bit_rate(br, 80, 256)) {
 		goto good_bitrate;
 	}
@@ -336,12 +336,12 @@ good_bitrate:
  */
 xmlChar* hb_markers(xmlNode *options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "markers");
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "markers");
 
-	if (xmlStrcmp(temp, (const xmlChar *) "yes") == 0 ) {
+	if (xmlStrcmp(temp, BAD_CAST "yes") == 0 ) {
 		xmlFree(temp);
 		return xmlCharStrdup(" -m");
-	} else if (xmlStrcmp(temp, (const xmlChar *) "no") == 0 ) {
+	} else if (xmlStrcmp(temp, BAD_CAST "no") == 0 ) {
 		xmlFree(temp);
 		return xmlCharStrdup("");
 	} else {
@@ -362,13 +362,13 @@ xmlChar* hb_markers(xmlNode *options)
  */
 xmlChar* hb_anamorphic(xmlNode *options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "anamorphic");
-	if (xmlStrcmp(temp, (const xmlChar *) "strict") == 0 ) {
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "anamorphic");
+	if (xmlStrcmp(temp, BAD_CAST "strict") == 0 ) {
 		xmlFree(temp);
-		return xmlStrdup((const xmlChar *) " --strict-anamorphic");
-	} else if (xmlStrcmp(temp, (const xmlChar *) "loose") == 0 ) {
+		return xmlStrdup(BAD_CAST " --strict-anamorphic");
+	} else if (xmlStrcmp(temp, BAD_CAST "loose") == 0 ) {
 		xmlFree(temp);
-		return xmlStrdup((const xmlChar *) " --loose-anamorphic");
+		return xmlStrdup(BAD_CAST " --loose-anamorphic");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options anamorphic attribute\n");
@@ -387,17 +387,17 @@ xmlChar* hb_anamorphic(xmlNode *options)
 xmlChar* hb_deinterlace(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -d ");
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "deinterlace");
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "deinterlace");
 	
-	if (xmlStrcmp(temp, (const xmlChar *) "fast") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "slow") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "slower") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "bob") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
+	if (xmlStrcmp(temp, BAD_CAST "fast") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "slow") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "slower") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "bob") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
 		xmlFree(arg);
 		xmlFree(temp);
 		return xmlCharStrdup("");
@@ -420,15 +420,15 @@ xmlChar* hb_deinterlace(xmlNode *options)
 xmlChar* hb_decomb(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -5 ");
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "decomb");
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "decomb");
 
-	if (xmlStrcmp(temp, (const xmlChar *) "fast") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "bob") == 0 ||
-			xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
+	if (xmlStrcmp(temp, BAD_CAST "fast") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "bob") == 0 ||
+			xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
 		xmlFree(arg);
 		xmlFree(temp);
 		return xmlCharStrdup("");
@@ -451,17 +451,17 @@ xmlChar* hb_decomb(xmlNode *options)
 xmlChar* hb_denoise(xmlNode *options)
 {
 	xmlChar *arg = xmlCharStrdup(" -8 ");
-	xmlChar *temp = xmlGetNoNsProp(options, (const xmlChar *) "denoise");
+	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "denoise");
 
-	if (xmlStrcmp(temp, (const xmlChar *) "ultralight") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "light") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "medium") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "strong") == 0 ||
-		xmlStrcmp(temp, (const xmlChar *) "default") == 0 ) {
+	if (xmlStrcmp(temp, BAD_CAST "ultralight") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "light") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "medium") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "strong") == 0 ||
+		xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
 		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
 		xmlFree(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, (const xmlChar *) "none") == 0) {
+	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
 		xmlFree(arg);
 		xmlFree(temp);
 		return xmlCharStrdup("");
@@ -487,11 +487,11 @@ xmlChar* get_format(xmlDocPtr doc)
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, (const xmlChar *) "handbrake_options")) {
+	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
-	return xmlGetNoNsProp(cur, (const xmlChar *) "format");
+	return xmlGetNoNsProp(cur, BAD_CAST "format");
 }
 
 /**
@@ -506,11 +506,11 @@ xmlChar* get_input_basedir(xmlDocPtr doc)
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, (const xmlChar *) "handbrake_options")) {
+	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
-	return xmlGetNoNsProp(cur, (const xmlChar *) "input_basedir");
+	return xmlGetNoNsProp(cur, BAD_CAST "input_basedir");
 }
 
 /**
