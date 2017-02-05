@@ -17,7 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "xml.h"
-
+#include "xsd.h"
+#include <libxml/xmlschemastypes.h>
 /**
  * @brief Parses the xml file. Validates xml against the DTD.
  *
@@ -26,33 +27,48 @@
  * @return Document tree object pointer. NULL on failure. Must be freed by caller.
  */
 xmlDocPtr parse_xml(char *infile)
-{
-	xmlParserCtxtPtr ctxt; // the parser context
-	xmlDocPtr doc; // the resulting document tree
+{	
+	// Create and parse Schema Parser Context
+	xmlSchemaParserCtxtPtr schema_ctxt =
+		xmlSchemaNewMemParserCtxt((const char *) hbr_xsd, hbr_xsd_len);
+	xmlSchemaPtr schema = xmlSchemaParse(schema_ctxt);
+	xmlSchemaFreeParserCtxt(schema_ctxt);
 
-	// create a parser context
-	ctxt = xmlNewParserCtxt();
-	if (ctxt == NULL) {
+	// create a valid parser context
+	xmlSchemaValidCtxtPtr valid_ctxt = xmlSchemaNewValidCtxt(schema);
+
+
+	if (valid_ctxt == NULL) {
 		fprintf(stderr, "Failed to allocate parser context\n");
+		xmlSchemaFreeValidCtxt(valid_ctxt);
 		return NULL;
 	}
 	// parse the file, activating the DTD validation option
-	doc = xmlCtxtReadFile(ctxt, infile, NULL, XML_PARSE_DTDVALID);
+	xmlDocPtr doc = xmlReadFile(infile, NULL, 0);
+
 	// check if parsing succeeded
 	if (doc == NULL) {
 		fprintf(stderr, "Failed to parse %s\n", infile);
-		xmlFreeParserCtxt(ctxt);
+		xmlSchemaFreeValidCtxt(valid_ctxt);
 		return NULL;
 	} else {
 		// check if validation succeeded
-		if (ctxt->valid == 0) {
+		int result = xmlSchemaValidateDoc(valid_ctxt, doc);
+		if (result != 0) {
 			fprintf(stderr, "Failed to validate %s\n", infile);
-			xmlFreeParserCtxt(ctxt);
+			xmlFreeDoc(doc);
+			xmlSchemaFreeValidCtxt(valid_ctxt);
+			xmlSchemaFree(schema);
+			xmlSchemaCleanupTypes();
+			xmlCleanupParser();
 			return NULL;
 		}
 	}
 	// free up the parser context
-	xmlFreeParserCtxt(ctxt);
+	xmlSchemaFreeValidCtxt(valid_ctxt);
+	xmlSchemaFree(schema);
+	xmlSchemaCleanupTypes();
+	xmlCleanupParser();
 	return doc;
 }
 

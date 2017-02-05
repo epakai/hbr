@@ -18,6 +18,7 @@
  */
 
 #include "out_options.h"
+#include <stdbool.h>
 
 /**
  * @brief Build HandBrakeCLI arguments specific to each outfile
@@ -40,14 +41,19 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	// handbrake options
 	struct tag iso_filename = {NULL, (xmlChar *) "iso_filename"};
 	struct tag dvdtitle = {NULL, (xmlChar *) "dvdtitle"};
-	struct tag crop = {NULL, (xmlChar *) "crop"};
-	struct tag chapters = {NULL, (xmlChar *) "chapters"};
+	struct tag crop_top = {NULL, (xmlChar *) "crop/top"};
+	struct tag crop_bottom = {NULL, (xmlChar *) "crop/bottom"};
+	struct tag crop_left = {NULL, (xmlChar *) "crop/left"};
+	struct tag crop_right = {NULL, (xmlChar *) "crop/right"};
+	struct tag chapters_start = {NULL, (xmlChar *) "chapters/start"};
+	struct tag chapters_end = {NULL, (xmlChar *) "chapters/end"};
 	struct tag audio = {NULL, (xmlChar *) "audio"};
 	struct tag subtitle = {NULL, (xmlChar *) "subtitle"};
 
 	struct tag *tag_array[] = {&type, &name, &year, &season,
 		&episode_number, &specific_name, &iso_filename, &dvdtitle,
-		&crop, &chapters, &audio, &subtitle};
+		&crop_top, &crop_bottom, &crop_left, &crop_right,
+		&chapters_start, &chapters_end, &audio, &subtitle};
 
 	int tag_array_size = sizeof(tag_array)/sizeof(struct tag*);
 	int i;
@@ -72,7 +78,7 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 
 	// full string of options
 	xmlChar *out_options = xmlCharStrdup("\0");
-	xmlChar *options[7];
+	xmlChar *options[10];
 	if ( xmlStrcmp(type.content, BAD_CAST "series") == 0 ){
 		options[0] = out_series_output(&name, &season, &episode_number, &specific_name, doc, out_count);
 	} else if ( xmlStrcmp(type.content, BAD_CAST "movie") == 0 ){
@@ -86,10 +92,10 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	}
 	options[1] = out_input(&iso_filename, doc, out_count);
 	options[2] = out_dvdtitle(&dvdtitle, doc, out_count);
-	options[3] = out_crop(&crop, doc, out_count);
-	options[4] = out_chapters(&chapters, doc, out_count);
-	options[5] = out_audio(&audio, doc, out_count);
-	options[6] = out_subtitle(&subtitle, doc, out_count);
+	options[3] = out_crop(&crop_top, &crop_bottom, &crop_left, &crop_right);
+	options[4] = out_chapters(&chapters_start, &chapters_end);
+	options[5] = out_audio(&audio);
+	options[6] = out_subtitle(&subtitle);
 	
 	// concatenate then free each option
 	for (i = 0; i<7; i++) {
@@ -132,6 +138,59 @@ int validate_file_string(xmlChar * file_string)
 		}
 	}
 	return 0;
+}
+
+/**
+ * @brief Build a crop object from the Handbrake style string
+ *
+ * @param crop_string String 4 colon separated integers i.e. 0:0:0:0
+ *
+ * @return crop object,
+ */
+struct crop get_crop(xmlChar * crop_string)
+{
+	if (xmlStrcmp(crop_string, BAD_CAST "") == 0 || crop_string == NULL) {
+		struct crop crop = {0, 0, 0, 0};
+		return crop;
+	}
+	xmlChar *token_string = xmlStrdup(crop_string);
+	char *crop_str[5];
+	// break crop into components
+	crop_str[0] = strtok((char *) token_string, ":");
+	crop_str[1] = strtok(NULL, ":");
+	crop_str[2] = strtok(NULL, ":");
+	crop_str[3] = strtok(NULL, "\0");
+	// verify each crop is 4 digit max (video isn't that big yet)
+	if ((strnlen(crop_str[0], 5) > 4) || (strnlen(crop_str[1], 5) > 4)
+			|| (strnlen(crop_str[2], 5) > 4) || (strnlen(crop_str[3], 5) > 4)){
+		fprintf(stderr, "Invalid crop (value too large) "
+				"'%s:%s:%s:%s'\n",
+				crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
+		struct crop crop = {0, 0, 0, 0};
+		return crop;
+	}
+	int i;
+	// verify all characters are digits
+	for (i = 0; i<4; i++){
+		int j = 0;
+		while (crop_str[i][j] != '\0'){
+			if (!isdigit(crop_str[i][j])){
+				fprintf(stderr, "Invalid crop (non-digits) "
+						"'%s:%s:%s:%s'\n",
+						crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
+				struct crop crop = {0, 0, 0, 0};
+				return crop;
+			}
+			j++;
+		}
+	}
+	struct crop crop;
+	crop.top = atoi(crop_str[0]);
+	crop.bottom = atoi(crop_str[1]);
+	crop.left = atoi(crop_str[2]);
+	crop.right = atoi(crop_str[3]);
+	xmlFree(token_string);
+	return crop;
 }
 
 /**
@@ -357,52 +416,27 @@ xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count)
 /**
  * @brief Build the crop option for an outfile (--crop)
  *
- * @param crop dimensions to be cropped
+ * @param crop_top dimensions to be cropped
+ * @param crop_bottom dimensions to be cropped
+ * @param crop_left dimensions to be cropped
+ * @param crop_right dimensions to be cropped
  * @param doc xml document
  * @param out_count outfile tag being evaluated
  *
  * @return command line option for crop
  */
-xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count)
+xmlChar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
+		struct tag *crop_left, struct tag *crop_right)
 {
-	if (xmlStrcmp(crop->content, BAD_CAST "") == 0) {
-		return xmlCharStrdup("");
-	}
-	xmlChar *token_string = xmlStrdup(crop->content);
-	char *crop_str[5];
-	// break crop into components
-	crop_str[0] = strtok((char *) token_string, ":");
-	crop_str[1] = strtok(NULL, ":");
-	crop_str[2] = strtok(NULL, ":");
-	crop_str[3] = strtok(NULL, "\0");
-	// verify each crop is 4 digit max (video isn't that big yet)
-	if ((strnlen(crop_str[0], 5) > 4) || (strnlen(crop_str[1], 5) > 4)
-			|| (strnlen(crop_str[2], 5) > 4) || (strnlen(crop_str[3], 5) > 4)){
-		fprintf(stderr, "%d: Invalid crop (values too large) "
-				"'%s:%s:%s:%s' in \"%s\" line number: %ld\n",
-				out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3],
-				doc->URL, get_outfile_line_number(doc, out_count, crop->tag_name) );
-		return NULL;
-	}
-	int i;
-	// verify all characters are digits
-	for (i = 0; i<4; i++){
-		int j = 0;
-		while (crop_str[i][j] != '\0'){
-			if (!isdigit(crop_str[i][j])){
-				fprintf(stderr, "%d: Invalid crop (non-digits) "
-						"'%s:%s:%s:%s' in \"%s\" line number: %ld\n",
-						out_count, crop_str[0], crop_str[1], crop_str[2], crop_str[3],
-						doc->URL, get_outfile_line_number(doc, out_count, crop->tag_name) );
-				return NULL;
-			}
-			j++;
-		}
-	}
-	xmlFree(token_string);
+
 	xmlChar *arg = xmlCharStrndup(" --crop ", 8);
-	//re-grab the property because strtok destroyed it
-	arg = xmlStrncat(arg, crop->content, xmlStrlen(crop->content));
+	arg = xmlStrncat(arg, crop_top->content, xmlStrlen(crop_top->content));
+	arg = xmlStrncat(arg, BAD_CAST ":", 2);
+	arg = xmlStrncat(arg, crop_bottom->content, xmlStrlen(crop_bottom->content));
+	arg = xmlStrncat(arg, BAD_CAST ":", 2);
+	arg = xmlStrncat(arg, crop_left->content, xmlStrlen(crop_left->content));
+	arg = xmlStrncat(arg, BAD_CAST ":", 2);
+	arg = xmlStrncat(arg, crop_right->content, xmlStrlen(crop_right->content));
 	return arg;
 }
 
@@ -415,153 +449,49 @@ xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count)
  *
  * @return command line option for chapters
  */
-xmlChar* out_chapters(struct tag *chapters, xmlDocPtr doc, int out_count)
+xmlChar* out_chapters(struct tag *chapters_start, struct tag *chapters_end)
 {
-	int dash_count = 0;
-	int non_digit_dash_found = 0;
-	// Check for digits and count '-' characters
-	int i;
-	for (i = 0; i< xmlStrlen(chapters->content); i++) {
-		if (!isdigit(chapters->content[i]) && chapters->content[i] != '-' ) {
-			non_digit_dash_found = 1;
-		}
-		if (chapters->content[i] == '-') {
-			dash_count++;
-		}
-	}
-	// Ensure only digits and '-'
-	if (non_digit_dash_found) {
-		fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n",
-				out_count, doc->URL, chapters->tag_name,
-				get_outfile_line_number(doc, out_count, chapters->tag_name) );
-		return NULL;
-		// Ensure single '-' and '-' is not first or last character
-	} else if (dash_count > 1 || chapters->content[0] == '-' ||
-			chapters->content[xmlStrlen(chapters->content)] == '-') {
-		fprintf(stderr, "%d: Bad usage of '-' (%s) in \"%s\" tag <%s> line number: %ld\n",
-				out_count, chapters->content, doc->URL, chapters->tag_name,
-				get_outfile_line_number(doc, out_count, chapters->tag_name) );
-		return NULL;
-	} else {
-		// convert to longs for testing
-		int first = strtol((const char *) chapters->content, NULL, 10);
-		if (first > 98 || first < 1) {
-			fprintf(stderr, "%d: Chapter value outside range (1-98) "
-					"(%s) in \"%s\" tag <%s> line number: %ld\n",
-					out_count, chapters->content, doc->URL, chapters->tag_name,
-					get_outfile_line_number(doc, out_count, chapters->tag_name) );
-			return NULL;
-		}
-		// Deal with second digit if a single '-' was found
-		if (dash_count == 1) {
-			int second;
-			//substring starts with -, increment pointer once
-			const xmlChar *temp = xmlStrstr(chapters->content, BAD_CAST "-") + 1;
-			second = strtol((const char *) temp, NULL, 10);
-			if (first > second) {
-				printf("first: %d second: %d\n", first, second);
-				fprintf(stderr, "%d: Initial chapter is after final chapter "
-						"(%s) in \"%s\" tag <%s> line number: %ld\n",
-						out_count, chapters->content, doc->URL, chapters->tag_name,
-						get_outfile_line_number(doc, out_count, chapters->tag_name) );
-				return NULL;
-			}
-			if (second > 98 ) {
-				fprintf(stderr, "%d: Max chapter value of 98 exceeded "
-						"(%s) in \"%s\" tag <%s> line number: %ld\n",
-						out_count, chapters->content, doc->URL, chapters->tag_name,
-						get_outfile_line_number(doc, out_count, chapters->tag_name) );
-				return NULL;
-			}
-		}
-		xmlChar *arg = xmlCharStrndup(" -c ", 4);
-		arg = xmlStrncat(arg, chapters->content, xmlStrlen(chapters->content));
-		return arg;
-	}
+	xmlChar *arg = xmlCharStrndup(" -c ", 4);
+	arg = xmlStrncat(arg, chapters_start->content, xmlStrlen(chapters_start->content));
+	arg = xmlStrncat(arg, BAD_CAST "-", 1);
+	arg = xmlStrncat(arg, chapters_end->content, xmlStrlen(chapters_end->content));
+
+	return arg;
 }
 
 /**
  * @brief Build the audio tracks option for an outfile (-a)
  *
  * @param audio
- * @param doc xml document
- * @param out_count outfile tag being evaluated
  *
  * @return command line option for audio tracks
  */
-xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count)
+xmlChar* out_audio(struct tag *audio)
 {
 	if (audio->content[0] == '\0') {
 		return xmlCharStrdup("");
 	}
-	if (audio->content[0] == ',' || audio->content[xmlStrlen(audio->content)] == ',') {
-		fprintf(stderr,
-				"%d: Extra leading or trailing ',' (%s) in \"%s\" tag "
-				"<%s> line number: %ld\n",
-				out_count, audio->content, doc->URL, audio->tag_name,
-				get_outfile_line_number(doc, out_count, audio->tag_name) );
-		return NULL;
-	}
-	int comma_count = 0;
+	xmlChar *comma_string = malloc(xmlStrlen(audio->content)*sizeof(xmlChar));
 	int i;
-	for (i = 1; i < xmlStrlen(audio->content); i++) {
-		if (audio->content[i] == ',') {
-			if ( audio->content[i-1] == ',' ) {
-				fprintf(stderr,
-						"%d: Extra comma(s) in \"%s\" tag <%s> line number: %ld\n",
-						out_count, doc->URL, audio->tag_name,
-						get_outfile_line_number(doc, out_count, audio->tag_name) );
-				return NULL;
-			}
-			comma_count++;
+	int cs_last_char = 0;
+	bool digit = false;
+	for (i=0; i<xmlStrlen(audio->content); i++) {
+		if ( isdigit(audio->content[i]) ) {
+			digit = true;
+			comma_string[cs_last_char] = audio->content[i];
+			cs_last_char++;
 		}
-		if (!isdigit(audio->content[i]) &&  audio->content[i] != ',') {
-			fprintf(stderr,
-					"%d: Invalid character(s) in \"%s\" tag <%s> line number: %ld\n",
-					out_count, doc->URL, audio->tag_name,
-					get_outfile_line_number(doc, out_count, audio->tag_name) );
-			return NULL;
-		}
-	}
-	// verify each track number is between 1 and 99
-	int *track_numbers = (int *) malloc((comma_count+1)*sizeof(int));
-	char **track_strings = (char **) malloc((comma_count+1)*sizeof(char *));
-	char *token;
-	int track_out_of_range = 0;
-	xmlChar *audio_copy = xmlStrdup(audio->content);
-	token = track_strings[0] = strtok((char *) audio_copy, ",");
-	track_numbers[0] = strtol(track_strings[0], NULL, 10);
-	if (track_numbers[0] < 1 || track_numbers[0] > 99) {
-		track_out_of_range = 1;
-	}
-	i = 1;
-	while ( token != NULL ) {
-		token = strtok(NULL, ",");
-		if (token != NULL ) {
-			track_strings[i] = token;
-			track_numbers[i] = strtol((char *) track_strings[i], NULL, 10);
-			if (track_numbers[0] < 1 || track_numbers[0] > 99) {
-				track_out_of_range = 1;
-				break;
+		if (audio->content[i] == '\t' || audio->content[i] == ' ') {
+			if (digit && isdigit(audio->content[i+1])) {
+				comma_string[cs_last_char] = ',';
+				cs_last_char++;
 			}
 		}
-		i++;
 	}
-	xmlFree(audio_copy);
-	free(track_numbers);
-	free(track_strings);
-	if (track_out_of_range) {
-		fprintf(stderr,
-				"%d: Audio track number too large in "
-				"\"%s\" tag <%s> line number: %ld\n",
-				out_count, doc->URL, audio->tag_name,
-				get_outfile_line_number(doc, out_count, audio->tag_name) );
-		return NULL;
-	} else {
-		xmlChar *arg = xmlCharStrndup(" -a ", 4);
-		arg = xmlStrncat(arg, audio->content, xmlStrlen(audio->content));
-		return arg;
-	}
+	comma_string[cs_last_char] = '\0';
+	xmlChar *arg = xmlCharStrndup(" -a ", 4);
+	arg = xmlStrncat(arg, comma_string, xmlStrlen(comma_string));
+	return arg;
 }
 
 
@@ -569,79 +499,34 @@ xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count)
  * @brief Build the subtitle tracks option for an outfile (-s)
  *
  * @param subtitle
- * @param doc xml document
- * @param out_count outfile tag being evaluated
  *
  * @return command line option for subtitle tracks
  */
-xmlChar* out_subtitle(struct tag *subtitle, xmlDocPtr doc, int out_count)
+xmlChar* out_subtitle(struct tag *subtitle)
 {
 	if (subtitle->content[0] == '\0') {
 		return xmlCharStrdup("");
 	}
-	if (subtitle->content[0] == ',' || subtitle->content[xmlStrlen(subtitle->content)] == ',') {
-		fprintf(stderr, "%d: Extra leading or trailing ',' (%s) in \"%s\" tag "
-				"<%s> line number: %ld\n",
-				out_count, subtitle->content, doc->URL, subtitle->tag_name,
-				get_outfile_line_number(doc, out_count, subtitle->tag_name) );
-		return NULL;
-	}
-	int comma_count = 0;
+	xmlChar *comma_string = malloc(xmlStrlen(subtitle->content)*sizeof(xmlChar));
 	int i;
-	for (i = 0; i < xmlStrlen(subtitle->content); i++) {
-		if (subtitle->content[i] == ',') {
-			if ( subtitle->content[i-1] == ',' ) {
-				fprintf(stderr, "%d: Extra comma(s) in \"%s\" tag "
-						"<%s> line number: %ld\n",
-						out_count, doc->URL, subtitle->tag_name,
-						get_outfile_line_number(doc, out_count, subtitle->tag_name) );
-				return NULL;
-			}
-			comma_count++;
+	int cs_last_char = 0;
+	bool digit = false;
+	for (i=0; i<xmlStrlen(subtitle->content); i++) {
+		if ( isdigit(subtitle->content[i]) ) {
+			digit = true;
+			comma_string[cs_last_char] = subtitle->content[i];
+			cs_last_char++;
 		}
-		if (!isdigit(subtitle->content[i]) &&  subtitle->content[i] != ',') {
-			fprintf(stderr, "%d: Invalid character(s) in \"%s\" tag "
-					"<%s> line number: %ld\n",
-					out_count, doc->URL, subtitle->tag_name,
-					get_outfile_line_number(doc, out_count, subtitle->tag_name) );
-			return NULL;
-		}
-	}
-	int *track_numbers = (int *) malloc((comma_count+1)*sizeof(int));
-	char **track_strings = (char **) malloc((comma_count+1)*sizeof(char *));
-	char *token;
-	int track_out_of_range = 0;
-	xmlChar *subtitle_copy = xmlStrdup(subtitle->content);
-	token = track_strings[0] = strtok((char *) subtitle_copy, ",");
-	track_numbers[0] = strtol(track_strings[0], NULL, 10);
-	if (track_numbers[0] < 1 || track_numbers[0] > 99) {
-		track_out_of_range = 1;
-	}
-	i = 1;
-	while ( token != NULL ) {
-		token = strtok(NULL, ",");
-		if (token != NULL ) {
-			track_strings[i] = token;
-			track_numbers[i] = strtol((char *) track_strings[i], NULL, 10);
-			if (track_numbers[i] < 1 || track_numbers[i] > 99) {
-				track_out_of_range = 1;
-				break;
+		if (subtitle->content[i] == '\t' || subtitle->content[i] == ' ') {
+			if (digit && isdigit(subtitle->content[i+1])) {
+				comma_string[cs_last_char] = ',';
+				cs_last_char++;
 			}
 		}
-		i++;
 	}
-	xmlFree(subtitle_copy);
-	free(track_numbers);
-	free(track_strings);
-	if (track_out_of_range) {
-		fprintf(stderr, "%d: Subtitle track number too large "
-				"in \"%s\" tag <%s> line number: %ld\n",
-				out_count, doc->URL, subtitle->tag_name,
-				get_outfile_line_number(doc, out_count, subtitle->tag_name) );
-		return NULL;
-	} else {
-		xmlChar *arg= xmlCharStrndup(" -s ", 4);
-		arg = xmlStrncat(arg, subtitle->content, xmlStrlen(subtitle->content));
-		return arg;
-	}
+	comma_string[cs_last_char] = '\0';
+
+	xmlChar *arg= xmlCharStrndup(" -s ", 4);
+	arg = xmlStrncat(arg, comma_string, xmlStrlen(comma_string));
+	return arg;
 }

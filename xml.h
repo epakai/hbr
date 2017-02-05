@@ -21,6 +21,7 @@
 #define _xml_h
 
 #include <libxml/xpath.h>
+#include <libxml/xmlschemas.h>
 
 xmlDocPtr parse_xml(char *);
 

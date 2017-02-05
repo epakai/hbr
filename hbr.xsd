@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+<xs:complexType name='handbrake_encode_type'>
+ <xs:sequence>
+  <xs:element ref='handbrake_options'/>
+  <xs:element ref='outfile' minOccurs='1' maxOccurs='unbounded'/>
+ </xs:sequence>
+</xs:complexType>
+<xs:element name='handbrake_encode' type='handbrake_encode_type' />
+
+
+<xs:element name='handbrake_options'>
+ <xs:complexType>
+  <xs:attribute name='format' use='optional' default='mkv'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='mp4'/>
+     <xs:enumeration value='mkv'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='video_encoder' use='optional' default='x264'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='x264'/>
+     <xs:enumeration value='mpeg4'/>
+     <xs:enumeration value='mpeg2'/>
+     <xs:enumeration value='VP8'/>
+     <xs:enumeration value='theora'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='video_quality' type='xs:string' use='optional' default='18'/>
+  <xs:attribute name='audio_encoder' use='optional' default='fdk_aac'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='av_aac'/>
+     <xs:enumeration value='fdk_aac'/>
+     <xs:enumeration value='fdk_haac'/>
+     <xs:enumeration value='copy:aac'/>
+     <xs:enumeration value='ac3'/>
+     <xs:enumeration value='copy:ac3'/>
+     <xs:enumeration value='copy:dts'/>
+     <xs:enumeration value='copy:dtshd'/>
+     <xs:enumeration value='mp3'/>
+     <xs:enumeration value='copy:mp3'/>
+     <xs:enumeration value='vorbis'/>
+     <xs:enumeration value='flac16'/>
+     <xs:enumeration value='flac24'/>
+     <xs:enumeration value='copy'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='audio_bitrate' type='xs:string' use='optional'/>
+  <xs:attribute name='audio_quality' type='xs:string' use='optional'/>
+  <xs:attribute name='anamorphic' use='optional' default='strict'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='loose'/>
+     <xs:enumeration value='strict'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='deinterlace' use='optional' default='none'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='fast'/>
+     <xs:enumeration value='slow'/>
+     <xs:enumeration value='slower'/>
+     <xs:enumeration value='bob'/>
+     <xs:enumeration value='default'/>
+     <xs:enumeration value='none'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='decomb' use='optional' default='default'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='fast'/>
+     <xs:enumeration value='bob'/>
+     <xs:enumeration value='default'/>
+     <xs:enumeration value='none'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='denoise' use='optional' default='none'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='ultralight'/>
+     <xs:enumeration value='light'/>
+     <xs:enumeration value='medium'/>
+     <xs:enumeration value='strong'/>
+     <xs:enumeration value='default'/>
+     <xs:enumeration value='none'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='markers' use='optional' default='yes'>
+   <xs:simpleType>
+    <xs:restriction base='xs:string'>
+     <xs:enumeration value='yes'/>
+     <xs:enumeration value='no'/>
+    </xs:restriction>
+   </xs:simpleType>
+  </xs:attribute>
+  <xs:attribute name='input_basedir' type='xs:string' use='required'/>
+ </xs:complexType>
+</xs:element>
+
+
+ <xs:element name='outfile'>
+  <xs:complexType>
+   <xs:all>
+    <xs:element ref='type'/>
+    <xs:element ref='iso_filename'/>
+    <xs:element ref='dvdtitle'/>
+    <xs:element ref='name'/>
+    <xs:element ref='year'/>
+    <xs:element ref='season'/>
+    <xs:element ref='episode_number'/>
+    <xs:element ref='specific_name' minOccurs='0' maxOccurs='1'/>
+    <xs:element ref='crop' minOccurs='0' maxOccurs='1'/>
+    <xs:element ref='chapters'/>
+    <xs:element ref='audio'/>
+    <xs:element ref='subtitle' minOccurs='0' maxOccurs='1'/>
+   </xs:all>
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name='type'>
+  <xs:simpleType>
+   <xs:restriction base='xs:string'>
+    <xs:enumeration value='series'/>
+    <xs:enumeration value='movie'/>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='iso_filename'>
+  <xs:simpleType>
+   <xs:restriction base='xs:normalizedString'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='dvdtitle' default='1'>
+  <xs:simpleType>
+   <xs:restriction base='xs:decimal'>
+    <xs:minInclusive value='1'/>
+    <xs:maxInclusive value='99'/>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='name'>
+  <xs:simpleType>
+   <xs:restriction base='xs:normalizedString'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='year'>
+  <xs:simpleType>
+   <xs:restriction base='xs:gYear'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='season'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='episode_number' default='1'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='specific_name'>
+  <xs:simpleType>
+   <xs:restriction base='xs:normalizedString'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+
+ <xs:element name='crop'>
+  <xs:complexType>
+   <xs:all>
+    <xs:element ref='top'/>
+    <xs:element ref='left'/>
+    <xs:element ref='bottom'/>
+    <xs:element ref='right'/>
+   </xs:all>
+  </xs:complexType>
+ </xs:element>
+ <xs:element name='top'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ <xs:element name='left'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ <xs:element name='bottom'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ <xs:element name='right'>
+  <xs:simpleType>
+   <xs:restriction base='xs:nonNegativeInteger'>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ 
+ <xs:element name='chapters'>
+  <xs:complexType>
+   <xs:all>
+    <xs:element ref='start'/>
+    <xs:element ref='end'/>
+   </xs:all>
+  </xs:complexType>
+ </xs:element>
+ <xs:element name='start' default='1'>
+  <xs:simpleType>
+    <xs:restriction base='xs:nonNegativeInteger'>
+    <xs:minInclusive value='1'/>
+    <xs:maxInclusive value='98'/>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+ <xs:element name='end' default='1'>
+  <xs:simpleType>
+    <xs:restriction base='xs:nonNegativeInteger'>
+    <xs:minInclusive value='1'/>
+    <xs:maxInclusive value='98'/>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:element>
+
+ <xs:element name='audio'>
+  <xs:simpleType>
+    <xs:list itemType="xs:nonNegativeInteger" />
+  </xs:simpleType>
+ </xs:element>
+
+ <xs:element name='subtitle'>
+  <xs:simpleType>
+    <xs:list itemType="xs:nonNegativeInteger" />
+  </xs:simpleType>
+ </xs:element>
+
+</xs:schema>

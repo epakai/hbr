@@ -7,25 +7,35 @@ DEPS = out_options.h hb_options.h gen_xml.h xml.h
 INCLUDES = `xml2-config --cflags` `pkg-config --cflags cunit`
 LFLAGS = `xml2-config --libs` `pkg-config --libs cunit`
 
+ifndef PREFIX
+	PREFIX = /usr/local
+endif
+
 .PHONY: install clean docs test-gen code-analysis clang-analyzer cppcheck vera pmccabe codespell
 
 default: hbr test-gen test_hbr
 
-hbr: $(OBJECTS) hbr.o
+hbr: $(OBJECTS) hbr.o xsd.h
 	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o $(PRGM_NAME) hbr.o $(OBJECTS)
 
 # Build CUnit test suite
-test_hbr: $(OBJECTS) test_hbr.o
+test_hbr: $(OBJECTS) test_hbr.o xsd.h
 	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o test_hbr test_hbr.o $(OBJECTS)
 
-%.o: %.c $(DEPS)
+%.o: %.c $(DEPS) xsd.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
+xsd.h: hbr.xsd
+	echo \#ifndef _xsd_h > xsd.h
+	echo \#define _xsd_h >> xsd.h
+	xxd -i hbr.xsd >> xsd.h
+	echo \#endif >> xsd.h
+
 install: hbr
-	cp hbr /usr/local/bin/hbr
+	install -D hbr $(PREFIX)/bin/hbr
 
 clean:
-	- rm -f *.o *.gch *.plist .test-gen.xml hbr test_hbr doxyfile.inc doxygen_sqlite3.db README.md
+	- rm -f *.o *.gch *.plist .test-gen.xml hbr test_hbr doxyfile.inc doxygen_sqlite3.db README.md xsd.h
 	- rm -r html
 
 doxyfile.inc: Makefile
@@ -43,8 +53,8 @@ test: test_hbr
 
 # Test generated templates are well formed according to the DTD
 test-gen: hbr
-	./$(PRGM_NAME) -g 2 > .test-gen.xml
-	xmllint --dtdvalid hbr.dtd .test-gen.xml -o /dev/null
+	./$(PRGM_NAME) -g 2 -p series -y 1900 > .test-gen.xml
+	xmllint --schema hbr.xsd .test-gen.xml -o /dev/null
 	- rm .test-gen.xml
 
 # Some static analysis, code formatting checks, and spellcheck
@@ -55,7 +65,7 @@ clang-analyzer:
 	- rm *.plist
 
 cppcheck:
-	- cppcheck $(SOURCE) $(DEPS)
+	- cppcheck --quiet $(SOURCE) $(DEPS)
 
 VERA_RULES = -R L001 -R L003 -R L004 -R L005 -R T001 -R T002 -R T003 -R T004 -R T005 -R T006 -R T007 -R T008 -R T009 -R T010 -R T013 -R T016 -R T019
 vera:

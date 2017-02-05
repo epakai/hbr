@@ -114,22 +114,25 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
  *
  * @return The number of episodes stored in episode_array
  */
-int read_episode_list(const char *episode_filename, struct episode **episode_array)
+struct episode_list read_episode_list(const char *episode_filename)
 {
 	int max_count = 30;
-	int episode_list_count = 0;
+	struct episode_list list;
+	list.count = 0;
 	FILE *el_file;
 	errno = 0;
 	el_file = fopen(episode_filename, "r");
 	if (el_file == NULL)  {
 		fprintf(stderr, "\"%s\" : ", episode_filename);
 		perror("Failed to open episode list");
-		return 0;
+		list.count = 0;
+		list.array = NULL;
+		return list;
 	}
 
-	*episode_array = malloc(max_count * sizeof(struct episode));
+	list.array = calloc(max_count, sizeof(struct episode));
 	char * buf = malloc(200*sizeof(char));
-	while (fgets(buf, 200, el_file) != NULL && episode_list_count < max_count) {
+	while (fgets(buf, 200, el_file) != NULL && list.count < max_count) {
 		// null terminate each line
 		buf[strcspn(buf, "\n")] = '\0';
 
@@ -142,41 +145,45 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
 			n++;
 		}
 		if (n == 0) {
-			free_episode_array(*episode_array, episode_list_count);
+			free_episode_list(list);
 			free(buf);
 			fclose(el_file);
-			fprintf(stderr, "No episode number found on line: %d\n", episode_list_count+1);
-			return 0;
+			fprintf(stderr, "No episode number found on line: %d\n", list.count+1);
+			list.count = 0;
+			list.array = NULL;
+			return list;
 		}
 		ep_number[n+1] = '\0';
 		n++;
-		(*episode_array)[episode_list_count].number = atoi(ep_number);
+		list.array[list.count].number = atoi(ep_number);
 		
 		// store the rest of the string as the episode name
-		(*episode_array)[episode_list_count].name =
+		list.array[list.count].name =
 			malloc( (strnlen(buf+n, 200)+1)*sizeof(char) );
-		if ((*episode_array)[episode_list_count].name != NULL) {
-			strncpy((*episode_array)[episode_list_count].name, buf+n, strnlen(buf+n, 200)+1 );
+		if (list.array[list.count].name != NULL) {
+			strncpy(list.array[list.count].name, buf+n, strnlen(buf+n, 200)+1 );
 		} else {
-			free_episode_array(*episode_array, episode_list_count);
+			free_episode_list(list);
 			free(buf);
 			fclose(el_file);
 			fprintf(stderr, "Failed malloc call for episode name.\n");
-			return 0;
+			list.count = 0;
+			list.array = NULL;
+			return list;
 		}
 		// Allocate more space if episodes is about to exceed max_count
-		if ( episode_list_count == max_count - 1 ) {
+		if ( list.count == max_count - 1 ) {
 			struct episode *temp;
-			if ( (temp = realloc(*episode_array, (max_count+20) * sizeof(struct episode))) != NULL){
-				*episode_array = temp;
+			if ( (temp = realloc(list.array, (max_count+20) * sizeof(struct episode))) != NULL){
+				list.array = temp;
 				max_count += 20;
 			}
 		}
-		episode_list_count++;
+		list.count++;
 	}
 	free(buf);
 	fclose(el_file);
-	return episode_list_count;
+	return list;
 }
 
 /**
@@ -185,18 +192,19 @@ int read_episode_list(const char *episode_filename, struct episode **episode_arr
  * @param episode_array episode_array to be freed.
  * @param count Number of struct episodes in the episode_array
  */
-void free_episode_array(struct episode *episode_array, int count)
+void free_episode_list(struct episode_list list)
 {
 	int i;
-	for ( i = 0; i < count; i++) {
-		free(episode_array[i].name);
+	for ( i = 0; i < list.count; i++) {
+		free(list.array[i].name);
 	}
-	free(episode_array);
-	episode_array = NULL;
+	free(list.array);
+	list.count = 0;
+	list.array = NULL;
 }
 
 /**
- * @brief Generates xml to standard output based on various options
+ * @brief Generates xmlDoc object outline for hbr input
  *
  * @param outfiles_count Number of outfile sections to generate.
  * Ignored if episodes argument is given.
@@ -211,17 +219,23 @@ void free_episode_array(struct episode *episode_array, int count)
  * @param format Output file format
  * @param basedir Location for source file
  * @param episodes Path for episode list file. Overides outfiles_count.
+ *
+ * @return xmlDocPtr to the generated document
  */
 xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		bool markers, const char *source, const char *year,
-		const char *crop, const char *name, const char *format,
+		struct crop crop, const char *name, const char *format,
 		const char *basedir, const char *episodes)
 {
-	struct episode *episode_array = NULL;
+	struct episode_list list;
+	list.count = 0;
+	list.array = NULL;
 	if (episodes != NULL) {
-		outfiles_count = read_episode_list(episodes, &episode_array);
+		list = read_episode_list(episodes);
+		outfiles_count = list.count;
 		if (outfiles_count == 0) {
 			fprintf(stderr, "Failed to parse episode list.\n");
+			free_episode_list(list);
 			return NULL;
 		}
 	}
@@ -234,10 +248,6 @@ xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 	xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
 	xmlNodePtr root = xmlNewNode(NULL, BAD_CAST "handbrake_encode");
 	xmlDocSetRootElement(doc, root);
-	//xmlNodePtr doctype = xmlNewChild(root, NULL, BAD_CAST "!DOCTYPE", NULL);
-	//xmlNewProp(doctype, BAD_CAST "handbrake_encode", NULL);
-	//xmlNewProp(doctype, BAD_CAST "SYSTEM", NULL);
-	//xmlNewProp(doctype, BAD_CAST "\"handbrake_encode.dtd\"", NULL);
 	
 	// create handbrake_options with defaults
 	xmlNodePtr opt_node = xmlNewChild(root, NULL, BAD_CAST "handbrake_options", NULL);
@@ -290,8 +300,8 @@ xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		xmlNewChild(outfile_node, NULL, BAD_CAST "season", BAD_CAST season_s);
 		if (episodes != NULL){
 			char ep_num_s[5];
-			snprintf(ep_num_s, 5, "%d", episode_array[i].number);
-			xmlChar *specific_name = xmlCharStrdup(episode_array[i].name);
+			snprintf(ep_num_s, 5, "%d", list.array[i].number);
+			xmlChar *specific_name = xmlCharStrdup(list.array[i].name);
 			xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", BAD_CAST ep_num_s);
 			if (i == 0) {
 				xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
@@ -307,30 +317,43 @@ xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 			}
 			xmlNewChild(outfile_node, NULL, BAD_CAST "specific_name", NULL);
 		}
-		xmlNewChild(outfile_node, NULL, BAD_CAST "crop", BAD_CAST crop);
+		xmlNodePtr crop_node = xmlNewChild(outfile_node, NULL, BAD_CAST "crop", NULL);
+		char crop_s[5];
+		snprintf(crop_s, 4, "%d", crop.top);
+		xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+		snprintf(crop_s, 4, "%d", crop.bottom);
+		xmlNewChild(crop_node, NULL, BAD_CAST "bottom", BAD_CAST crop_s);
+		snprintf(crop_s, 4, "%d", crop.left);
+		xmlNewChild(crop_node, NULL, BAD_CAST "left", BAD_CAST crop_s);
+		snprintf(crop_s, 4, "%d", crop.right);
+		xmlNewChild(crop_node, NULL, BAD_CAST "right", BAD_CAST crop_s);
+		xmlNodePtr chapters_node = xmlNewChild(outfile_node, NULL, BAD_CAST "chapters", NULL);
+		xmlNewChild(chapters_node, NULL, BAD_CAST "start", NULL);
+		xmlNewChild(chapters_node, NULL, BAD_CAST "end", NULL);
 		if (i == 0) {
-			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
-						" chapters specified as a range \"1-3\" or single chapters \"3\" "));
-		}
-		xmlNewChild(outfile_node, NULL, BAD_CAST "chapters", NULL);
-		if (i == 0) {
-			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " comma separated list of audio tracks "));
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " List of tracks, space separated"));
 		}
 		xmlNewChild(outfile_node, NULL, BAD_CAST "audio", NULL);
 		if (i == 0) {
-			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " comma separated list of subtitle tracks "));
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " List of tracks, space separated"));
 		}
 		xmlNewChild(outfile_node, NULL, BAD_CAST "subtitle", NULL);
 	}
 	
 
 	if (episodes != NULL) {
-		free_episode_array(episode_array, outfiles_count);
+		free_episode_list(list);
 	}
 	
 	return doc;
 }
 
+/**
+ * @brief Writes an xmlDoc to file descriptor 1 (stdout)
+ * with formatting and no short tags
+ *
+ * @param doc pointer to an xmlDoc to be printed
+ */
 void print_xml(xmlDocPtr doc)
 {
 	xmlSaveCtxtPtr save_ctxt = xmlSaveToFd(1, "UTF-8", XML_SAVE_FORMAT | XML_SAVE_NO_EMPTY );

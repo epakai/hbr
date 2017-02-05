@@ -22,6 +22,7 @@
 #include <libxml/xpath.h>
 #include <ctype.h>
 
+
 xmlChar* hb_options_string(xmlDocPtr doc);
 xmlChar* get_format(xmlDocPtr);
 xmlChar* get_input_basedir(xmlDocPtr);
@@ -32,7 +33,6 @@ xmlChar* hb_video_quality(xmlNode *, xmlDocPtr);
 xmlChar* hb_audio_encoder(xmlNode *);
 xmlChar* hb_audio_quality(xmlNode *, xmlDocPtr);
 xmlChar* hb_audio_bitrate(xmlNode *, xmlDocPtr);
-xmlChar* hb_crop(xmlNode *);
 xmlChar* hb_markers(xmlNode *);
 xmlChar* hb_anamorphic(xmlNode *);
 xmlChar* hb_deinterlace(xmlNode *);

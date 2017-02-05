@@ -35,8 +35,20 @@ struct tag {
 	xmlChar *tag_name; /**< Name of the tag */
 };
 
+
+/**
+ * @brief Holds the crop dimensions for each side
+ */
+struct crop {
+	unsigned int top;
+	unsigned int bottom;
+	unsigned int left;
+	unsigned int right;
+};
+
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 int validate_file_string(xmlChar * file_string);
+struct crop get_crop(xmlChar * crop_string);
 
 xmlChar* out_series_output(struct tag *name, struct tag *season,
 		struct tag *episode_number, struct tag *specific_name,
@@ -45,9 +57,10 @@ xmlChar* out_movie_output(struct tag *name, struct tag *year,
 		struct tag *specific_name, xmlDocPtr doc, int out_count);
 xmlChar* out_input(struct tag *iso_filename, xmlDocPtr doc, int out_count);
 xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count);
-xmlChar* out_crop(struct tag *crop, xmlDocPtr doc, int out_count);
-xmlChar* out_chapters(struct tag *chapters, xmlDocPtr doc, int out_count);
-xmlChar* out_audio(struct tag *audio, xmlDocPtr doc, int out_count);
-xmlChar* out_subtitle(struct tag *subtitle, xmlDocPtr doc, int out_count);
+xmlChar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
+		struct tag *crop_left, struct tag *crop_right);
+xmlChar* out_chapters(struct tag *chapters_start, struct tag *chapters_end);
+xmlChar* out_audio(struct tag *audio);
+xmlChar* out_subtitle(struct tag *subtitle);
 
 #endif

@@ -98,10 +98,12 @@ int main(int argc, char * argv[])
 
 	if ( gen_arguments.generate > 0 ) {
 		// Call gen_xml with passed arguments or defaults
+		
+		struct crop crop_arg = get_crop(BAD_CAST gen_arguments.crop);
 		xmlDocPtr doc = gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
 				gen_arguments.season ?: 1, gen_arguments.video_type,
 				gen_arguments.markers, gen_arguments.source ?: "",
-				gen_arguments.year ?: "", gen_arguments.crop ?: "0:0:0:0",
+				gen_arguments.year ?: "", crop_arg,
 				gen_arguments.name ?: "", gen_arguments.format ?: "mkv",
 				gen_arguments.basedir ?: "", gen_arguments.episodes);
 		if (doc != NULL) {

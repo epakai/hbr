@@ -55,7 +55,7 @@ void test_get_outfile(void) { CU_ASSERT(0); }
 void test_get_outfile_line_number(void) { CU_ASSERT(0); }
 void test_get_outfile_from_episode(void) { CU_ASSERT(0); }
 
-int main (int argc, char **argv) {
+int main (void) {
 	if (CU_initialize_registry() != CUE_SUCCESS ) {
 		fprintf(stderr, "CUnit registry failed to initialize\n");
 		return CU_get_error();

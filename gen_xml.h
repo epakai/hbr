@@ -20,6 +20,7 @@
 #ifndef _gen_xml_h
 #define _gen_xml_h
 
+#include "out_options.h"
 #include <argp.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -73,15 +74,23 @@ struct episode {
 	char * name;     /**< Episode name. */
 };
 
+/**
+ * @brief
+ */
+struct episode_list {
+	int count;
+	struct episode *array;
+};
+
 error_t parse_gen_opt(int key, char *arg, struct argp_state *);
 
-int read_episode_list(const char *episode_filename, struct episode **episode_array);
+struct episode_list read_episode_list(const char *episode_filename);
 
-void free_episode_array(struct episode *episode_array, int count);
+void free_episode_list(struct episode_list list);
 
 xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		bool markers, const char *source, const char *year,
-		const char *crop, const char *name, const char *format,
+		struct crop crop, const char *name, const char *format,
 		const char *basedir, const char *episodes);
 
 void print_xml(xmlDocPtr doc);
