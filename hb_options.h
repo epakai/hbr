@@ -21,6 +21,7 @@
 
 #include <libxml/xpath.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 
 xmlChar* hb_options_string(xmlDocPtr doc);
@@ -39,6 +40,6 @@ xmlChar* hb_deinterlace(xmlNode *);
 xmlChar* hb_decomb(xmlNode *);
 xmlChar* hb_denoise(xmlNode *);
 
-int valid_bit_rate(int bitrate, int minimum, int maximum);
+bool valid_bit_rate(int bitrate, int minimum, int maximum);
 
 #endif

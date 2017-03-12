@@ -522,8 +522,17 @@ xmlChar* get_input_basedir(xmlDocPtr doc)
  *
  * @return boolean status, 1 is valid, 0 is invalid
  */
-int valid_bit_rate(int bitrate, int minimum, int maximum)
+bool valid_bit_rate(int bitrate, int minimum, int maximum)
 {
+	if (bitrate < 0 || minimum < 0 || maximum < 0) {
+		fprintf(stderr, "Negative value passed to valid_bit_rate()\n");
+		return false;
+	}
+	if (minimum > maximum) {
+		fprintf(stderr, "Minimum exceeds maximum in valid_bit_rate()\n");
+		return false;
+	}
+
 	// list is slightly reordered to put common rates first
 	int valid_bitrates[] = { 128, 160, 192, 224, 256, 320,
 		384, 448, 512, 40, 48, 56, 64, 80, 96, 112, 576, 640,
@@ -531,10 +540,10 @@ int valid_bit_rate(int bitrate, int minimum, int maximum)
 	int i;
 	for (i=0; i<27; i++) {
 		if (bitrate == valid_bitrates[i]){
-			if (bitrate > minimum && bitrate < maximum) {
-				return 1; //valid
+			if (bitrate >= minimum && bitrate <= maximum) {
+				return true; //valid
 			}
 		}
 	}
-	return 0;
+	return false;
 }

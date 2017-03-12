@@ -104,15 +104,11 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 }
 
 /**
- * @brief Builds an array of episode numbers and titles from a file
- * One line per episode with episode number, a single non-digit separator,
- * and the episode title.
+ * @brief Builds an episode_list from a file
  *
  * @param episode_filename Path to the episode list.
- * @param episode_array Address of a struct episode pointer. Caller should
- * call free_episode_array() once use is complete.
  *
- * @return The number of episodes stored in episode_array
+ * @return List of episodes, must be free'd with free_episode_list()
  */
 struct episode_list read_episode_list(const char *episode_filename)
 {
@@ -174,7 +170,7 @@ struct episode_list read_episode_list(const char *episode_filename)
 		// Allocate more space if episodes is about to exceed max_count
 		if ( list.count == max_count - 1 ) {
 			struct episode *temp;
-			if ( (temp = realloc(list.array, (max_count+20) * sizeof(struct episode))) != NULL){
+			if ((temp = realloc(list.array, (max_count+20) * sizeof(struct episode))) != NULL){
 				list.array = temp;
 				max_count += 20;
 			}

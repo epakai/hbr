@@ -82,7 +82,9 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
  * @return
  */
 int main(int argc, char * argv[])
-{
+{	
+	// TODO: separate gen arg parsing, generation,
+	// enc arg parsing, and encoding into separate functions
 	struct enc_arguments enc_arguments;
 	enc_arguments.episode = -1;
 	enc_arguments.overwrite = false;
