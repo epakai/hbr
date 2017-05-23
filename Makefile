@@ -78,7 +78,13 @@ pmccabe:
 	@echo "|       |        |   First line of function"
 	@echo "|       |        |       |   # lines in function"
 	@echo "|       |        |       |       | "
-	- @pmccabe ${SOURCE} | sort -nr |head 
+	- @pmccabe $(SOURCE) | sort -nr |head 
 
 codespell:
-	- codespell --quiet-level=3
+	- codespell --quiet-level=3 $(SOURCE) $(DEPS)
+
+help:
+	$(MAKE) --print-data-base --question |       \
+	awk '/^[^.%][-A-Za-z0-9_]*:/                 \
+	 { print substr($$1, 1, length($$1)-1) }' |  \
+        sort

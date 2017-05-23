@@ -19,6 +19,7 @@
 
 #include "out_options.h"
 #include <stdbool.h>
+#include <string.h>
 
 /**
  * @brief Build HandBrakeCLI arguments specific to each outfile
