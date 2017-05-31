@@ -151,7 +151,7 @@ int main (void) {
 		goto exit;
 	}
 
-	CU_basic_set_mode(CU_BRM_VERBOSE);
+	CU_basic_set_mode(CU_BRM_NORMAL);
 	CU_basic_run_tests();
 exit:	CU_cleanup_registry();
 
