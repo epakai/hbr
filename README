@@ -24,7 +24,7 @@ Generation can also use an episode list in a separate file.
 Each line of the episode list file is a episode number, then a space or tab 
 followed by the episode name. Each episode starts on a new line.
 
-    hbr -l episode_list --format=mkv --basedir/video/iso > show.xml
+    hbr -l list_of_episode --format=mkv --basedir/video/iso > show.xml
 
 Once you generate the xml edit it to complete all fields.
 
@@ -71,8 +71,8 @@ Descriptions of the attributes of the the <handbrake_options> element:
     input_basedir - Path that specifies where to find <iso_filename>
                     for each <outfile>
 
-Since it is tedious to fill these out comiben the -g option with other
-options to fill out common elements across <outfile> elements.
+Since it is tedious to fill these out. The user can combine the -g option 
+with other options to fill out common elements across all <outfile> elements.
 See the output of hbr --help for a full list of options.
 
 The user configures each outfile. Here are descriptions of each element:

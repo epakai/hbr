@@ -33,13 +33,20 @@ add_executable(test_hbr EXCLUDE_FROM_ALL test_hbr.c xml.c out_options.c hb_optio
 target_link_libraries(test_hbr ${LIBXML2_LIBRARIES} ${CUNIT_LIBRARY})
 
 # documentation build
+find_program(MARKDOWN markdown)
+add_custom_command( 
+	OUTPUT README.md
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/README 
+	COMMAND ${MARKDOWN} ${CMAKE_CURRENT_SOURCE_DIR}/README > README.md
+	)
+
 find_program(DOXYGEN doxygen)
-add_custom_target (
-	doc
+add_custom_target ( doc
+	DEPENDS README.md
+	BYPRODUCTS doxyfile.inc html/*
 	COMMAND echo INPUT = ./ > doxyfile.inc
 	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
 	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
-	COMMAND markdown ${CMAKE_CURRENT_SOURCE_DIR}/README > README.md
 	COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
 	)
 
@@ -47,16 +54,16 @@ add_custom_target (
 add_custom_target (
 	# Test generate XML is valid
 	test_gen
+	DEPENDS hbr
 	COMMAND ./hbr -g 2 -p series -y 1900 > .test-gen.xml
 	COMMAND ${LIBXML2_XMLLINT_EXECUTABLE} --schema hbr.xsd .test-gen.xml -o /dev/null
 	COMMAND rm .test-gen.xml
-	DEPENDS hbr
 	)
 add_custom_target (
 	# Run unit test executable
 	unit_test
-	COMMAND ./test_hbr
 	DEPENDS test_hbr
+	COMMAND ./test_hbr
 	)
 add_custom_target (
 	tests
