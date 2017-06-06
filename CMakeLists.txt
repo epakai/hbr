@@ -10,7 +10,6 @@ add_custom_command(
 	DEPENDS hbr.xsd
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/hbr.xsd hbr.xsd
 	COMMAND ${XXD} -i hbr.xsd xsd.h
-	COMMAND ${CMAKE_COMMAND} -E remove hbr.xsd
 	COMMENT "Converting XML Schema (hbr.xsd) to static array (xsd.h)")
 
 # libxml-2.0 depends
