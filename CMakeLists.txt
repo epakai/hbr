@@ -1,15 +1,16 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (hbr C)
 set (VERSION_MAJOR 0)
-set (VERSION_MINOR 0)
+set (VERSION_MINOR 1)
 
 # xxd command to build hex array of the XML Schema
 find_program(XXD xxd)
 add_custom_command(
 	OUTPUT xsd.h
+	DEPENDS hbr.xsd
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/hbr.xsd hbr.xsd
 	COMMAND ${XXD} -i hbr.xsd xsd.h
-	DEPENDS hbr.xsd
+	COMMAND ${CMAKE_COMMAND} -E remove hbr.xsd
 	COMMENT "Converting XML Schema (hbr.xsd) to static array (xsd.h)")
 
 # libxml-2.0 depends
@@ -20,6 +21,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # hbr - main executable
 add_executable(hbr hbr.c xml.c out_options.c hb_options.c gen_xml.c xsd.h)
 target_link_libraries(hbr ${LIBXML2_LIBRARIES})
+
+# install hbr executable
+install(PROGRAMS hbr
+	DESTINATION bin
+	)
 
 # CUnit dependency via pkg-config
 find_package(PkgConfig)
@@ -43,11 +49,15 @@ add_custom_command(
 find_program(DOXYGEN doxygen)
 add_custom_target ( doc
 	DEPENDS README.md
-	BYPRODUCTS doxyfile.inc html/*
-	COMMAND echo INPUT = ./ > doxyfile.inc
+	COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/ > doxyfile.inc
 	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
 	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
 	COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
+	COMMAND ${CMAKE_COMMAND} -E remove doxyfile.inc
+	)
+# remove docs on clean command
+set_directory_properties(
+	PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "html"
 	)
 
 # run tests 
