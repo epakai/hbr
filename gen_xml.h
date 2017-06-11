@@ -37,11 +37,11 @@ static const struct argp_option gen_options[] = {
 	{"format",   'f', "mkv|mp4",      0, "Output container format", 0},
 	{"title",    't', "NUM",          0, "DVD Title number (for discs with a single title)", 0},
 	{"type",     'p', "series|movie", 0, "Type of video", 1},
-	{"source",   's', "FILE",         0, "Source filename (DVD iso file)", 0},
+	{"source",   'S', "FILE",         0, "Source filename (DVD iso file)", 0},
 	{"year",     'y', "YEAR",         0, "Movie Release year", 1},
 	{"crop",     'c', "T:B:L:R",      0, "Pixels to crop, top:bottom:left:right", 0},
 	{"name",     'n', "Name",         0, "Movie or series name", 1},
-	{"season",   'e', "NUM",          0, "Series season", 1},
+	{"season",   's', "NUM",          0, "Series season", 1},
 	{"basedir",  'b', "PATH",         0, "Base directory for input files", 1},
 	{"markers",  'm', 0,              0, "Add chapter markers", 1},
 	{"help",     '?', 0,      OPTION_HIDDEN, "", 0 },
@@ -92,6 +92,12 @@ xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 		bool markers, const char *source, const char *year,
 		struct crop crop, const char *name, const char *format,
 		const char *basedir, const char *episodes);
+
+void create_outfile_section( xmlNodePtr outfile_node, bool comment, int *video_type,
+		const char *iso_filename, int *dvdtitle, const char *name,
+		const char *year, int *season, int *episode_number,
+		const char *specific_name, struct crop *crop, int *chapters_start,
+		int *chapters_end, const char *audio, const char *subtitle);
 
 void print_xml(xmlDocPtr doc);
 

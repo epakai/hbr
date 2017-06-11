@@ -61,7 +61,7 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 				gen_arguments->format = arg;
 			}
 			break;
-		case 's':
+		case 'S':
 			gen_arguments->source = arg;
 			break;
 		case 'p':
@@ -86,7 +86,7 @@ error_t parse_gen_opt(int key, char *arg, struct argp_state *state)
 		case 'n':
 			gen_arguments->name = arg;
 			break;
-		case 'e':
+		case 's':
 			if ( atoi(arg) > 0 ) {
 				gen_arguments->season = atoi(arg);
 			}
@@ -218,7 +218,7 @@ void free_episode_list(struct episode_list list)
  *
  * @return xmlDocPtr to the generated document
  */
-xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
+xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 		bool markers, const char *source, const char *year,
 		struct crop crop, const char *name, const char *format,
 		const char *basedir, const char *episodes)
@@ -266,83 +266,122 @@ xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
 		xmlNodePtr outfile_node = xmlNewChild(root, NULL, BAD_CAST "outfile", NULL);
+		char *specific_name = "";
+		if (episodes != NULL){
+			create_outfile_section(outfile_node, TRUE, &video_type, source, &dvdtitle, 
+					name, year, &season, &(list.array[i].number), 
+					list.array[i].name, &crop,  NULL, NULL, NULL, NULL);
+		} else {
+			int episode_number = i;
+			create_outfile_section(outfile_node, TRUE, &video_type, source, &dvdtitle, 
+					name, year, &season, &episode_number, specific_name, &crop, NULL, NULL, 
+					NULL, NULL);
+		}
+	}
+	if (episodes != NULL) {
+		free_episode_list(list);
+	}
+	return doc;
+}
 
-		if (i == 0) {
+void create_outfile_section( xmlNodePtr outfile_node, bool comment,
+		int *video_type, const char *iso_filename, int *dvdtitle,
+		const char *name, const char *year, int *season,
+		int *episode_number, const char *specific_name, struct crop *crop,
+		int *chapters_start, int *chapters_end, const char *audio,
+		const char *subtitle)
+{
+		// TAG: video_type
+		if (comment) {
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " type may be series or movie "));
 		}
-		if ( video_type == 0) {
+		if ( *video_type == 0) {
 			xmlNewChild(outfile_node, NULL, BAD_CAST "type", BAD_CAST "movie");
-		} else if ( video_type == 1) {
+		} else if ( *video_type == 1) {
 			xmlNewChild(outfile_node, NULL, BAD_CAST "type", BAD_CAST "series");
 		} else {
 			xmlNewChild(outfile_node, NULL, BAD_CAST "type", NULL);
 		}
-		xmlNewChild(outfile_node, NULL, BAD_CAST "iso_filename", BAD_CAST source);
+		// TAG: iso_filename
+		xmlNewChild(outfile_node, NULL, BAD_CAST "iso_filename", BAD_CAST iso_filename);
+		// TAG: dvdtitle
 		char title_s[3];
-		snprintf(title_s, 3, "%d", title);
+		snprintf(title_s, 3, "%d", *dvdtitle);
 		xmlNewChild(outfile_node, NULL, BAD_CAST "dvdtitle", BAD_CAST title_s);
-		if (i == 0) {
+		if (comment) {
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " filename depends on outfile type "));
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
 						" series filename: <name> - s<season>e<episode_number> - <specific_name> "));
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " movie filename: <name> (<year>) "));
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
-						" Replace characters '&<>' in name with their xml entities &amp; &lt; &gt; "));
+						" Replace characters '&', '<', and '>' in specific_name with their xml entities &amp; &lt; &gt; "));
 		}
+		// TAG: name
 		xmlNewTextChild(outfile_node, NULL, BAD_CAST "name", BAD_CAST name);
+		// TAG: year
 		xmlNewChild(outfile_node, NULL, BAD_CAST "year", BAD_CAST year);
+		// TAG: season
 		char season_s[3];
-		snprintf(season_s, 3, "%d", season);
+		snprintf(season_s, 3, "%d", *season);
 		xmlNewChild(outfile_node, NULL, BAD_CAST "season", BAD_CAST season_s);
-		if (episodes != NULL){
-			char ep_num_s[5];
-			snprintf(ep_num_s, 5, "%d", list.array[i].number);
-			xmlChar *specific_name = xmlCharStrdup(list.array[i].name);
-			xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", BAD_CAST ep_num_s);
-			if (i == 0) {
-				xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
-							" Replace characters '&<>' in specific_name with their xml entities &amp; &lt; &gt; "));
-			}
-			xmlNewTextChild(outfile_node, NULL, BAD_CAST "specific_name", specific_name);
-			xmlFree(specific_name);
-		} else {
-			xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", NULL);
-			if (i == 0) {
-				xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
-							" Replace characters '&<>' in specific_name with their xml entities &amp; &lt; &gt; "));
-			}
-			xmlNewChild(outfile_node, NULL, BAD_CAST "specific_name", NULL);
+		// TAG: episode_number
+		char ep_num_s[5];
+		snprintf(ep_num_s, 5, "%d", *episode_number);
+		xmlNewChild(outfile_node, NULL, BAD_CAST "episode_number", BAD_CAST ep_num_s);
+		if (comment) {
+			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST
+						" Replace characters '&', '<', and '>' in specific_name with their xml entities &amp; &lt; &gt; "));
 		}
+		// TAG: specific_name
+		xmlNewTextChild(outfile_node, NULL, BAD_CAST "specific_name", BAD_CAST specific_name);
+		// TAG: crop
 		xmlNodePtr crop_node = xmlNewChild(outfile_node, NULL, BAD_CAST "crop", NULL);
 		char crop_s[5];
-		snprintf(crop_s, 4, "%d", crop.top);
-		xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
-		snprintf(crop_s, 4, "%d", crop.bottom);
-		xmlNewChild(crop_node, NULL, BAD_CAST "bottom", BAD_CAST crop_s);
-		snprintf(crop_s, 4, "%d", crop.left);
-		xmlNewChild(crop_node, NULL, BAD_CAST "left", BAD_CAST crop_s);
-		snprintf(crop_s, 4, "%d", crop.right);
-		xmlNewChild(crop_node, NULL, BAD_CAST "right", BAD_CAST crop_s);
+		if (crop == NULL) {
+			snprintf(crop_s, 4, "%d", 0);
+			xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+			xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+			xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+			xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+		} else {
+			snprintf(crop_s, 4, "%d", crop->top);
+			xmlNewChild(crop_node, NULL, BAD_CAST "top", BAD_CAST crop_s);
+			snprintf(crop_s, 4, "%d", crop->bottom);
+			xmlNewChild(crop_node, NULL, BAD_CAST "bottom", BAD_CAST crop_s);
+			snprintf(crop_s, 4, "%d", crop->left);
+			xmlNewChild(crop_node, NULL, BAD_CAST "left", BAD_CAST crop_s);
+			snprintf(crop_s, 4, "%d", crop->right);
+			xmlNewChild(crop_node, NULL, BAD_CAST "right", BAD_CAST crop_s);
+		}
+		// TAG: chapters
 		xmlNodePtr chapters_node = xmlNewChild(outfile_node, NULL, BAD_CAST "chapters", NULL);
-		xmlNewChild(chapters_node, NULL, BAD_CAST "start", NULL);
-		xmlNewChild(chapters_node, NULL, BAD_CAST "end", NULL);
-		if (i == 0) {
+		if (chapters_start == NULL) {
+			xmlNewChild(chapters_node, NULL, BAD_CAST "start", NULL);
+		} else {
+			char start_s[3];
+			snprintf(start_s, 3, "%d", *chapters_start);
+			xmlNewChild(chapters_node, NULL, BAD_CAST "start", BAD_CAST start_s);
+		}
+		if (chapters_end == NULL) {
+			xmlNewChild(chapters_node, NULL, BAD_CAST "end", NULL);
+		} else {
+			char end_s[3];
+			snprintf(end_s, 3, "%d", *chapters_end);
+			xmlNewChild(chapters_node, NULL, BAD_CAST "end", BAD_CAST end_s);
+		}
+		// TAG: audio
+		if (comment) {
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " List of tracks, space separated"));
 		}
-		xmlNewChild(outfile_node, NULL, BAD_CAST "audio", NULL);
-		if (i == 0) {
+		xmlNewChild(outfile_node, NULL, BAD_CAST "audio", BAD_CAST audio);
+		// TAG: subtitle
+		if (comment) {
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " List of tracks, space separated"));
 		}
-		xmlNewChild(outfile_node, NULL, BAD_CAST "subtitle", NULL);
-	}
-	
-
-	if (episodes != NULL) {
-		free_episode_list(list);
-	}
-	
-	return doc;
+		xmlNewChild(outfile_node, NULL, BAD_CAST "subtitle", BAD_CAST subtitle);
 }
+
+
 
 /**
  * @brief Writes an xmlDoc to file descriptor 1 (stdout)
