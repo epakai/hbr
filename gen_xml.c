@@ -268,12 +268,12 @@ xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 		xmlNodePtr outfile_node = xmlNewChild(root, NULL, BAD_CAST "outfile", NULL);
 		char *specific_name = "";
 		if (episodes != NULL){
-			create_outfile_section(outfile_node, TRUE, &video_type, source, &dvdtitle, 
+			create_outfile_section(outfile_node, true, &video_type, source, &dvdtitle, 
 					name, year, &season, &(list.array[i].number), 
 					list.array[i].name, &crop,  NULL, NULL, NULL, NULL);
 		} else {
 			int episode_number = i;
-			create_outfile_section(outfile_node, TRUE, &video_type, source, &dvdtitle, 
+			create_outfile_section(outfile_node, true, &video_type, source, &dvdtitle, 
 					name, year, &season, &episode_number, specific_name, &crop, NULL, NULL, 
 					NULL, NULL);
 		}
