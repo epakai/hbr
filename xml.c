@@ -51,18 +51,17 @@ xmlDocPtr parse_xml(char *infile)
 		fprintf(stderr, "Failed to parse %s\n", infile);
 		xmlSchemaFreeValidCtxt(valid_ctxt);
 		return NULL;
-	} else {
-		// check if validation succeeded
-		int result = xmlSchemaValidateDoc(valid_ctxt, doc);
-		if (result != 0) {
-			fprintf(stderr, "Failed to validate %s\n", infile);
-			xmlFreeDoc(doc);
-			xmlSchemaFreeValidCtxt(valid_ctxt);
-			xmlSchemaFree(schema);
-			xmlSchemaCleanupTypes();
-			xmlCleanupParser();
-			return NULL;
-		}
+	}
+	// check if validation succeeded
+	int result = xmlSchemaValidateDoc(valid_ctxt, doc);
+	if (result != 0) {
+		fprintf(stderr, "Failed to validate %s\n", infile);
+		xmlFreeDoc(doc);
+		xmlSchemaFreeValidCtxt(valid_ctxt);
+		xmlSchemaFree(schema);
+		xmlSchemaCleanupTypes();
+		xmlCleanupParser();
+		return NULL;
 	}
 	// free up the parser context
 	xmlSchemaFreeValidCtxt(valid_ctxt);
@@ -87,17 +86,16 @@ xmlXPathObjectPtr xpath_get_object(xmlDocPtr doc, xmlChar *xpath_expr)
 	if (xpath_context == NULL) {
 		fprintf(stderr, "Unable to create XPath context\n");
 		return NULL;
-	} else {
-		xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(xpath_expr, xpath_context);
-		if (outfile_obj == NULL) {
-			fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", xpath_expr);
-			xmlXPathFreeContext(xpath_context);
-			xmlFree(xpath_expr);
-			return NULL;
-		}
-		xmlXPathFreeContext(xpath_context);
-		return outfile_obj;
 	}
+	xmlXPathObjectPtr outfile_obj = xmlXPathEvalExpression(xpath_expr, xpath_context);
+	if (outfile_obj == NULL) {
+		fprintf(stderr, "Unable to evaluate xpath expression \"%s\"\n", xpath_expr);
+		xmlXPathFreeContext(xpath_context);
+		xmlFree(xpath_expr);
+		return NULL;
+	}
+	xmlXPathFreeContext(xpath_context);
+	return outfile_obj;
 }
 
 /**
@@ -121,17 +119,16 @@ xmlChar* get_outfile_child_content(xmlDocPtr doc, int out_count, xmlChar *child)
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
-	if (outfile_obj != NULL) {
-		// get child's content
-		xmlChar *temp = xmlNodeGetContent((xmlNode *) outfile_obj->nodesetval->nodeTab[0]);
-		// copy content so we can free the XPath Object
-		xmlChar *content = xmlStrdup(temp);
-		xmlFree(temp);
-		xmlXPathFreeObject(outfile_obj);
-		return content;
-	} else {
+	if (outfile_obj == NULL) {
 		return NULL;
 	}
+	// get child's content
+	xmlChar *temp = xmlNodeGetContent((xmlNode *) outfile_obj->nodesetval->nodeTab[0]);
+	// copy content so we can free the XPath Object
+	xmlChar *content = xmlStrdup(temp);
+	xmlFree(temp);
+	xmlXPathFreeObject(outfile_obj);
+	return content;
 }
 
 /**
@@ -153,13 +150,13 @@ xmlNode* get_outfile(xmlDocPtr doc, int out_count)
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
-	if (outfile_obj != NULL) {
-		xmlNodePtr outfile_node = outfile_obj->nodesetval->nodeTab[0];
-		xmlXPathFreeObject(outfile_obj);
-		return outfile_node;
-	} else {
+	// outfile not found
+	if (outfile_obj == NULL) {
 		return NULL;
 	}
+	xmlNodePtr outfile_node = outfile_obj->nodesetval->nodeTab[0];
+	xmlXPathFreeObject(outfile_obj);
+	return outfile_node;
 }
 
 /**
@@ -182,13 +179,12 @@ long int get_outfile_line_number(xmlDocPtr doc, int out_count, xmlChar *child)
 
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
-	if (outfile_obj != NULL) {
-		int	line_number = xmlGetLineNo(outfile_obj->nodesetval->nodeTab[0]);
-		xmlXPathFreeObject(outfile_obj);
-		return line_number;
-	} else {
+	if (outfile_obj == NULL) {
 		return -1;
 	}
+	int	line_number = xmlGetLineNo(outfile_obj->nodesetval->nodeTab[0]);
+	xmlXPathFreeObject(outfile_obj);
+	return line_number;
 }
 
 /**
@@ -203,13 +199,12 @@ int outfile_count(xmlDocPtr doc)
 	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
-	if (outfile_obj != NULL) {
-		int count = outfile_obj->nodesetval->nodeNr;
-		xmlXPathFreeObject(outfile_obj);
-		return count;
-	} else {
+	if (outfile_obj == NULL) {
 		return -1;
 	}
+	int count = outfile_obj->nodesetval->nodeNr;
+	xmlXPathFreeObject(outfile_obj);
+	return count;
 }
 
 /**
@@ -226,23 +221,25 @@ int get_outfile_from_episode(xmlDocPtr doc, int episode_number)
 	xmlChar *outfile_xpath = xmlCharStrdup("/handbrake_encode/outfile");
 	xmlXPathObjectPtr outfile_obj = xpath_get_object(doc, outfile_xpath);
 	xmlFree(outfile_xpath);
-	if (outfile_obj != NULL) {
-		int i;
-		for (i = 1; i <= out_count; i++) {
-			xmlChar *out_episode_num =
-				get_outfile_child_content(doc, i, (xmlChar *) "episode_number");
-			int e = strtol((const char *) out_episode_num, NULL, 10);
-			if ( e == episode_number) {
-				xmlFree(out_episode_num);
-				return i;
-			}
-		}
-		fprintf(stderr, "Unable to find episode matching number: %d in file \"%s\"\n",
-				episode_number, outfile_xpath);
-		xmlXPathFreeObject(outfile_obj);
-		return -1;
-	} else {
+	// failed to create outfile object
+	if (outfile_obj == NULL) {
 		xmlXPathFreeObject(outfile_obj);
 		return -1;
 	}
+	// search for the outfile with matching episode
+	int i;
+	for (i = 1; i <= out_count; i++) {
+		xmlChar *out_episode_num =
+			get_outfile_child_content(doc, i, (xmlChar *) "episode_number");
+		int e = strtol((const char *) out_episode_num, NULL, 10);
+		if ( e == episode_number) {
+			xmlFree(out_episode_num);
+			return i;
+		}
+	}
+	// matching episode number was not found
+	fprintf(stderr, "Unable to find episode matching number: %d in file \"%s\"\n",
+			episode_number, outfile_xpath);
+	xmlXPathFreeObject(outfile_obj);
+	return -1;
 }
