@@ -1,8 +1,34 @@
 handbrake runner (hbr)                      https://github.com/epakai/hbr
-====================== 
+================================================================================ 
 
 This is a tool for automating HandBrakeCLI runs. The goal is to allow for
 encodes to be re-run with modified settings.
+
+================================================================================
+Building hbr
+================================================================================
+
+Build dependencies:         cmake, libxml2-dev
+Test dependencies:          libcunit1-dev, libxml2-utils
+Documentation dependencies: markdown, doxygen, graphviz 
+
+In order to build hbr: (1) create a build directory. (2) run cmake. (3) run make.
+
+	mkdir hbr_build && cd hbr_build
+	cmake /path/to/hbr/
+	make
+
+Then the tests may be built and run with:
+
+	make tests
+
+Doxygen documentation (programming reference) can be generated with:
+
+	make doc
+
+================================================================================
+Usage
+================================================================================
 
 Usage is to specify an xml file for all relevant settings.
 
@@ -28,7 +54,9 @@ followed by the episode name. Each episode starts on a new line.
 
 Once you generate the xml edit it to complete all fields.
 
-============================================================================
+================================================================================
+Worflow description
+================================================================================
 
 This is a basic description of the expected work flow for hbr:
 
