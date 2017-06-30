@@ -17,7 +17,7 @@ add_executable(hbr hbr.c xml.c out_options.c hb_options.c gen_xml.c xsd.h)
 target_link_libraries(hbr ${LIBXML2_LIBRARIES})
 
 # install hbr executable
-install(PROGRAMS hbr
+install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr
 	DESTINATION bin
 	)
 
