@@ -45,13 +45,13 @@ static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an
 static char enc_args_doc[] = "<XML FILE>";
 
 static struct argp_option enc_options[] = {
-	{"debug",     'd', 0,      0, "print the commands to be run instead of executing", 1},
-	{"episode",   'e', "NUM",  0, "only encodes for entry with matching episode number", 1},
-	{"preview",   'p', 0,      0, "generate a preview image for each output file", 1},
-	{"overwrite", 'y', 0,      0, "overwrite encoded files without confirmation", 1},
-	{"version",   'V', 0,      0, "prints program version", 1},
-	{"help",      '?', 0,              0, "Give this help list", 2},
-	{"usage",     '@', 0,  OPTION_HIDDEN, "Give this help list", 2},
+	{"debug",     'd', 0,     0, "print the commands to be run instead of executing", 1},
+	{"episode",   'e', "NUM", 0, "only encodes for entry with matching episode number", 1},
+	{"preview",   'p', 0,     0, "generate a preview image for each output file", 1},
+	{"overwrite", 'y', 0,     0, "overwrite encoded files without confirmation", 1},
+	{"version",   'V', 0,     0, "prints program version", 1},
+	{"help",      '?', 0,     0, "Give this help list", 2},
+	{"usage",     '@', 0,     OPTION_HIDDEN, "Give this help list", 2},
 	{ 0, 0, 0, 0, 0, 0 }
 };
 

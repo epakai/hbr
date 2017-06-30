@@ -265,15 +265,14 @@ xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 	}
 	int i;
 	for (i = 0; i< outfiles_count; i++) {
-		xmlNodePtr outfile_node = xmlNewChild(root, NULL, BAD_CAST "outfile", NULL);
 		char *specific_name = "";
 		if (episodes != NULL){
-			create_outfile_section(outfile_node, true, &video_type, source, &dvdtitle, 
+			create_outfile_section(root, true, &video_type, source, &dvdtitle, 
 					name, year, &season, &(list.array[i].number), 
 					list.array[i].name, &crop,  NULL, NULL, NULL, NULL);
 		} else {
 			int episode_number = i;
-			create_outfile_section(outfile_node, true, &video_type, source, &dvdtitle, 
+			create_outfile_section(root, true, &video_type, source, &dvdtitle, 
 					name, year, &season, &episode_number, specific_name, &crop, NULL, NULL, 
 					NULL, NULL);
 		}
@@ -284,13 +283,34 @@ xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 	return doc;
 }
 
-void create_outfile_section( xmlNodePtr outfile_node, bool comment,
+/**
+ * @brief Create an outfile section in an xml document given the parent xmlNodePtr.
+ * All arguments are pointers. NULL can be passed for the element to be left empty.
+ *
+ * @param parent an xmlNodePtr that is the parent element for this outfile section
+ * @param comment whether the output should include comments describing each child element
+ * @param video_type 0 for movie, 1 for series, null pointer to remain empty
+ * @param iso_filename path and filename for the source ISO
+ * @param dvdtitle numeric dvd title (1-99)
+ * @param name Series or movie name
+ * @param year Release year
+ * @param season Season number
+ * @param episode_number Episode number
+ * @param specific_name Name of the episode or particular movie version
+ * @param crop Crop values in a struct crop
+ * @param chapters_start Chapter to begin ripping
+ * @param chapters_end Final chapter to be ripped
+ * @param audio Comma separated list of audio track numbers
+ * @param subtitle Comma separated list of subtitle track numbers
+ */
+void create_outfile_section( xmlNodePtr parent, bool comment,
 		int *video_type, const char *iso_filename, int *dvdtitle,
 		const char *name, const char *year, int *season,
 		int *episode_number, const char *specific_name, struct crop *crop,
 		int *chapters_start, int *chapters_end, const char *audio,
 		const char *subtitle)
 {
+		xmlNodePtr outfile_node = xmlNewChild(parent, NULL, BAD_CAST "outfile", NULL);
 		// TAG: video_type
 		if (comment) {
 			xmlAddChild(outfile_node, xmlNewComment(BAD_CAST " type may be series or movie "));
