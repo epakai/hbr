@@ -4,9 +4,13 @@ set (VERSION_MAJOR 0)
 set (VERSION_MINOR 1)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_subdirectory(src)
+file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/doxyfile.inc)
+
+find_program(MARKDOWN markdown)
+find_program(DOXYGEN doxygen)
+find_program(DOT dot)
 
 # documentation build
-find_program(MARKDOWN markdown)
 add_custom_command( 
 	OUTPUT README.md
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/README 
@@ -16,7 +20,15 @@ add_custom_target(readme_md
 	DEPENDS README.md
 	)
 
-find_program(DOXYGEN doxygen)
+add_custom_target ( doc
+	COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_BINARY_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/src/ >> doxyfile.inc
+	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
+	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
+	COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
+	)
+ADD_DEPENDENCIES(doc hbr_xml_schema_h)
+
+# warn about missing documentation tools
 if(${DOXYGEN} STREQUAL "DOXYGEN-NOTFOUND")
 	message(WARNING "${DOXYGEN}: documentation cannot be generated (install doxygen)")
 else()
@@ -33,14 +45,6 @@ else()
 		message(WARNING "${MARKDOWN}: documentation will not include README (install markdown)")
 	endif()
 endif()
-find_program(DOT dot)
-add_custom_target ( doc
-	COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_BINARY_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/src/ >> doxyfile.inc
-	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
-	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
-	COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
-	)
-ADD_DEPENDENCIES(doc hbr_xml_schema_h)
 
 # remove docs on clean command
 set_property(DIRECTORY PROPERTY ADDITIONAL_MAKE_CLEAN_FILES 
