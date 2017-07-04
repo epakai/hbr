@@ -27,7 +27,7 @@
  * @return Document tree object pointer. NULL on failure. Must be freed by caller.
  */
 xmlDocPtr parse_xml(char *infile)
-{	
+{
 	// Create and parse Schema Parser Context
 	xmlSchemaParserCtxtPtr schema_ctxt =
 		xmlSchemaNewMemParserCtxt((const char *) hbr_xsd, hbr_xsd_len);

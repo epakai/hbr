@@ -421,8 +421,6 @@ xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count)
  * @param crop_bottom dimensions to be cropped
  * @param crop_left dimensions to be cropped
  * @param crop_right dimensions to be cropped
- * @param doc xml document
- * @param out_count outfile tag being evaluated
  *
  * @return command line option for crop
  */
@@ -444,19 +442,19 @@ xmlChar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
 /**
  * @brief Build the chapters option for an outfile (-c)
  *
- * @param chapters
- * @param doc xml document
- * @param out_count outfile tag being evaluated
+ * @param chapters_start chapters start tag
+ * @param chapters_end chapters end tag
  *
  * @return command line option for chapters
  */
 xmlChar* out_chapters(struct tag *chapters_start, struct tag *chapters_end)
 {
 	xmlChar *arg = xmlCharStrndup(" -c ", 4);
-	arg = xmlStrncat(arg, chapters_start->content, xmlStrlen(chapters_start->content));
+	arg = xmlStrncat(arg, chapters_start->content,
+			xmlStrlen(chapters_start->content));
 	arg = xmlStrncat(arg, BAD_CAST "-", 1);
-	arg = xmlStrncat(arg, chapters_end->content, xmlStrlen(chapters_end->content));
-
+	arg = xmlStrncat(arg, chapters_end->content,
+			xmlStrlen(chapters_end->content));
 	return arg;
 }
 

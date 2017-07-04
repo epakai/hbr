@@ -82,7 +82,7 @@ struct episode_list {
 	struct episode *array;
 };
 
-error_t parse_gen_opt(int key, char *arg, struct argp_state *);
+error_t parse_gen_opt(int token, char *arg, struct argp_state *);
 
 struct episode_list read_episode_list(const char *episode_filename);
 
