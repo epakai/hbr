@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "xml.h"
-#include "xsd.h"
+#include "hbr_xml_schema.h"
 #include <libxml/xmlschemastypes.h>
 /**
  * @brief Parses the xml file. Validates xml against the DTD.

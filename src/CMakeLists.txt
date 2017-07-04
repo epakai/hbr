@@ -1,11 +1,14 @@
 # xxd command to build hex array of the XML Schema
 find_program(XXD xxd)
 add_custom_command(
-	OUTPUT xsd.h
+	OUTPUT hbr_xml_schema.h
 	DEPENDS hbr.xsd
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/hbr.xsd hbr.xsd
-	COMMAND ${XXD} -i hbr.xsd xsd.h
-	COMMENT "Converting XML Schema (hbr.xsd) to static array (xsd.h)")
+	COMMAND ${XXD} -i hbr.xsd hbr_xml_schema.h
+	COMMENT "Converting XML Schema (hbr.xsd) to static array (hbr_xml_schema.h)")
+add_custom_target(hbr_xml_schema_h
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hbr_xml_schema.h
+	)
 
 # libxml-2.0 depends
 find_package(LibXml2)
@@ -13,7 +16,7 @@ include_directories(${LIBXML2_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # hbr - main executable
-add_executable(hbr hbr.c xml.c out_options.c hb_options.c gen_xml.c xsd.h)
+add_executable(hbr hbr.c xml.c out_options.c hb_options.c gen_xml.c hbr_xml_schema.h)
 target_link_libraries(hbr ${LIBXML2_LIBRARIES})
 
 # install hbr executable
@@ -29,19 +32,8 @@ find_library(CUNIT_LIBRARY NAMES cunit HINTS ${PC_CUNIT_LIBRARY_DIRS})
 include_directories(${CUNIT_INCLUDE_DIR})
 
 # test_hbr - test executable
-add_executable(test_hbr EXCLUDE_FROM_ALL test_hbr.c xml.c out_options.c hb_options.c gen_xml.c xsd.h)
+add_executable(test_hbr EXCLUDE_FROM_ALL test_hbr.c xml.c out_options.c hb_options.c gen_xml.c hbr_xml_schema.h)
 target_link_libraries(test_hbr ${LIBXML2_LIBRARIES} ${CUNIT_LIBRARY})
-
-# documentation build
-find_program(MARKDOWN markdown)
-add_custom_command( 
-	OUTPUT README.md
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../README 
-	COMMAND ${MARKDOWN} ${CMAKE_CURRENT_SOURCE_DIR}/../README > README.md
-	)
-add_custom_target(readme_md 
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/README.md
-	)
 
 # run tests 
 add_custom_target (
@@ -61,4 +53,8 @@ add_custom_target (
 add_custom_target (
 	tests
 	DEPENDS unit_test test_gen
+	)
+
+set_property(DIRECTORY PROPERTY ADDITIONAL_MAKE_CLEAN_FILES
+	"hbr.xsd"
 	)
