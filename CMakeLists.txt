@@ -23,6 +23,8 @@ else()
 	if(${DOT} STREQUAL "DOT-NOTFOUND")
 		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/doxyfile.inc "HAVE_DOT = NO\n")
 		message(WARNING "${DOT}: documentation will not include graphs (install graphviz)")
+	else()
+		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/doxyfile.inc "HAVE_DOT = YES\n")
 	endif()
 	if(MARKDOWN)
 		ADD_DEPENDENCIES(doc readme_md)
@@ -33,7 +35,6 @@ else()
 endif()
 find_program(DOT dot)
 add_custom_target ( doc
-	DEPENDS ${DOXYGEN} STR
 	COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_BINARY_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/src/ >> doxyfile.inc
 	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
 	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
