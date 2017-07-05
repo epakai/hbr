@@ -20,14 +20,6 @@ add_custom_target(readme_md
 	DEPENDS README.md
 	)
 
-add_custom_target ( doc
-	COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_BINARY_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/src/ >> doxyfile.inc
-	COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
-	COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
-	COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
-	)
-ADD_DEPENDENCIES(doc hbr_xml_schema_h)
-
 # warn about missing documentation tools
 if(${DOXYGEN} STREQUAL "DOXYGEN-NOTFOUND")
 	message(WARNING "${DOXYGEN}: documentation cannot be generated (Install doxygen)")
@@ -38,11 +30,19 @@ else()
 	else()
 		file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/doxyfile.inc "HAVE_DOT = YES\n")
 	endif()
-	if(MARKDOWN)
-		ADD_DEPENDENCIES(doc readme_md)
-	endif()
 	if(${MARKDOWN} STREQUAL "MARKDOWN-NOTFOUND")
 		message(WARNING "${MARKDOWN}: documentation will not include README (Install markdown)")
+	endif()
+	# main documentation target
+	add_custom_target ( doc
+		COMMAND echo INPUT = ${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_BINARY_DIR}/ ${CMAKE_CURRENT_BINARY_DIR}/src/ >> doxyfile.inc
+		COMMAND echo PROJECT_NAME = ${PROJECT_NAME} >> doxyfile.inc
+		COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
+		COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
+		)
+	ADD_DEPENDENCIES(doc hbr_xml_schema_h)
+	if(MARKDOWN)
+		ADD_DEPENDENCIES(doc readme_md)
 	endif()
 endif()
 
