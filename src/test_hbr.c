@@ -105,9 +105,12 @@ int main (void) {
 	}
 	// Create test suites
 	CU_pSuite xml_suite = CU_add_suite("xml", init_xml, clean_xml);
-	CU_pSuite gen_xml_suite = CU_add_suite("gen_xml", init_gen_xml, clean_gen_xml);
-	CU_pSuite hb_options_suite = CU_add_suite("hb_options", init_hb_options, clean_hb_options);
-	CU_pSuite out_options_suite = CU_add_suite("out_options", init_out_options, clean_out_options);
+	CU_pSuite gen_xml_suite =
+		CU_add_suite("gen_xml", init_gen_xml, clean_gen_xml);
+	CU_pSuite hb_options_suite =
+		CU_add_suite("hb_options", init_hb_options, clean_hb_options);
+	CU_pSuite out_options_suite =
+		CU_add_suite("out_options", init_out_options, clean_out_options);
 	if ( gen_xml_suite == NULL || hb_options_suite == NULL ||
 			xml_suite == NULL || out_options_suite == NULL ) {
 		fprintf(stderr, "Failing adding a tets suite\n");
