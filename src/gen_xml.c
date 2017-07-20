@@ -187,14 +187,14 @@ xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 	for (i = 0; i< outfiles_count; i++) {
 		char *specific_name = "";
 		if (episodes != NULL){
-			create_outfile_section(root, true, &video_type, source,
+			create_outfile_section(root, (i == 0)?true:false, &video_type, source,
 					&dvdtitle, name, year, &season,
 					&(list.array[i].number),
 					list.array[i].name, &vcrop,  NULL, NULL,
 					NULL, NULL);
 		} else {
 			int episode_number = i;
-			create_outfile_section(root, true, &video_type, source,
+			create_outfile_section(root, (i == 0)?true:false, &video_type, source,
 					&dvdtitle, name, year, &season,
 					&episode_number, specific_name, &vcrop,
 					NULL, NULL, NULL, NULL);
