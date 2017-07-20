@@ -1,5 +1,1 @@
-hbr
-test_hbr
-*.o
-*.gch
-xsd.h
+build/*
