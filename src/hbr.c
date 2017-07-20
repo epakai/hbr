@@ -25,25 +25,15 @@
 #include <stdbool.h>
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 #include <libxml/xpath.h>
-#include "gen_xml.h"                    // for gen_arguments, gen_argp, etc
 #include "xml.h"                        // parse_xml, outfile_count, etc
 #include "hb_options.h"
 #include "out_options.h"
 
-const char *argp_program_version = "hbr 1.0";
-const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
-
 // Set to enable debug output of commands to be run
 bool debug = false;
 
-/*
- * PROTOTYPES
- */
-static error_t parse_enc_opt (int token, char *arg, struct argp_state *);
-void generate_thumbnail(xmlChar *filename, int outfile_count, int total_outfiles);
-int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite);
-int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count);
-
+const char *argp_program_version = ""; //TODO pull version from one place
+const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an "
 "xml file with all encoded files placed in current directory";
 static char enc_args_doc[] = "<XML FILE>";
@@ -54,11 +44,18 @@ static struct argp_option enc_options[] = {
 	{"preview",   'p', 0,     0, "generate a preview image for each output file", 1},
 	{"overwrite", 'y', 0,     0, "overwrite encoded files without confirmation", 1},
 	{"version",   'V', 0,     0, "prints program version", 1},
-	{"help",      '?', 0,     0, "Give this help list", 2},
-	{"usage",     '@', 0,     OPTION_HIDDEN, "Give this help list", 2},
+	{"help",      '?', 0,     0, "Give this help list", -1},
+	{"usage",     '@', 0,     OPTION_HIDDEN, "Give this help list", -1},
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
+/*
+ * PROTOTYPES
+ */
+static error_t parse_enc_opt (int token, char *arg, struct argp_state *);
+void generate_thumbnail(xmlChar *filename, int outfile_count, int total_outfiles);
+int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite);
+int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count);
 
 /**
  * @brief Arguments for hbr. Handled by argp.
@@ -74,8 +71,6 @@ struct enc_arguments {
 static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
 	enc_doc, NULL, 0, 0};
 
-/*************************************************/
-
 /**
  * @brief
  *
@@ -86,36 +81,13 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
  */
 int main(int argc, char * argv[])
 {
-	// TODO: separate gen arg parsing, generation,
-	// enc arg parsing, and encoding into separate functions
+	// TODO: separate enc arg parsing, and encoding into separate functions
 	struct enc_arguments enc_arguments;
 	enc_arguments.episode = -1;
 	enc_arguments.overwrite = false;
 	enc_arguments.debug = false;
 	enc_arguments.preview = 0;
-	struct gen_arguments gen_arguments = {-1, 0, 0, -1, 0,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
-	// check for request to generate new xml file
-	argp_parse(&gen_argp, argc, argv,
-			ARGP_IN_ORDER|ARGP_NO_EXIT|ARGP_SILENT,
-			0, &gen_arguments);
-
-	if ( gen_arguments.generate > 0 ) {
-		// Call gen_xml with passed arguments or defaults
-		
-		struct crop crop_arg = get_crop(BAD_CAST gen_arguments.crop);
-		xmlDocPtr doc = gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
-				gen_arguments.season ?: 1, gen_arguments.video_type,
-				gen_arguments.markers, gen_arguments.source ?: "",
-				gen_arguments.year ?: "", crop_arg,
-				gen_arguments.name ?: "", gen_arguments.format ?: "mkv",
-				gen_arguments.basedir ?: "", gen_arguments.episodes);
-		if (doc != NULL) {
-			print_xml(doc);
-		}
-		return 0;
-	}
 	// parse normal options
 	argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
 	debug = enc_arguments.debug; // set global debug
@@ -220,17 +192,13 @@ int main(int argc, char * argv[])
 static error_t parse_enc_opt (int token, char *arg, struct argp_state *state)
 {
 	struct enc_arguments *enc_arguments = (struct enc_arguments *) state->input;
-	char prog_name[] = "hbr";
 	switch (token) {
 		case '@': // --usage
 		case '?':
-			argp_help(&enc_argp, stdout, ARGP_HELP_SHORT_USAGE, prog_name);
-			argp_help(&enc_argp, stdout, ARGP_HELP_PRE_DOC, prog_name);
-			argp_help(&enc_argp, stdout, ARGP_HELP_LONG, prog_name);
-
-			printf("\nUsage: hbr %s [OPTION...]\n", gen_args_doc);
-			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, prog_name);
-			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, prog_name);
+			//TODO maybe pull executable name from somewhere else
+			argp_help(&enc_argp, stdout, ARGP_HELP_SHORT_USAGE, "hbr");
+			argp_help(&enc_argp, stdout, ARGP_HELP_PRE_DOC, "hbr");
+			argp_help(&enc_argp, stdout, ARGP_HELP_LONG, "hbr");
 			printf("Report bugs to %s\n", argp_program_bug_address);
 			exit(0);
 			break;
@@ -260,7 +228,6 @@ static error_t parse_enc_opt (int token, char *arg, struct argp_state *state)
 		case ARGP_KEY_END:
 			if (state->arg_num < 1) {
 				/* Not enough arguments. */
-				printf("Usage: hbr %s [OPTION...]\n", gen_args_doc);
 				argp_usage (state);
 			}
 			break;

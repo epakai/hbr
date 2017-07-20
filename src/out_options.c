@@ -142,59 +142,6 @@ int validate_file_string(xmlChar * file_string)
 }
 
 /**
- * @brief Build a crop object from the Handbrake style string
- *
- * @param crop_string String 4 colon separated integers i.e. 0:0:0:0
- *
- * @return crop object,
- */
-struct crop get_crop(xmlChar * crop_string)
-{
-	if (xmlStrcmp(crop_string, BAD_CAST "") == 0 || crop_string == NULL) {
-		struct crop crop = {0, 0, 0, 0};
-		return crop;
-	}
-	xmlChar *token_string = xmlStrdup(crop_string);
-	char *crop_str[5];
-	// break crop into components
-	crop_str[0] = strtok((char *) token_string, ":");
-	crop_str[1] = strtok(NULL, ":");
-	crop_str[2] = strtok(NULL, ":");
-	crop_str[3] = strtok(NULL, "\0");
-	// verify each crop is 4 digit max (video isn't that big yet)
-	if ((strnlen(crop_str[0], 5) > 4) || (strnlen(crop_str[1], 5) > 4)
-			|| (strnlen(crop_str[2], 5) > 4) || (strnlen(crop_str[3], 5) > 4)){
-		fprintf(stderr, "Invalid crop (value too large) "
-				"'%s:%s:%s:%s'\n",
-				crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
-		struct crop crop = {0, 0, 0, 0};
-		return crop;
-	}
-	int i;
-	// verify all characters are digits
-	for (i = 0; i<4; i++){
-		int j = 0;
-		while (crop_str[i][j] != '\0'){
-			if (!isdigit(crop_str[i][j])){
-				fprintf(stderr, "Invalid crop (non-digits) "
-						"'%s:%s:%s:%s'\n",
-						crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
-				struct crop crop = {0, 0, 0, 0};
-				return crop;
-			}
-			j++;
-		}
-	}
-	struct crop crop;
-	crop.top = atoi(crop_str[0]);
-	crop.bottom = atoi(crop_str[1]);
-	crop.left = atoi(crop_str[2]);
-	crop.right = atoi(crop_str[3]);
-	xmlFree(token_string);
-	return crop;
-}
-
-/**
  * @brief Builds the path and filename option for series outfiles (-o)
  *
  * @param name General name

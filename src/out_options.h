@@ -48,7 +48,6 @@ struct crop {
 
 xmlChar* out_options_string(xmlDocPtr doc, int out_count);
 int validate_file_string(xmlChar * file_string);
-struct crop get_crop(xmlChar * crop_string);
 
 xmlChar* out_series_output(struct tag *name, struct tag *season,
 		struct tag *episode_number, struct tag *specific_name,

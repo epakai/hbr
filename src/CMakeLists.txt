@@ -19,8 +19,12 @@ include_directories(${LIBXML2_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # hbr - main executable
-add_executable(hbr hbr.c xml.c out_options.c hb_options.c gen_xml.c hbr_xml_schema.h)
+add_executable(hbr hbr.c xml.c out_options.c hb_options.c hbr_xml_schema.h)
 target_link_libraries(hbr ${LIBXML2_LIBRARIES})
+
+# hbr-gen - xml template generation
+add_executable(hbr-gen hbr-gen.c xml.c gen_xml.c hbr_xml_schema.h)
+target_link_libraries(hbr-gen ${LIBXML2_LIBRARIES})
 
 # install hbr executable
 install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr

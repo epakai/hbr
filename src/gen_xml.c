@@ -25,85 +25,6 @@
 #include <libxml/xmlsave.h>
 
 /**
- * @brief Argp Parse options for xml generation.
- *
- * @param token Command line token associated with each argument.
- * @param arg Value for the token being passed.
- * @param state Argp state for the parser
- *
- * @return Error status.
- */
-error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
-{
-	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
-	switch (token) {
-		case '@':
-		case '?':
-			break;
-		case 'l':
-			gen_arguments->episodes = arg;
-			gen_arguments->generate = 1;
-			break;
-		case 'g':
-			if (arg != NULL) {
-				if ( atoi(arg) > 0 ) {
-					gen_arguments->generate = atoi(arg);
-				}
-			} else {
-				gen_arguments->generate = 1;
-			}
-			break;
-		case 'f':
-			if (strncmp(arg, "mkv", 3) == 0) {
-				gen_arguments->format = arg;
-			}
-			if (strncmp(arg, "mp4", 3) == 0) {
-				gen_arguments->format = arg;
-			}
-			break;
-		case 'S':
-			gen_arguments->source = arg;
-			break;
-		case 'p':
-			if (strncmp(arg, "movie", 5) == 0) {
-				gen_arguments->video_type = 0;
-			}
-			if (strncmp(arg, "series", 6) == 0) {
-				gen_arguments->video_type = 1;
-			}
-			break;
-		case 't':
-			if ( atoi(arg) >= 1  && atoi(arg) <= 99 ) {
-				gen_arguments->title = atoi(arg);
-			}
-			break;
-		case 'y':
-			gen_arguments->year = arg;
-			break;
-		case 'c':
-			gen_arguments->crop = arg;
-			break;
-		case 'n':
-			gen_arguments->name = arg;
-			break;
-		case 's':
-			if ( atoi(arg) > 0 ) {
-				gen_arguments->season = atoi(arg);
-			}
-			break;
-		case 'b':
-			gen_arguments->basedir = arg;
-			break;
-		case 'm':
-			gen_arguments->markers =  true;
-			break;
-		default:
-			return ARGP_ERR_UNKNOWN;
-	}
-	return 0;
-}
-
-/**
  * @brief Builds an episode_list from a file
  *
  * @param episode_filename Path to the episode list.
@@ -416,4 +337,57 @@ void print_xml(xmlDocPtr doc)
 	xmlSaveClose(save_ctxt);
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
+}
+
+/**
+ * @brief Build a crop object from the Handbrake style string
+ *
+ * @param crop_string String 4 colon separated integers i.e. 0:0:0:0
+ *
+ * @return crop object,
+ */
+struct crop get_crop(xmlChar * crop_string)
+{
+	if (xmlStrcmp(crop_string, BAD_CAST "") == 0 || crop_string == NULL) {
+		struct crop crop = {0, 0, 0, 0};
+		return crop;
+	}
+	xmlChar *token_string = xmlStrdup(crop_string);
+	char *crop_str[5];
+	// break crop into components
+	crop_str[0] = strtok((char *) token_string, ":");
+	crop_str[1] = strtok(NULL, ":");
+	crop_str[2] = strtok(NULL, ":");
+	crop_str[3] = strtok(NULL, "\0");
+	// verify each crop is 4 digit max (video isn't that big yet)
+	if ((strnlen(crop_str[0], 5) > 4) || (strnlen(crop_str[1], 5) > 4)
+			|| (strnlen(crop_str[2], 5) > 4) || (strnlen(crop_str[3], 5) > 4)){
+		fprintf(stderr, "Invalid crop (value too large) "
+				"'%s:%s:%s:%s'\n",
+				crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
+		struct crop crop = {0, 0, 0, 0};
+		return crop;
+	}
+	int i;
+	// verify all characters are digits
+	for (i = 0; i<4; i++){
+		int j = 0;
+		while (crop_str[i][j] != '\0'){
+			if (!isdigit(crop_str[i][j])){
+				fprintf(stderr, "Invalid crop (non-digits) "
+						"'%s:%s:%s:%s'\n",
+						crop_str[0], crop_str[1], crop_str[2], crop_str[3]);
+				struct crop crop = {0, 0, 0, 0};
+				return crop;
+			}
+			j++;
+		}
+	}
+	struct crop crop;
+	crop.top = atoi(crop_str[0]);
+	crop.bottom = atoi(crop_str[1]);
+	crop.left = atoi(crop_str[2]);
+	crop.right = atoi(crop_str[3]);
+	xmlFree(token_string);
+	return crop;
 }
