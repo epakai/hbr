@@ -52,8 +52,8 @@ if(PC_CUNIT_FOUND)
 	add_custom_target (
 		# Test generate XML is valid
 		test_gen
-		DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr
-		COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr -g 2 -p series -y 1900 > .test-gen.xml
+		DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr-gen
+		COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr-gen -n 2 -p series -y 1900 > .test-gen.xml
 		COMMAND ${LIBXML2_XMLLINT_EXECUTABLE} --schema hbr.xsd .test-gen.xml -o /dev/null
 		COMMAND rm .test-gen.xml
 		)

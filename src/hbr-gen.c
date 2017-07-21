@@ -31,7 +31,7 @@
 // Set to enable debug output of commands to be run
 bool debug = false;
 
-/* 
+/*
  * Argument handling setup for argp
  */
 const char *argp_program_version = ""; //TODO pull version from one place
@@ -195,5 +195,3 @@ error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
 	}
 	return 0;
 }
-
-
