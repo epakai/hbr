@@ -12,10 +12,13 @@ Build dependencies:         cmake, libxml2-dev
 Test dependencies:          libcunit1-dev, libxml2-utils
 Documentation dependencies: markdown, doxygen, graphviz 
 
-In order to build hbr: (1) create a build directory. (2) run cmake. (3) run make.
+In order to build hbr: 
+	1) Create a build directory. (This can be inside the repository)
+	2) Run cmake. 
+	3) Run make.
 
-	mkdir hbr_build && cd hbr_build
-	cmake /path/to/hbr/
+	mkdir build && cd build
+	cmake /path/to/hbr_repository/
 	make
 
 Then the tests may be built and run with:
@@ -38,19 +41,19 @@ You may also specify a specific episode from the xml file to encode.
 
     hbr show.xml -e 8
 
-To generate an xml file, run hbr with the -g or -l option. Some tags
-and options can be prefilled by the generator. See hbr --help for a list.
-Generator output of hbr is to standard output. Redirect it to a file.
+To generate an xml file, run hbr-gen with the -n or -l option. Some tags
+and options can be prefilled by the generator. See hbr-gen --help for a list.
+The output of hbr-gen is to standard output. Redirect it to a file.
 
 This generates a file with 12 outfile sections: 
 
-    hbr -g 12 --format=mkv --basedir=/video/iso > show.xml
+    hbr-gen -n 12 --format=mkv --basedir=/video/iso > show.xml
 
 Generation can also use an episode list in a separate file. 
 Each line of the episode list file is a episode number, then a space or tab 
 followed by the episode name. Each episode starts on a new line.
 
-    hbr -l list_of_episode --format=mkv --basedir/video/iso > show.xml
+    hbr-gen -l list_of_episode --format=mkv --basedir/video/iso > show.xml
 
 Once you generate the xml edit it to complete all fields.
 
@@ -65,7 +68,7 @@ tracks, etc. they want to be in their encode. We will base this example
 on manual editing of the xml file. Given 6 episodes to encode the user
 would run:
 
-    hbr -g 6 > show_title.xml
+    hbr-gen -n 6 > show_title.xml
 
 This produces an xml file with a <handbrake_options> element with default
 values and 6 <outfile> elements. <handbrake_options> includes settings 

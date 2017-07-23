@@ -35,7 +35,7 @@ struct episode {
 };
 
 /**
- * @brief
+ * @brief Pointer array of episodes with a count
  */
 struct episode_list {
 	int count;
@@ -46,9 +46,9 @@ struct episode_list read_episode_list(const char *episode_filename);
 
 void free_episode_list(struct episode_list list);
 
-xmlDocPtr gen_xml(int outfiles_count, int title, int season, int video_type,
+xmlDocPtr gen_xml(int outfiles_count, int dvdtitle, int season, int video_type,
 		bool markers, const char *source, const char *year,
-		struct crop crop, const char *name, const char *format,
+		struct crop vcrop, const char *name, const char *format,
 		const char *basedir, const char *episodes);
 
 void create_outfile_section( xmlNodePtr parent, bool comment, int *video_type,

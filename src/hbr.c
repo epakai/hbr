@@ -29,15 +29,19 @@
 #include "hb_options.h"
 #include "out_options.h"
 
-// Set to enable debug output of commands to be run
+/**
+ * @brief Set to enable debug output of commands to be run
+ */
 bool debug = false;
 
+/**
+ * @brief argp info for help/usage output (-?/--help)
+ */
 const char *argp_program_version = ""; //TODO pull version from one place
 const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an "
 "xml file with all encoded files placed in current directory";
 static char enc_args_doc[] = "<XML FILE>";
-
 static struct argp_option enc_options[] = {
 	{"debug",     'd', 0,     0, "print the commands to be run instead of executing", 1},
 	{"episode",   'e', "NUM", 0, "only encodes for entry with matching episode number", 1},
@@ -72,12 +76,12 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
 	enc_doc, NULL, 0, 0};
 
 /**
- * @brief
+ * @brief Reads the input file and calls handbrake for each specified outfile
  *
- * @param argc
- * @param argv[]
+ * @param argc Command line argument count
+ * @param argv[] Arguments to be parsed by argp
  *
- * @return
+ * @return 0 - success, 1 - failure
  */
 int main(int argc, char * argv[])
 {
@@ -261,7 +265,6 @@ void generate_thumbnail(xmlChar *filename, int outfile_count, int total_outfiles
 	}
 	xmlFree(ft_command);
 }
-
 
 /**
  * @brief Handle the logic around calling handbrake
