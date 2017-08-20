@@ -39,6 +39,7 @@ struct episode_list read_episode_list(const char *episode_filename)
 	FILE *el_file;
 	errno = 0;
 	el_file = fopen(episode_filename, "r");
+	// Try to open the file
 	if (el_file == NULL)  {
 		fprintf(stderr, "\"%s\" : ", episode_filename);
 		perror("Failed to open episode list");

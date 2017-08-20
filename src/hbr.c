@@ -30,11 +30,6 @@
 #include "out_options.h"
 
 /**
- * @brief Set to enable debug output of commands to be run
- */
-bool debug = false;
-
-/**
  * @brief argp info for help/usage output (-?/--help)
  */
 const char *argp_program_version = ""; //TODO pull version from one place
@@ -56,6 +51,7 @@ static struct argp_option enc_options[] = {
 /*
  * PROTOTYPES
  */
+void encode_loop(xmlDocPtr doc, xmlChar *hb_options);
 static error_t parse_enc_opt (int token, char *arg, struct argp_state *);
 void generate_thumbnail(xmlChar *filename, int outfile_count, int total_outfiles);
 int call_handbrake(xmlChar *hb_command, int out_count, bool overwrite);
@@ -70,7 +66,7 @@ struct enc_arguments {
 	bool overwrite;   /**< Default to overwriting previous encodes. */
 	bool debug;       /**< Print commands instead of executing. */
 	int preview;      /**< Generate preview image using ffmpegthumbnailer. */
-};
+} enc_arguments;
 
 static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
 	enc_doc, NULL, 0, 0};
@@ -85,8 +81,6 @@ static struct argp enc_argp = {enc_options, parse_enc_opt, enc_args_doc,
  */
 int main(int argc, char * argv[])
 {
-	// TODO: separate enc arg parsing, and encoding into separate functions
-	struct enc_arguments enc_arguments;
 	enc_arguments.episode = -1;
 	enc_arguments.overwrite = false;
 	enc_arguments.debug = false;
@@ -94,7 +88,6 @@ int main(int argc, char * argv[])
 
 	// parse normal options
 	argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
-	debug = enc_arguments.debug; // set global debug
 	
 	// parse xml document to tree
 	xmlDocPtr xml_doc = parse_xml(enc_arguments.args[0]);
@@ -118,6 +111,21 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
+	encode_loop(xml_doc, hb_options);
+
+	xmlFreeDoc(xml_doc);
+	xmlFree(hb_options);
+	xmlCleanupParser();
+	return 0;
+}
+
+/**
+ * @brief Loops through each encode or the specified encode
+ *
+ * @param xml_doc Document to read outfile specifications from
+ * @param hb_options general option string for HandBrakeCLI
+ */
+void encode_loop(xmlDocPtr xml_doc, xmlChar *hb_options) {
 	// loop for each out_file tag in xml_doc
 	int out_count = outfile_count(xml_doc);
 	if (out_count < 1) {
@@ -152,10 +160,12 @@ int main(int argc, char * argv[])
 		const xmlChar *filename_end = xmlStrstr(filename_start, BAD_CAST "\"");
 		xmlChar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 		
+		// output current encode information
 		printf("%c[1m", 27);
 		printf("Encoding: %d/%d: %s\n", i, out_count, filename);
 		printf("%c[0m", 27);
-		if (debug) {
+		if (enc_arguments.debug) {
+			// print full handbrake command
 			printf("%s\n", hb_command);
 		} else {
 			if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
@@ -177,11 +187,6 @@ int main(int argc, char * argv[])
 		xmlFree(out_options);
 		xmlFree(hb_command);
 	}
-	xmlFreeDoc(xml_doc);
-	xmlFree(hb_options);
-	xmlCleanupParser();
-
-	return 0;
 }
 
 /**
@@ -258,7 +263,7 @@ void generate_thumbnail(xmlChar *filename, int outfile_count, int total_outfiles
 	printf("%c[1m", 27);
 	printf("Generating preview: %d/%d: %s.png\n", outfile_count, total_outfiles, filename);
 	printf("%c[0m", 27);
-	if (debug) {
+	if (enc_arguments.debug) {
 		printf("%s\n", ft_command);
 	} else {
 		system((char *) ft_command);
@@ -360,6 +365,7 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count)
 	if (pipe(hb_err)<0){
 		fclose(logfile);
 		xmlFree(log_filename);
+		free(cwd);
 		return 1;
 	}
 
