@@ -102,11 +102,12 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
 	for (i = 0; i<7; i++) {
 		// fail on error
 		if (options[i] == NULL) {
-			for (i=0; i<7; i++) {
+			for (; i<7; i++) {
 				if (options[i] != NULL) {
 					xmlFree(options[i]);
 				}
 			}
+			xmlFree(out_options);
 			return NULL;
 		}
 		out_options = xmlStrcat(out_options, options[i]);
