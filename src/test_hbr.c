@@ -30,7 +30,16 @@
 int init_gen_xml(void) { return 0; }
 int clean_gen_xml(void) { return 0; }
 void test_parse_gen_opt(void) { CU_ASSERT(0); }
-void test_read_episode_list(void) { CU_ASSERT(0); }
+void test_read_episode_list(void) { 
+	// generate episode list
+	// 	potential lists
+	// 	good input, out of numerical order
+	// 	good input with one bad member
+	// 	bad input, long lines, alpha only, etc.
+	// call read_episode_list on it
+	// assert episode count matches
+	// assert each episode is a member of the list and the number matches
+	CU_ASSERT(0); }
 void test_free_episode_array(void) { CU_ASSERT(0); }
 void test_gen_xml(void) { CU_ASSERT(0); }
 
@@ -64,7 +73,7 @@ void test_valid_bit_rate(void) {
 	CU_ASSERT(false == valid_bit_rate(512, 513, 100000));
 	// over range
 	CU_ASSERT(false == valid_bit_rate(512, 0, 511));
-	// function should also emit an error for these
+	// function should also emit an error for the following
 	// maximum < minimum
 	CU_ASSERT(false == valid_bit_rate(512, 512, 0));
 	// negative values

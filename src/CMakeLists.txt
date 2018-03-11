@@ -27,7 +27,8 @@ add_executable(hbr-gen hbr-gen.c xml.c gen_xml.c hbr_xml_schema.h)
 target_link_libraries(hbr-gen ${LIBXML2_LIBRARIES})
 
 # install hbr executable
-install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr
+install(
+    PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hbr-gen
 	DESTINATION bin
 	)
 
