@@ -364,7 +364,6 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count)
 	pid_t hb_pid;
 	if (pipe(hb_err)<0){
 		fclose(logfile);
-		xmlFree(log_filename);
 		free(cwd);
 		return 1;
 	}
@@ -391,10 +390,10 @@ int hb_fork(xmlChar *hb_command, xmlChar *log_filename, int out_count)
 		return 1;
 	}
 	// buffer output from handbrake and write to logfile
-	char *buf = (char *) malloc(80*sizeof(char));
+	char *buf = (char *) malloc(1024*sizeof(char));
 	int bytes;
-	while ( (bytes = read(hb_err[0], buf, 80)) != 0) {
-		fwrite(buf, bytes, 80, logfile);
+	while ( (bytes = read(hb_err[0], buf, 1024)) > 0) {
+		fwrite(buf, sizeof(char), bytes, logfile);
 	}
 	free(buf);
 	close(hb_err[1]);
