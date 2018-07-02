@@ -1,0 +1,11 @@
+# Short outline of metadata fetching process
+# Much better handled by the similarly named script fetch_metadata.py
+# This is just here for reference
+
+udisksctl loop-setup -r -f /mnt/storage/video/iso/Mallrats/Mallrats.iso
+# udiskie will automount this
+DVDID=`./src/dvdid/dvdid /home/user/media/MALLRATS | tr -d '|'.`
+wget -O mallrats_meta.xml http://metaservices.windowsmedia.com/pas_dvd_B/template/GetMDRDVDByCRC.xml?CRC=$DVDID
+xmlformat -i mallrats_meta.xml
+udisksctl unmount -b /dev/loop0
+udisksctl loop-delete -b /dev/loop0
