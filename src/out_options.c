@@ -129,10 +129,10 @@ xmlChar* out_options_string(xmlDocPtr doc, int out_count)
  */
 int validate_file_string(xmlChar * file_string)
 {
-	xmlChar bad_chars[6] = { '\\', '/', '`', '\"', '!'};
+	xmlChar bad_chars[] = { '\\', '/', '`', '\"', '!'};
 
 	int i;
-	for (i = 0; i<5; i++) {
+	for (i = 0; i<(sizeof(bad_chars)/sizeof(xmlChar)); i++) {
 		const xmlChar *temp;
 		if ((temp = xmlStrchr(file_string, bad_chars[i])) != NULL ){
 			// return difference between first occurrence and string start

@@ -535,10 +535,10 @@ bool valid_bit_rate(int bitrate, int minimum, int maximum)
 
 	// list is slightly reordered to put common rates first
 	int valid_bitrates[] = { 128, 160, 192, 224, 256, 320,
-		384, 448, 512, 40, 48, 56, 64, 80, 96, 112, 576, 640,
+		384, 448, 512, 32, 40, 48, 56, 64, 80, 96, 112, 576, 640,
 		768, 960, 1152, 1344, 1536, 2304, 3072, 4608, 6144 };
 	int i;
-	for (i=0; i<27; i++) {
+	for (i=0; i<(sizeof(valid_bitrates)/sizeof(int)); i++) {
 		if (bitrate == valid_bitrates[i]){
 			if (bitrate >= minimum && bitrate <= maximum) {
 				return true; //valid
