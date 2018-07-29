@@ -54,30 +54,30 @@ audio_quality=
 # [string] (optional)
 # <off,strict,loose,custom>
 # defaults to off if not specified
-picture_anamorphic=strict
+anamorphic=strict
 
 # [boolean] (optional)
-picture_autocrop=
+autocrop=
 
 # [boolean] (optional)
-picture_loose_crop=
+loose_crop=
 
 # [string] (optional)
 # <default,fast,slow,slower,bob>
-filter_deinterlace=none
+deinterlace=none
 
 # [string] (optional)
 # <default,fast,bob>
-filter_decomb=
+decomb=
 
 # [string] (optional)
 # <default,ultralight,light,medium,strong>
-filter_denoise=
+denoise=
 
 # [boolean] (optional)
-filter_grayscale=
+grayscale=
 
 # [string_list] (optional)
 # <vertical_flip,horizontal_flip,rotate_clockwise>
-filter_rotate=
+rotate=
 
