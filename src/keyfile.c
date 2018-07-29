@@ -23,9 +23,9 @@
 
 
 /**
- * @brief Parses the xml file. Validates xml against the DTD.
+ * @brief Parses the key value file.
  *
- * @param infile path for xml file.
+ * @param infile path for key value file.
  *
  * @return GKeyfile pointer. NULL on failure. Must be freed by caller.
  */
@@ -51,10 +51,10 @@ struct config get_config(GKeyFile* key_file)
 {
     const gchar* group = "CONFIG";
     struct config c;
-    //TODO verify CONFIG group exists
+    //verify CONFIG group exists in file
     if (!g_key_file_has_group(key_file, group))
     {
-        // TODO return empty config with all sets = false
+        return empty_config();
     }
     c.key.markers = get_key_value_boolean(key_file, group, "markers",
             &c.set.markers);
@@ -97,19 +97,57 @@ struct config get_config(GKeyFile* key_file)
     return c;
 }
 
+struct config empty_config()
+{
+    struct config c;
+    c.set.markers = FALSE;
+    c.set.autocrop = FALSE;
+    c.set.loose_crop = FALSE;
+    c.set.video_turbo = FALSE;
+    c.set.video_two_pass = FALSE;
+    c.set.audio_encoder = FALSE;
+    c.set.decomb = FALSE;
+    c.set.deinterlace = FALSE;
+    c.set.denoise = FALSE;
+    c.set.grayscale = FALSE;
+    c.set.rotate = FALSE;
+    c.set.format = FALSE;
+    c.set.anamorphic = FALSE;
+    c.set.video_encoder = FALSE;
+    c.set.video_framerate = FALSE;
+    c.set.video_framerate_control = FALSE;
+    c.set.input_basedir = FALSE;
+    c.set.audio_bitrate = FALSE;
+    c.set.audio_quality = FALSE;
+    c.set.video_bitrate = FALSE;
+    c.set.video_quality = FALSE;
+    return c;
+}
+
 void free_config(struct config c)
 {
-    g_free(c.key.audio_encoder);
-    g_free(c.key.decomb);
-    g_free(c.key.deinterlace);
-    g_free(c.key.denoise);
-    g_free(c.key.grayscale);
-    g_free(c.key.rotate);
-    g_free(c.key.format);
-    g_free(c.key.anamorphic);
-    g_free(c.key.video_encoder);
-    g_free(c.key.video_framerate);
-    g_free(c.key.video_framerate_control);
+    if (c.set.audio_encoder)
+        g_free(c.key.audio_encoder);
+    if (c.set.decomb)
+        g_free(c.key.decomb);
+    if (c.set.deinterlace)
+        g_free(c.key.deinterlace);
+    if (c.set.denoise)
+        g_free(c.key.denoise);
+    if (c.set.grayscale)
+        g_free(c.key.grayscale);
+    if (c.set.rotate)
+        g_free(c.key.rotate);
+    if (c.set.format)
+        g_free(c.key.format);
+    if (c.set.anamorphic)
+        g_free(c.key.anamorphic);
+    if (c.set.video_encoder)
+        g_free(c.key.video_encoder);
+    if (c.set.video_framerate)
+        g_free(c.key.video_framerate);
+    if (c.set.video_framerate_control)
+        g_free(c.key.video_framerate_control);
 }
 
 gchar* get_key_value_string(GKeyFile *key_file, const gchar *group_name,
@@ -163,7 +201,7 @@ int outfile_count()
 {
     int count = 0;
     // TODO
-	return count;
+    return count;
 }
 
 /**
