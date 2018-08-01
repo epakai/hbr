@@ -147,8 +147,8 @@ void encode_loop(GKeyFile* keyfile, gchar *hb_options) {
 		hb_command = strcat(hb_command, hb_options);
 		hb_command = strcat(hb_command, out_options);
 
-		const gchar *filename_start = strstr(hb_command, BAD_CAST "-o")+4;
-		const gchar *filename_end = strstr(filename_start, BAD_CAST "\"");
+		const gchar *filename_start = strstr(hb_command, "-o")+4;
+		const gchar *filename_end = strstr(filename_start, "\"");
 		gchar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 		
 		// output current encode information
@@ -274,11 +274,11 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
 int call_handbrake(gchar *hb_command, int out_count, bool overwrite)
 {
 	// separate filename and construct log filename
-	const gchar *filename_start = strstr(hb_command, BAD_CAST "-o")+4;
-	const gchar *filename_end = strstr(filename_start, BAD_CAST "\"");
+	const gchar *filename_start = strstr(hb_command, "-o")+4;
+	const gchar *filename_end = strstr(filename_start, "\"");
 	gchar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
 	gchar *log_filename = g_strdup(filename);
-	log_filename = strcat(log_filename, BAD_CAST ".log");
+	log_filename = strcat(log_filename, ".log");
 	// file doesn't exist, go ahead
 	if ( access((char *) filename, F_OK ) != 0 ) {
 		int r = hb_fork(hb_command, log_filename, out_count);

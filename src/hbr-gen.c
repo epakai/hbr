@@ -96,7 +96,7 @@ int main(int argc, char * argv[])
 
 	argp_parse(&gen_argp, argc, argv, ARGP_NO_HELP, 0, &gen_arguments);
 
-	struct crop crop_arg = get_crop(BAD_CAST gen_arguments.crop);
+	struct crop crop_arg = get_crop(gen_arguments.crop);
 	xmlDocPtr doc = gen_xml(gen_arguments.generate, gen_arguments.title ?: 1,
 			gen_arguments.season ?: 1, gen_arguments.video_type,
 			gen_arguments.markers, gen_arguments.source ?: "",

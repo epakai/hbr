@@ -80,9 +80,9 @@ gchar* out_options_string(GKeyFile* keyfile, int out_count)
 	// full string of options
 	gchar *out_options = g_strdup("\0");
 	gchar *options[10];
-	if ( strcmp(type.content, BAD_CAST "series") == 0 ){
+	if ( strcmp(type.content, "series") == 0 ){
 		options[0] = out_series_output(&name, &season, &episode_number, &specific_name, keyfile, out_count);
-	} else if ( strcmp(type.content, BAD_CAST "movie") == 0 ){
+	} else if ( strcmp(type.content, "movie") == 0 ){
 		options[0] = out_movie_output(&name, &year, &specific_name, keyfile, out_count);
 	} else {
 		fprintf(stderr, "%d: Invalid type in \"%s\" tag <%s> line number: %ld\n",
@@ -164,7 +164,7 @@ gchar* out_series_output(struct tag *name, struct tag *season,
 	gchar *cwd = (gchar *) getcwd(NULL, 0);
 	arg = strcat(arg, cwd);
 	g_free(cwd);
-	arg = strcat(arg, BAD_CAST "/");
+	arg = strcat(arg, "/");
 
 	// Verify <name> is non-empty
 	int name_len = strlen(name->content);
@@ -175,15 +175,15 @@ gchar* out_series_output(struct tag *name, struct tag *season,
 		return NULL;
 	}
 	arg = strncat(arg, name->content, name_len);
-	arg = strncat(arg, BAD_CAST " - ", 3);
+	arg = strncat(arg, " - ", 3);
 	// add season if episode also exists
 	// Season is a one or two digit number, left padded with a 0 if one digit
 	if (season->content[0] != '\0' && episode_number->content[0] != '\0') {
 		if (strlen(season->content) <= 2 && isdigit(season->content[0])
 				&& (isdigit(season->content[1]) || season->content[1] == '\0')) {
-			arg = strncat(arg, BAD_CAST "s", 1);
+			arg = strncat(arg, "s", 1);
 			if (strlen(season->content) == 1){
-				arg = strncat(arg, BAD_CAST "0", 1);
+				arg = strncat(arg, "0", 1);
 			}
 			arg = strncat(arg, season->content, strlen(season->content));
 		} else {
@@ -199,15 +199,15 @@ gchar* out_series_output(struct tag *name, struct tag *season,
 		if ( isdigit(episode_number->content[i]) && i < 3) {
 			continue;
 		} else if ( episode_number->content[i] == '\0' && i > 0) {
-			arg = strncat(arg, BAD_CAST "e", 1);
+			arg = strncat(arg, "e", 1);
 			if (i == 1) {
-				arg = strncat(arg, BAD_CAST "00", 2);
+				arg = strncat(arg, "00", 2);
 			}
 			if (i == 2) {
-				arg = strncat(arg, BAD_CAST "0", 1);
+				arg = strncat(arg, "0", 1);
 			}
 			arg = strncat(arg, episode_number->content, strlen(episode_number->content));
-			arg = strncat(arg, BAD_CAST " - ", 3);
+			arg = strncat(arg, " - ", 3);
 			break;
 		} else {
 			fprintf(stderr, "%d: Invalid episode number in \"%s\" tag "
@@ -226,13 +226,13 @@ gchar* out_series_output(struct tag *name, struct tag *season,
 		g_free(arg);
 		arg = temp_arg;
 	}
-	arg = strncat(arg, BAD_CAST ".", 1);
+	arg = strncat(arg, ".", 1);
 
 	gchar *format = get_format(doc);
-	arg = strncat(arg, BAD_CAST format, 3);
+	arg = strncat(arg, format, 3);
 	g_free(format);
 
-	arg = strncat(arg, BAD_CAST "\"", 1);
+	arg = strncat(arg, "\"", 1);
 	return arg;
 }
 
@@ -256,7 +256,7 @@ gchar* out_movie_output(struct tag *name, struct tag *year,
 	gchar *cwd = (gchar *) getcwd(NULL, 0);
 	arg = strcat(arg, cwd);
 	g_free(cwd);
-	arg = strcat(arg, BAD_CAST "/");
+	arg = strcat(arg, "/");
 	
 	// Verify <name> is non-empty
 	int name_len = strlen(name->content);
@@ -272,9 +272,9 @@ gchar* out_movie_output(struct tag *name, struct tag *year,
 		if ( isdigit(year->content[i]) && i < 4) {
 			continue;
 		} else if ( year->content[i] == '\0' && i == 4) {
-			arg = strncat(arg, BAD_CAST " (", 2);
+			arg = strncat(arg, " (", 2);
 			arg = strncat(arg, year->content, strlen(year->content));
-			arg = strncat(arg, BAD_CAST ")", 1);
+			arg = strncat(arg, ")", 1);
 		} else {
 			fprintf(stderr,
 					"%d: Invalid year in \"%s\" tag <%s> line number: %ld\n",
@@ -284,7 +284,7 @@ gchar* out_movie_output(struct tag *name, struct tag *year,
 		}
 	}
 	if (specific_name->content[0] != '\0') {
-		arg = strncat(arg, BAD_CAST " - ", 3);
+		arg = strncat(arg, " - ", 3);
 		arg = strncat(arg, specific_name->content, strlen(specific_name->content));
 	}
 	if (strlen(arg) > 249){
@@ -293,13 +293,13 @@ gchar* out_movie_output(struct tag *name, struct tag *year,
 		g_free(arg);
 		arg = temp_arg;
 	}
-	arg = strncat(arg, BAD_CAST ".", 1);
+	arg = strncat(arg, ".", 1);
 	
 	gchar *format = get_format(doc);
-	arg = strncat(arg, BAD_CAST format, 3);
+	arg = strncat(arg, format, 3);
 	g_free(format);
 	
-	arg = strncat(arg, BAD_CAST "\"", 1);
+	arg = strncat(arg, "\"", 1);
 	return arg;
 }
 
@@ -321,7 +321,7 @@ gchar* out_input(struct tag *iso_filename, GKeyFile* keyfile, int out_count)
 	// check input filename exists or error
 	gchar* full_path = g_strdup(input_basedir);
 	if (input_basedir[ib_length-1] != '/') {
-		full_path = strncat(full_path, BAD_CAST "/", 1);
+		full_path = strncat(full_path, "/", 1);
 	}
 	g_free(input_basedir);
 
@@ -336,7 +336,7 @@ gchar* out_input(struct tag *iso_filename, GKeyFile* keyfile, int out_count)
 	}
 	arg = strncat(arg, full_path, strlen(full_path));
 	g_free(full_path);
-	arg = strncat(arg, BAD_CAST "\"", 1);
+	arg = strncat(arg, "\"", 1);
 	return arg;
 }
 
@@ -382,11 +382,11 @@ gchar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
 
 	gchar *arg = g_strndup(" --crop ", 8);
 	arg = strncat(arg, crop_top->content, strlen(crop_top->content));
-	arg = strncat(arg, BAD_CAST ":", 2);
+	arg = strncat(arg, ":", 2);
 	arg = strncat(arg, crop_bottom->content, strlen(crop_bottom->content));
-	arg = strncat(arg, BAD_CAST ":", 2);
+	arg = strncat(arg, ":", 2);
 	arg = strncat(arg, crop_left->content, strlen(crop_left->content));
-	arg = strncat(arg, BAD_CAST ":", 2);
+	arg = strncat(arg, ":", 2);
 	arg = strncat(arg, crop_right->content, strlen(crop_right->content));
 	return arg;
 }
@@ -404,7 +404,7 @@ gchar* out_chapters(struct tag *chapters_start, struct tag *chapters_end)
 	gchar *arg = g_strndup(" -c ", 4);
 	arg = strncat(arg, chapters_start->content,
 			strlen(chapters_start->content));
-	arg = strncat(arg, BAD_CAST "-", 1);
+	arg = strncat(arg, "-", 1);
 	arg = strncat(arg, chapters_end->content,
 			strlen(chapters_end->content));
 	return arg;

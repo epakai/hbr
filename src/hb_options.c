@@ -29,7 +29,7 @@
 gchar* hb_options_string(GKeyFile* keyfile)
 {
 	// Find the handbrake_options element
-	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, "handbrake_options")) {
 		cur = cur->next;
 	}
 
@@ -57,11 +57,11 @@ gchar* hb_options_string(GKeyFile* keyfile)
 
 			return NULL;
 		}
-		opt_str = strcat(opt_str, BAD_CAST options[i]);
+		opt_str = strcat(opt_str, options[i]);
 		g_free(options[i]);
 	}
 
-	opt_str = strncat(opt_str, BAD_CAST " ", 1);
+	opt_str = strncat(opt_str, " ", 1);
 	return opt_str;
 }
 
@@ -74,12 +74,12 @@ gchar* hb_options_string(GKeyFile* keyfile)
  */
 gchar* hb_format(gchar* options)
 {
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "format");
+	gchar* temp = xmlGetNoNsProp(options, "format");
 	// format is constrained by the XML DTD to be "mkv" or "mp4"
-	if (strcmp(temp, BAD_CAST "mkv") == 0){
+	if (strcmp(temp, "mkv") == 0){
 		g_free(temp);
 		return g_strdup(" -f av_mkv");
-	} else if (strcmp(temp, BAD_CAST "mp4") == 0){
+	} else if (strcmp(temp, "mp4") == 0){
 		g_free(temp);
 		return g_strdup(" -f av_mp4");
 	} else {
@@ -99,12 +99,12 @@ gchar* hb_format(gchar* options)
 gchar* hb_video_encoder(gchar* options)
 {
 	gchar* arg = g_strdup(" -e ");
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "video_encoder");
-	if (strcmp(temp, BAD_CAST "x264") == 0 ||
-			strcmp(temp, BAD_CAST "mpeg4") == 0 ||
-			strcmp(temp, BAD_CAST "mpeg2") == 0 ||
-			strcmp(temp, BAD_CAST "VP8") == 0 ||
-			strcmp(temp, BAD_CAST "theora") == 0 ) {
+	gchar* temp = xmlGetNoNsProp(options, "video_encoder");
+	if (strcmp(temp, "x264") == 0 ||
+			strcmp(temp, "mpeg4") == 0 ||
+			strcmp(temp, "mpeg2") == 0 ||
+			strcmp(temp, "VP8") == 0 ||
+			strcmp(temp, "theora") == 0 ) {
 		arg = strncat(arg, temp, strlen(temp));
 		g_free(temp);
 		return arg;
@@ -126,7 +126,7 @@ gchar* hb_video_encoder(gchar* options)
 gchar* hb_video_quality(gchar* options, GKeyFile* keyfile)
 {
 	gchar* quality_string;
-	if ((quality_string = xmlGetNoNsProp(options, BAD_CAST "video_quality"))[0] == '\0') {
+	if ((quality_string = xmlGetNoNsProp(options, "video_quality"))[0] == '\0') {
 		g_free(quality_string);
 		// Empty string lets Handbrake pick the default
 		return g_strdup("");
@@ -143,19 +143,19 @@ gchar* hb_video_quality(gchar* options, GKeyFile* keyfile)
 	}
 	long quality = strtol((char *) quality_string, NULL, 10);
 	if ( 0 <= quality && quality <=63 ) {
-		if ( strncmp(encoder, BAD_CAST " -e VP8", 7) == 0 ||
-				strncmp(encoder, BAD_CAST " -e theora", 10) == 0) {
+		if ( strncmp(encoder, " -e VP8", 7) == 0 ||
+				strncmp(encoder, " -e theora", 10) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 0 <= quality && quality <=51 ) {
-		if ( strncmp(encoder, BAD_CAST " -e x264", 8) == 0) {
+		if ( strncmp(encoder, " -e x264", 8) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 1 <= quality && quality <=31 ) {
-		if ( strncmp(encoder, BAD_CAST " -e mpeg4", 9) == 0 ||
-				strncmp(encoder, BAD_CAST " -e mpeg2", 9) == 0) {
+		if ( strncmp(encoder, " -e mpeg4", 9) == 0 ||
+				strncmp(encoder, " -e mpeg2", 9) == 0) {
 			goto good_quality;
 		}
 	}
@@ -185,21 +185,21 @@ good_quality:
 gchar* hb_audio_encoder(gchar* options)
 {
 	gchar* arg = g_strdup(" -E ");
-	gchar* encoder = xmlGetNoNsProp(options, BAD_CAST "audio_encoder");
-	if (strcmp(encoder, BAD_CAST "av_aac") == 0 ||
-			strcmp(encoder, BAD_CAST "fdk_aac") == 0 ||
-			strcmp(encoder, BAD_CAST "fdk_haac") == 0 ||
-			strcmp(encoder, BAD_CAST "copy:aac") == 0 ||
-			strcmp(encoder, BAD_CAST "ac3") == 0 ||
-			strcmp(encoder, BAD_CAST "copy:ac3") == 0 ||
-			strcmp(encoder, BAD_CAST "copy:dts") == 0 ||
-			strcmp(encoder, BAD_CAST "copy:dtshd") == 0 ||
-			strcmp(encoder, BAD_CAST "mp3") == 0 ||
-			strcmp(encoder, BAD_CAST "copy:mp3") == 0 ||
-			strcmp(encoder, BAD_CAST "vorbis") == 0 ||
-			strcmp(encoder, BAD_CAST "flac16") == 0 ||
-			strcmp(encoder, BAD_CAST "flac24") == 0 ||
-			strcmp(encoder, BAD_CAST "copy") == 0 ) {
+	gchar* encoder = xmlGetNoNsProp(options, "audio_encoder");
+	if (strcmp(encoder, "av_aac") == 0 ||
+			strcmp(encoder, "fdk_aac") == 0 ||
+			strcmp(encoder, "fdk_haac") == 0 ||
+			strcmp(encoder, "copy:aac") == 0 ||
+			strcmp(encoder, "ac3") == 0 ||
+			strcmp(encoder, "copy:ac3") == 0 ||
+			strcmp(encoder, "copy:dts") == 0 ||
+			strcmp(encoder, "copy:dtshd") == 0 ||
+			strcmp(encoder, "mp3") == 0 ||
+			strcmp(encoder, "copy:mp3") == 0 ||
+			strcmp(encoder, "vorbis") == 0 ||
+			strcmp(encoder, "flac16") == 0 ||
+			strcmp(encoder, "flac24") == 0 ||
+			strcmp(encoder, "copy") == 0 ) {
 		arg = strncat(arg, encoder, strlen(encoder));
 		g_free(encoder);
 		return arg;
@@ -221,7 +221,7 @@ gchar* hb_audio_encoder(gchar* options)
 gchar* hb_audio_quality(gchar* options, GKeyFile* keyfile)
 {
 	gchar* arg = g_strdup(" -Q ");
-	gchar* quality = xmlGetNoNsProp(options, BAD_CAST "audio_quality");
+	gchar* quality = xmlGetNoNsProp(options, "audio_quality");
 	if (quality[0] == '\0') {
 		g_free(arg);
 		g_free(quality);
@@ -229,8 +229,8 @@ gchar* hb_audio_quality(gchar* options, GKeyFile* keyfile)
 		return g_strdup("");
 	}
 	gchar* codec = hb_audio_encoder(options);
-	if (strcmp(codec, BAD_CAST " -E mp3") == 0
-			|| strcmp(codec, BAD_CAST " -E vorbis") == 0) {
+	if (strcmp(codec, " -E mp3") == 0
+			|| strcmp(codec, " -E vorbis") == 0) {
 		float a_quality = strtof((char *) quality, NULL);
 		char temp[5];
 		if (codec[4] == 'm') { //mp3
@@ -244,7 +244,7 @@ gchar* hb_audio_quality(gchar* options, GKeyFile* keyfile)
 		} else {
 			goto invalid_bitrate;
 		}
-		arg = strncat(arg, BAD_CAST temp, 5);
+		arg = strncat(arg, temp, 5);
 		g_free(quality);
 		g_free(codec);
 		return arg;
@@ -273,7 +273,7 @@ invalid_bitrate:
 gchar* hb_audio_bitrate(gchar* options, GKeyFile* keyfile)
 {
 	gchar* arg = g_strdup(" -B ");
-	gchar* bitrate = xmlGetNoNsProp(options, BAD_CAST "audio_bitrate");
+	gchar* bitrate = xmlGetNoNsProp(options, "audio_bitrate");
 	if (bitrate[0] == '\0') {
 		g_free(arg);
 		g_free(bitrate);
@@ -282,33 +282,33 @@ gchar* hb_audio_bitrate(gchar* options, GKeyFile* keyfile)
 	}
 	int br = strtol((char *) bitrate, NULL, 10);
 	gchar* codec = hb_audio_encoder(options);
-	if ( ((strcmp(codec, BAD_CAST " -E mp3") == 0)
-			|| (strcmp(codec, BAD_CAST " -E copy:mp3") == 0))
+	if ( ((strcmp(codec, " -E mp3") == 0)
+			|| (strcmp(codec, " -E copy:mp3") == 0))
 			&& valid_bit_rate(br, 32, 320)) {
 		goto good_bitrate;
 	}
-	if ( ((strcmp(codec, BAD_CAST " -E av_aac") == 0)
-				|| (strcmp(codec, BAD_CAST " -E copy:aac") == 0))
+	if ( ((strcmp(codec, " -E av_aac") == 0)
+				|| (strcmp(codec, " -E copy:aac") == 0))
 			&& valid_bit_rate(br, 192, 1536 )) {
 		goto good_bitrate;
 	}
-	if ( (strcmp(codec, BAD_CAST " -E vorbis") == 0)
+	if ( (strcmp(codec, " -E vorbis") == 0)
 			&& valid_bit_rate(br, 192, 1344)) {
 		goto good_bitrate;
 	}
-	if ( ((strcmp(codec, BAD_CAST " -E fdk_aac") == 0)
-				|| (strcmp(codec, BAD_CAST " -E copy:dtshd") == 0)
-				|| (strcmp(codec, BAD_CAST " -E copy") == 0)
-				|| (strcmp(codec, BAD_CAST " -E copy:dts") == 0))
+	if ( ((strcmp(codec, " -E fdk_aac") == 0)
+				|| (strcmp(codec, " -E copy:dtshd") == 0)
+				|| (strcmp(codec, " -E copy") == 0)
+				|| (strcmp(codec, " -E copy:dts") == 0))
 			&& valid_bit_rate(br, 160, 1344 )) {
 		goto good_bitrate;
 	}
-	if ( ((strcmp(codec, BAD_CAST " -E ac3") == 0)
-				|| ( strcmp(codec, BAD_CAST " -E copy:ac3") == 0))
+	if ( ((strcmp(codec, " -E ac3") == 0)
+				|| ( strcmp(codec, " -E copy:ac3") == 0))
 			&& valid_bit_rate(br, 224, 640)) {
 		goto good_bitrate;
 	}
-	if ( (strcmp(codec, BAD_CAST " -E fdk_haac") == 0)
+	if ( (strcmp(codec, " -E fdk_haac") == 0)
 			&& valid_bit_rate(br, 80, 256)) {
 		goto good_bitrate;
 	}
@@ -337,12 +337,12 @@ good_bitrate:
  */
 gchar* hb_markers(gchar* options)
 {
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "markers");
+	gchar* temp = xmlGetNoNsProp(options, "markers");
 
-	if (strcmp(temp, BAD_CAST "yes") == 0 ) {
+	if (strcmp(temp, "yes") == 0 ) {
 		g_free(temp);
 		return g_strdup(" -m");
-	} else if (strcmp(temp, BAD_CAST "no") == 0 ) {
+	} else if (strcmp(temp, "no") == 0 ) {
 		g_free(temp);
 		return g_strdup("");
 	} else {
@@ -363,13 +363,13 @@ gchar* hb_markers(gchar* options)
  */
 gchar* hb_anamorphic(gchar* options)
 {
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "anamorphic");
-	if (strcmp(temp, BAD_CAST "strict") == 0 ) {
+	gchar* temp = xmlGetNoNsProp(options, "anamorphic");
+	if (strcmp(temp, "strict") == 0 ) {
 		g_free(temp);
-		return g_strdup(BAD_CAST " --strict-anamorphic");
-	} else if (strcmp(temp, BAD_CAST "loose") == 0 ) {
+		return g_strdup(" --strict-anamorphic");
+	} else if (strcmp(temp, "loose") == 0 ) {
 		g_free(temp);
-		return g_strdup(BAD_CAST " --loose-anamorphic");
+		return g_strdup(" --loose-anamorphic");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options anamorphic attribute\n");
@@ -388,17 +388,17 @@ gchar* hb_anamorphic(gchar* options)
 gchar* hb_deinterlace(gchar* options)
 {
 	gchar* arg = g_strdup(" -d ");
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "deinterlace");
+	gchar* temp = xmlGetNoNsProp(options, "deinterlace");
 	
-	if (strcmp(temp, BAD_CAST "fast") == 0 ||
-		strcmp(temp, BAD_CAST "slow") == 0 ||
-		strcmp(temp, BAD_CAST "slower") == 0 ||
-		strcmp(temp, BAD_CAST "bob") == 0 ||
-		strcmp(temp, BAD_CAST "default") == 0 ) {
+	if (strcmp(temp, "fast") == 0 ||
+		strcmp(temp, "slow") == 0 ||
+		strcmp(temp, "slower") == 0 ||
+		strcmp(temp, "bob") == 0 ||
+		strcmp(temp, "default") == 0 ) {
 		arg = strncat(arg, temp, strlen(temp));
 		g_free(temp);
 		return arg;
-	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+	} else if (strcmp(temp, "none") == 0) {
 		g_free(arg);
 		g_free(temp);
 		return g_strdup("");
@@ -421,15 +421,15 @@ gchar* hb_deinterlace(gchar* options)
 gchar* hb_decomb(gchar* options)
 {
 	gchar* arg = g_strdup(" -5 ");
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "decomb");
+	gchar* temp = xmlGetNoNsProp(options, "decomb");
 
-	if (strcmp(temp, BAD_CAST "fast") == 0 ||
-			strcmp(temp, BAD_CAST "bob") == 0 ||
-			strcmp(temp, BAD_CAST "default") == 0 ) {
+	if (strcmp(temp, "fast") == 0 ||
+			strcmp(temp, "bob") == 0 ||
+			strcmp(temp, "default") == 0 ) {
 		arg = strncat(arg, temp, strlen(temp));
 		g_free(temp);
 		return arg;
-	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+	} else if (strcmp(temp, "none") == 0) {
 		g_free(arg);
 		g_free(temp);
 		return g_strdup("");
@@ -452,17 +452,17 @@ gchar* hb_decomb(gchar* options)
 gchar* hb_denoise(gchar* options)
 {
 	gchar* arg = g_strdup(" -8 ");
-	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "denoise");
+	gchar* temp = xmlGetNoNsProp(options, "denoise");
 
-	if (strcmp(temp, BAD_CAST "ultralight") == 0 ||
-		strcmp(temp, BAD_CAST "light") == 0 ||
-		strcmp(temp, BAD_CAST "medium") == 0 ||
-		strcmp(temp, BAD_CAST "strong") == 0 ||
-		strcmp(temp, BAD_CAST "default") == 0 ) {
+	if (strcmp(temp, "ultralight") == 0 ||
+		strcmp(temp, "light") == 0 ||
+		strcmp(temp, "medium") == 0 ||
+		strcmp(temp, "strong") == 0 ||
+		strcmp(temp, "default") == 0 ) {
 		arg = strncat(arg, temp, strlen(temp));
 		g_free(temp);
 		return arg;
-	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+	} else if (strcmp(temp, "none") == 0) {
 		g_free(arg);
 		g_free(temp);
 		return g_strdup("");
@@ -488,11 +488,11 @@ gchar* get_format(GKeyFile* keyfile)
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, "handbrake_options")) {
 		cur = cur->next;
 	}
 
-	return xmlGetNoNsProp(cur, BAD_CAST "format");
+	return xmlGetNoNsProp(cur, "format");
 }
 
 /**
@@ -507,11 +507,11 @@ gchar* get_input_basedir(GKeyFile* keyfile)
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, "handbrake_options")) {
 		cur = cur->next;
 	}
 
-	return xmlGetNoNsProp(cur, BAD_CAST "input_basedir");
+	return xmlGetNoNsProp(cur, "input_basedir");
 }
 
 /**
