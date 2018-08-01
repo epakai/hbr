@@ -19,27 +19,26 @@
 #ifndef _hb_options_h
 #define _hb_options_h
 
-#include <libxml/xpath.h>
 #include <ctype.h>
-#include <stdbool.h>
+#include <glib.h>
 
 
-xmlChar* hb_options_string(xmlDocPtr doc);
-xmlChar* get_format(xmlDocPtr);
-xmlChar* get_input_basedir(xmlDocPtr);
+gchar* hb_options_string(GKeyFile* keyfile);
+gchar* get_format(GKeyFile*);
+gchar* get_input_basedir(GKeyFile*);
 
-xmlChar* hb_format(xmlNode *);
-xmlChar* hb_video_encoder(xmlNode *);
-xmlChar* hb_video_quality(xmlNode *, xmlDocPtr);
-xmlChar* hb_audio_encoder(xmlNode *);
-xmlChar* hb_audio_quality(xmlNode *, xmlDocPtr);
-xmlChar* hb_audio_bitrate(xmlNode *, xmlDocPtr);
-xmlChar* hb_markers(xmlNode *);
-xmlChar* hb_anamorphic(xmlNode *);
-xmlChar* hb_deinterlace(xmlNode *);
-xmlChar* hb_decomb(xmlNode *);
-xmlChar* hb_denoise(xmlNode *);
+gchar* hb_format(gchar* );
+gchar* hb_video_encoder(gchar* );
+gchar* hb_video_quality(gchar* , GKeyFile*);
+gchar* hb_audio_encoder(gchar* );
+gchar* hb_audio_quality(gchar* , GKeyFile*);
+gchar* hb_audio_bitrate(gchar* , GKeyFile*);
+gchar* hb_markers(gchar* );
+gchar* hb_anamorphic(gchar* );
+gchar* hb_deinterlace(gchar* );
+gchar* hb_decomb(gchar* );
+gchar* hb_denoise(gchar* );
 
-bool valid_bit_rate(int bitrate, int minimum, int maximum);
+gboolean valid_bit_rate(int bitrate, int minimum, int maximum);
 
 #endif

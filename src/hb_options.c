@@ -26,18 +26,16 @@
  *
  * @return String of command line arguments
  */
-xmlChar* hb_options_string(xmlDocPtr doc)
+gchar* hb_options_string(GKeyFile* keyfile)
 {
-	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
-	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
 	// allocate and initialize options string
-	xmlChar *opt_str = xmlCharStrdup("\0");
-	xmlChar *options[11];
+	gchar* opt_str = g_strdup("\0");
+	gchar* options[11];
 
 	options[0] = hb_format(cur);
 	options[1] = hb_video_encoder(cur);
@@ -59,11 +57,11 @@ xmlChar* hb_options_string(xmlDocPtr doc)
 
 			return NULL;
 		}
-		opt_str = xmlStrcat(opt_str, BAD_CAST options[i]);
-		xmlFree(options[i]);
+		opt_str = strcat(opt_str, BAD_CAST options[i]);
+		g_free(options[i]);
 	}
 
-	opt_str = xmlStrncat(opt_str, BAD_CAST " ", 1);
+	opt_str = strncat(opt_str, BAD_CAST " ", 1);
 	return opt_str;
 }
 
@@ -74,16 +72,16 @@ xmlChar* hb_options_string(xmlDocPtr doc)
  *
  * @return command line option string starting with a space, NULL on failure
  */
-xmlChar* hb_format(xmlNode *options)
+gchar* hb_format(gchar* options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "format");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "format");
 	// format is constrained by the XML DTD to be "mkv" or "mp4"
-	if (xmlStrcmp(temp, BAD_CAST "mkv") == 0){
-		xmlFree(temp);
-		return xmlCharStrdup(" -f av_mkv");
-	} else if (xmlStrcmp(temp, BAD_CAST "mp4") == 0){
-		xmlFree(temp);
-		return xmlCharStrdup(" -f av_mp4");
+	if (strcmp(temp, BAD_CAST "mkv") == 0){
+		g_free(temp);
+		return g_strdup(" -f av_mkv");
+	} else if (strcmp(temp, BAD_CAST "mp4") == 0){
+		g_free(temp);
+		return g_strdup(" -f av_mp4");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options format attribute\n");
@@ -98,17 +96,17 @@ xmlChar* hb_format(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_video_encoder(xmlNode *options)
+gchar* hb_video_encoder(gchar* options)
 {
-	xmlChar *arg = xmlCharStrdup(" -e ");
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "video_encoder");
-	if (xmlStrcmp(temp, BAD_CAST "x264") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "mpeg4") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "mpeg2") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "VP8") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "theora") == 0 ) {
-		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
-		xmlFree(temp);
+	gchar* arg = g_strdup(" -e ");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "video_encoder");
+	if (strcmp(temp, BAD_CAST "x264") == 0 ||
+			strcmp(temp, BAD_CAST "mpeg4") == 0 ||
+			strcmp(temp, BAD_CAST "mpeg2") == 0 ||
+			strcmp(temp, BAD_CAST "VP8") == 0 ||
+			strcmp(temp, BAD_CAST "theora") == 0 ) {
+		arg = strncat(arg, temp, strlen(temp));
+		g_free(temp);
 		return arg;
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
@@ -125,54 +123,55 @@ xmlChar* hb_video_encoder(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_video_quality(xmlNode *options, xmlDocPtr doc)
+gchar* hb_video_quality(gchar* options, GKeyFile* keyfile)
 {
-	xmlChar *quality_string;
+	gchar* quality_string;
 	if ((quality_string = xmlGetNoNsProp(options, BAD_CAST "video_quality"))[0] == '\0') {
-		xmlFree(quality_string);
+		g_free(quality_string);
 		// Empty string lets Handbrake pick the default
-		return xmlCharStrdup("");
+		return g_strdup("");
 	}
 	
-	xmlChar *encoder = hb_video_encoder(options);
-	xmlChar *temp = xmlCharStrdup(" -q ");
+	gchar* encoder = hb_video_encoder(options);
+	gchar* temp = g_strdup(" -q ");
 
 	// test for max of two digits
-	if ( xmlStrlen(quality_string) > 2
+	if ( strlen(quality_string) > 2
 			|| !isdigit(quality_string[0])
 			|| !isdigit(quality_string[1])) {
 		goto invalid_quality;
 	}
 	long quality = strtol((char *) quality_string, NULL, 10);
 	if ( 0 <= quality && quality <=63 ) {
-		if ( xmlStrncmp(encoder, BAD_CAST " -e VP8", 7) == 0 ||
-				xmlStrncmp(encoder, BAD_CAST " -e theora", 10) == 0) {
+		if ( strncmp(encoder, BAD_CAST " -e VP8", 7) == 0 ||
+				strncmp(encoder, BAD_CAST " -e theora", 10) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 0 <= quality && quality <=51 ) {
-		if ( xmlStrncmp(encoder, BAD_CAST " -e x264", 8) == 0) {
+		if ( strncmp(encoder, BAD_CAST " -e x264", 8) == 0) {
 			goto good_quality;
 		}
 	}
 	if ( 1 <= quality && quality <=31 ) {
-		if ( xmlStrncmp(encoder, BAD_CAST " -e mpeg4", 9) == 0 ||
-				xmlStrncmp(encoder, BAD_CAST " -e mpeg2", 9) == 0) {
+		if ( strncmp(encoder, BAD_CAST " -e mpeg4", 9) == 0 ||
+				strncmp(encoder, BAD_CAST " -e mpeg2", 9) == 0) {
 			goto good_quality;
 		}
 	}
 invalid_quality:
+    //TODO see if we can add line number support back in
 	fprintf(stderr, "Invalid video quality '%s' for %s encoder in \"%s\""
-			"line number: ~%ld\n",
-			quality_string, encoder, doc->URL, xmlGetLineNo(options)-9);
-	xmlFree(quality_string);
-	xmlFree(encoder);
-	xmlFree(temp);
+			"line number: ~\n",
+			quality_string, encoder, doc->URL);
+	g_free(quality_string);
+	g_free(encoder);
+	g_free(temp);
 	return NULL;
 good_quality:
-	temp = xmlStrcat(temp, quality_string);
-	xmlFree(quality_string);
-	xmlFree(encoder);
+	temp = strcat(temp, quality_string);
+	g_free(quality_string);
+	g_free(encoder);
 	return temp;
 }
 
@@ -183,26 +182,26 @@ good_quality:
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_audio_encoder(xmlNode *options)
+gchar* hb_audio_encoder(gchar* options)
 {
-	xmlChar *arg = xmlCharStrdup(" -E ");
-	xmlChar *encoder = xmlGetNoNsProp(options, BAD_CAST "audio_encoder");
-	if (xmlStrcmp(encoder, BAD_CAST "av_aac") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "fdk_aac") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "fdk_haac") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy:aac") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "ac3") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy:ac3") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy:dts") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy:dtshd") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "mp3") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy:mp3") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "vorbis") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "flac16") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "flac24") == 0 ||
-			xmlStrcmp(encoder, BAD_CAST "copy") == 0 ) {
-		arg = xmlStrncat(arg, encoder, xmlStrlen(encoder));
-		xmlFree(encoder);
+	gchar* arg = g_strdup(" -E ");
+	gchar* encoder = xmlGetNoNsProp(options, BAD_CAST "audio_encoder");
+	if (strcmp(encoder, BAD_CAST "av_aac") == 0 ||
+			strcmp(encoder, BAD_CAST "fdk_aac") == 0 ||
+			strcmp(encoder, BAD_CAST "fdk_haac") == 0 ||
+			strcmp(encoder, BAD_CAST "copy:aac") == 0 ||
+			strcmp(encoder, BAD_CAST "ac3") == 0 ||
+			strcmp(encoder, BAD_CAST "copy:ac3") == 0 ||
+			strcmp(encoder, BAD_CAST "copy:dts") == 0 ||
+			strcmp(encoder, BAD_CAST "copy:dtshd") == 0 ||
+			strcmp(encoder, BAD_CAST "mp3") == 0 ||
+			strcmp(encoder, BAD_CAST "copy:mp3") == 0 ||
+			strcmp(encoder, BAD_CAST "vorbis") == 0 ||
+			strcmp(encoder, BAD_CAST "flac16") == 0 ||
+			strcmp(encoder, BAD_CAST "flac24") == 0 ||
+			strcmp(encoder, BAD_CAST "copy") == 0 ) {
+		arg = strncat(arg, encoder, strlen(encoder));
+		g_free(encoder);
 		return arg;
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
@@ -219,19 +218,19 @@ xmlChar* hb_audio_encoder(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
+gchar* hb_audio_quality(gchar* options, GKeyFile* keyfile)
 {
-	xmlChar *arg = xmlCharStrdup(" -Q ");
-	xmlChar *quality = xmlGetNoNsProp(options, BAD_CAST "audio_quality");
+	gchar* arg = g_strdup(" -Q ");
+	gchar* quality = xmlGetNoNsProp(options, BAD_CAST "audio_quality");
 	if (quality[0] == '\0') {
-		xmlFree(arg);
-		xmlFree(quality);
+		g_free(arg);
+		g_free(quality);
 		// Empty string lets Handbrake pick the default
-		return xmlCharStrdup("");
+		return g_strdup("");
 	}
-	xmlChar *codec = hb_audio_encoder(options);
-	if (xmlStrcmp(codec, BAD_CAST " -E mp3") == 0
-			|| xmlStrcmp(codec, BAD_CAST " -E vorbis") == 0) {
+	gchar* codec = hb_audio_encoder(options);
+	if (strcmp(codec, BAD_CAST " -E mp3") == 0
+			|| strcmp(codec, BAD_CAST " -E vorbis") == 0) {
 		float a_quality = strtof((char *) quality, NULL);
 		char temp[5];
 		if (codec[4] == 'm') { //mp3
@@ -245,18 +244,19 @@ xmlChar* hb_audio_quality(xmlNode *options, xmlDocPtr doc)
 		} else {
 			goto invalid_bitrate;
 		}
-		arg = xmlStrncat(arg, BAD_CAST temp, 5);
-		xmlFree(quality);
-		xmlFree(codec);
+		arg = strncat(arg, BAD_CAST temp, 5);
+		g_free(quality);
+		g_free(codec);
 		return arg;
 	} else {
 invalid_bitrate:
+    //TODO see if we can add line number support back in
 		fprintf(stderr,
-				"Invalid quality'%s' for %s codec in \"%s\" line number: ~%ld\n",
-				quality, xmlStrsub(codec, 4, 7), doc->URL, xmlGetLineNo(options)-7);
-		xmlFree(arg);
-		xmlFree(quality);
-		xmlFree(codec);
+				"Invalid quality'%s' for %s codec in \"%s\" line number: ~\n",
+				quality, xmlStrsub(codec, 4, 7), doc->URL);
+		g_free(arg);
+		g_free(quality);
+		g_free(codec);
 		return NULL;
 	}
 
@@ -270,60 +270,61 @@ invalid_bitrate:
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_audio_bitrate(xmlNode *options, xmlDocPtr doc)
+gchar* hb_audio_bitrate(gchar* options, GKeyFile* keyfile)
 {
-	xmlChar *arg = xmlCharStrdup(" -B ");
-	xmlChar *bitrate = xmlGetNoNsProp(options, BAD_CAST "audio_bitrate");
+	gchar* arg = g_strdup(" -B ");
+	gchar* bitrate = xmlGetNoNsProp(options, BAD_CAST "audio_bitrate");
 	if (bitrate[0] == '\0') {
-		xmlFree(arg);
-		xmlFree(bitrate);
+		g_free(arg);
+		g_free(bitrate);
 		// Empty string lets Handbrake pick the default
-		return xmlCharStrdup("");
+		return g_strdup("");
 	}
 	int br = strtol((char *) bitrate, NULL, 10);
-	xmlChar *codec = hb_audio_encoder(options);
-	if ( ((xmlStrcmp(codec, BAD_CAST " -E mp3") == 0)
-			|| (xmlStrcmp(codec, BAD_CAST " -E copy:mp3") == 0))
+	gchar* codec = hb_audio_encoder(options);
+	if ( ((strcmp(codec, BAD_CAST " -E mp3") == 0)
+			|| (strcmp(codec, BAD_CAST " -E copy:mp3") == 0))
 			&& valid_bit_rate(br, 32, 320)) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, BAD_CAST " -E av_aac") == 0)
-				|| (xmlStrcmp(codec, BAD_CAST " -E copy:aac") == 0))
+	if ( ((strcmp(codec, BAD_CAST " -E av_aac") == 0)
+				|| (strcmp(codec, BAD_CAST " -E copy:aac") == 0))
 			&& valid_bit_rate(br, 192, 1536 )) {
 		goto good_bitrate;
 	}
-	if ( (xmlStrcmp(codec, BAD_CAST " -E vorbis") == 0)
+	if ( (strcmp(codec, BAD_CAST " -E vorbis") == 0)
 			&& valid_bit_rate(br, 192, 1344)) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, BAD_CAST " -E fdk_aac") == 0)
-				|| (xmlStrcmp(codec, BAD_CAST " -E copy:dtshd") == 0)
-				|| (xmlStrcmp(codec, BAD_CAST " -E copy") == 0)
-				|| (xmlStrcmp(codec, BAD_CAST " -E copy:dts") == 0))
+	if ( ((strcmp(codec, BAD_CAST " -E fdk_aac") == 0)
+				|| (strcmp(codec, BAD_CAST " -E copy:dtshd") == 0)
+				|| (strcmp(codec, BAD_CAST " -E copy") == 0)
+				|| (strcmp(codec, BAD_CAST " -E copy:dts") == 0))
 			&& valid_bit_rate(br, 160, 1344 )) {
 		goto good_bitrate;
 	}
-	if ( ((xmlStrcmp(codec, BAD_CAST " -E ac3") == 0)
-				|| ( xmlStrcmp(codec, BAD_CAST " -E copy:ac3") == 0))
+	if ( ((strcmp(codec, BAD_CAST " -E ac3") == 0)
+				|| ( strcmp(codec, BAD_CAST " -E copy:ac3") == 0))
 			&& valid_bit_rate(br, 224, 640)) {
 		goto good_bitrate;
 	}
-	if ( (xmlStrcmp(codec, BAD_CAST " -E fdk_haac") == 0)
+	if ( (strcmp(codec, BAD_CAST " -E fdk_haac") == 0)
 			&& valid_bit_rate(br, 80, 256)) {
 		goto good_bitrate;
 	}
 
+    //TODO see if we can add line number support back in
 	fprintf(stderr,
-			"Invalid bitrate '%s' for %s codec in \"%s\" line number: ~%ld\n",
-			bitrate, xmlStrsub(codec, 4, 11), doc->URL, xmlGetLineNo(options)-7);
-	xmlFree(bitrate);
-	xmlFree(codec);
-	xmlFree(arg);
+			"Invalid bitrate '%s' for %s codec in \"%s\" line number: ~\n",
+			bitrate, xmlStrsub(codec, 4, 11), doc->URL);
+	g_free(bitrate);
+	g_free(codec);
+	g_free(arg);
 	return NULL;
 good_bitrate:
-	arg = xmlStrncat(arg, bitrate, xmlStrlen(bitrate));
-	xmlFree(bitrate);
-	xmlFree(codec);
+	arg = strncat(arg, bitrate, strlen(bitrate));
+	g_free(bitrate);
+	g_free(codec);
 	return arg;
 }
 
@@ -334,20 +335,20 @@ good_bitrate:
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_markers(xmlNode *options)
+gchar* hb_markers(gchar* options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "markers");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "markers");
 
-	if (xmlStrcmp(temp, BAD_CAST "yes") == 0 ) {
-		xmlFree(temp);
-		return xmlCharStrdup(" -m");
-	} else if (xmlStrcmp(temp, BAD_CAST "no") == 0 ) {
-		xmlFree(temp);
-		return xmlCharStrdup("");
+	if (strcmp(temp, BAD_CAST "yes") == 0 ) {
+		g_free(temp);
+		return g_strdup(" -m");
+	} else if (strcmp(temp, BAD_CAST "no") == 0 ) {
+		g_free(temp);
+		return g_strdup("");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options markers attribute\n");
-		xmlFree(temp);
+		g_free(temp);
 		return NULL;
 	}
 
@@ -360,19 +361,19 @@ xmlChar* hb_markers(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_anamorphic(xmlNode *options)
+gchar* hb_anamorphic(gchar* options)
 {
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "anamorphic");
-	if (xmlStrcmp(temp, BAD_CAST "strict") == 0 ) {
-		xmlFree(temp);
-		return xmlStrdup(BAD_CAST " --strict-anamorphic");
-	} else if (xmlStrcmp(temp, BAD_CAST "loose") == 0 ) {
-		xmlFree(temp);
-		return xmlStrdup(BAD_CAST " --loose-anamorphic");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "anamorphic");
+	if (strcmp(temp, BAD_CAST "strict") == 0 ) {
+		g_free(temp);
+		return g_strdup(BAD_CAST " --strict-anamorphic");
+	} else if (strcmp(temp, BAD_CAST "loose") == 0 ) {
+		g_free(temp);
+		return g_strdup(BAD_CAST " --loose-anamorphic");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options anamorphic attribute\n");
-		xmlFree(temp);
+		g_free(temp);
 		return NULL;
 	}
 }
@@ -384,28 +385,28 @@ xmlChar* hb_anamorphic(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_deinterlace(xmlNode *options)
+gchar* hb_deinterlace(gchar* options)
 {
-	xmlChar *arg = xmlCharStrdup(" -d ");
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "deinterlace");
+	gchar* arg = g_strdup(" -d ");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "deinterlace");
 	
-	if (xmlStrcmp(temp, BAD_CAST "fast") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "slow") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "slower") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "bob") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
-		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
-		xmlFree(temp);
+	if (strcmp(temp, BAD_CAST "fast") == 0 ||
+		strcmp(temp, BAD_CAST "slow") == 0 ||
+		strcmp(temp, BAD_CAST "slower") == 0 ||
+		strcmp(temp, BAD_CAST "bob") == 0 ||
+		strcmp(temp, BAD_CAST "default") == 0 ) {
+		arg = strncat(arg, temp, strlen(temp));
+		g_free(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
-		xmlFree(arg);
-		xmlFree(temp);
-		return xmlCharStrdup("");
+	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+		g_free(arg);
+		g_free(temp);
+		return g_strdup("");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options deinterlace attribute\n");
-		xmlFree(arg);
-		xmlFree(temp);
+		g_free(arg);
+		g_free(temp);
 		return NULL;
 	}
 }
@@ -417,26 +418,26 @@ xmlChar* hb_deinterlace(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_decomb(xmlNode *options)
+gchar* hb_decomb(gchar* options)
 {
-	xmlChar *arg = xmlCharStrdup(" -5 ");
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "decomb");
+	gchar* arg = g_strdup(" -5 ");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "decomb");
 
-	if (xmlStrcmp(temp, BAD_CAST "fast") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "bob") == 0 ||
-			xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
-		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
-		xmlFree(temp);
+	if (strcmp(temp, BAD_CAST "fast") == 0 ||
+			strcmp(temp, BAD_CAST "bob") == 0 ||
+			strcmp(temp, BAD_CAST "default") == 0 ) {
+		arg = strncat(arg, temp, strlen(temp));
+		g_free(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
-		xmlFree(arg);
-		xmlFree(temp);
-		return xmlCharStrdup("");
+	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+		g_free(arg);
+		g_free(temp);
+		return g_strdup("");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options decomb attribute\n");
-		xmlFree(arg);
-		xmlFree(temp);
+		g_free(arg);
+		g_free(temp);
 		return NULL;
 	}
 }
@@ -448,28 +449,28 @@ xmlChar* hb_decomb(xmlNode *options)
  *
  * @return command line option string starting with a space
  */
-xmlChar* hb_denoise(xmlNode *options)
+gchar* hb_denoise(gchar* options)
 {
-	xmlChar *arg = xmlCharStrdup(" -8 ");
-	xmlChar *temp = xmlGetNoNsProp(options, BAD_CAST "denoise");
+	gchar* arg = g_strdup(" -8 ");
+	gchar* temp = xmlGetNoNsProp(options, BAD_CAST "denoise");
 
-	if (xmlStrcmp(temp, BAD_CAST "ultralight") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "light") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "medium") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "strong") == 0 ||
-		xmlStrcmp(temp, BAD_CAST "default") == 0 ) {
-		arg = xmlStrncat(arg, temp, xmlStrlen(temp));
-		xmlFree(temp);
+	if (strcmp(temp, BAD_CAST "ultralight") == 0 ||
+		strcmp(temp, BAD_CAST "light") == 0 ||
+		strcmp(temp, BAD_CAST "medium") == 0 ||
+		strcmp(temp, BAD_CAST "strong") == 0 ||
+		strcmp(temp, BAD_CAST "default") == 0 ) {
+		arg = strncat(arg, temp, strlen(temp));
+		g_free(temp);
 		return arg;
-	} else if (xmlStrcmp(temp, BAD_CAST "none") == 0) {
-		xmlFree(arg);
-		xmlFree(temp);
-		return xmlCharStrdup("");
+	} else if (strcmp(temp, BAD_CAST "none") == 0) {
+		g_free(arg);
+		g_free(temp);
+		return g_strdup("");
 	} else {
 		// This condition shouldn't be reached unless the DTD is modified
 		fprintf(stderr, "Invalid handbrake_options denoise attribute\n");
-		xmlFree(arg);
-		xmlFree(temp);
+		g_free(arg);
+		g_free(temp);
 		return NULL;
 	}
 }
@@ -479,15 +480,15 @@ xmlChar* hb_denoise(xmlNode *options)
  *
  * @param doc XML document to read values from
  *
- * @return either "mp4" or "mkv", caller must xmlFree()
+ * @return either "mp4" or "mkv", caller must g_free()
  */
 
-xmlChar* get_format(xmlDocPtr doc)
+gchar* get_format(GKeyFile* keyfile)
 {
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
@@ -499,14 +500,14 @@ xmlChar* get_format(xmlDocPtr doc)
  *
  * @param doc XML document to read values from
  *
- * @return path for input files, caller must xmlFree()
+ * @return path for input files, caller must g_free()
  */
-xmlChar* get_input_basedir(xmlDocPtr doc)
+gchar* get_input_basedir(GKeyFile* keyfile)
 {
 	xmlNode *root_element = xmlDocGetRootElement(doc);
 	// Find the handbrake_options element
 	xmlNode *cur = root_element->children;
-	while (cur && xmlStrcmp(cur->name, BAD_CAST "handbrake_options")) {
+	while (cur && strcmp(cur->name, BAD_CAST "handbrake_options")) {
 		cur = cur->next;
 	}
 
@@ -520,9 +521,9 @@ xmlChar* get_input_basedir(xmlDocPtr doc)
  * @param minimum set range for valid bitrate (depending on codec)
  * @param maximum set range for valid bitrate (depending on codec)
  *
- * @return boolean status, 1 is valid, 0 is invalid
+ * @return boolean status
  */
-bool valid_bit_rate(int bitrate, int minimum, int maximum)
+gboolean valid_bit_rate(int bitrate, int minimum, int maximum)
 {
 	if (bitrate < 0 || minimum < 0 || maximum < 0) {
 		fprintf(stderr, "Negative value passed to valid_bit_rate()\n");

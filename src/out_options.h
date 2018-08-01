@@ -19,20 +19,19 @@
 #ifndef _out_options_h
 #define _out_options_h
 
-#include <libxml/xpath.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include "xml.h"
+#include <glib.h>
 #include "hb_options.h"
 
 /**
  * @brief Contains tag contents and tag name
  */
 struct tag {
-	xmlChar *content;  /**< Content of a tag */
-	xmlChar *tag_name; /**< Name of the tag */
+	gchar *content;  /**< Content of a tag */
+	gchar *tag_name; /**< Name of the tag */
 };
 
 
@@ -46,20 +45,20 @@ struct crop {
 	unsigned int right;
 };
 
-xmlChar* out_options_string(xmlDocPtr doc, int out_count);
-int validate_file_string(xmlChar * file_string);
+gchar* out_options_string(GKeyFile* keyfile, int out_count);
+int validate_file_string(gchar* file_string);
 
-xmlChar* out_series_output(struct tag *name, struct tag *season,
+gchar* out_series_output(struct tag *name, struct tag *season,
 		struct tag *episode_number, struct tag *specific_name,
-		xmlDocPtr doc, int out_count);
-xmlChar* out_movie_output(struct tag *name, struct tag *year,
-		struct tag *specific_name, xmlDocPtr doc, int out_count);
-xmlChar* out_input(struct tag *iso_filename, xmlDocPtr doc, int out_count);
-xmlChar* out_dvdtitle(struct tag *dvdtitle, xmlDocPtr doc, int out_count);
-xmlChar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
+		GKeyFile* keyfile, int out_count);
+gchar* out_movie_output(struct tag *name, struct tag *year,
+		struct tag *specific_name, GKeyFile* keyfile, gchar* infile, int out_count);
+gchar* out_input(struct tag *iso_filename, GKeyFile* keyfile, int out_count);
+gchar* out_dvdtitle(struct tag *dvdtitle, GKeyFile* keyfile, gchar* infile, int out_count);
+gchar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
 		struct tag *crop_left, struct tag *crop_right);
-xmlChar* out_chapters(struct tag *chapters_start, struct tag *chapters_end);
-xmlChar* out_audio(struct tag *audio);
-xmlChar* out_subtitle(struct tag *subtitle);
+gchar* out_chapters(struct tag *chapters_start, struct tag *chapters_end);
+gchar* out_audio(struct tag *audio);
+gchar* out_subtitle(struct tag *subtitle);
 
 #endif
