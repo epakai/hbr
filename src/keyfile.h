@@ -22,19 +22,59 @@
 #include <glib.h>
 
 struct config_keys {
-    gboolean markers, autocrop, loose_crop, video_turbo, video_two_pass;
-    gchar *audio_encoder, *decomb, *deinterlace, *denoise, *grayscale, *rotate,
-          *format, *anamorphic, *video_encoder, *video_framerate,
-          *video_framerate_control, *input_basedir;
-    gint audio_bitrate, audio_quality, video_bitrate, video_quality;
+    gchar*     format;
+    gboolean   markers;
+    gchar*     input_basedir; // only used for local configs
+
+    gchar*     picture_anamorphic;
+    gboolean   picture_autocrop;
+    gboolean   picture_loose_crop;
+
+    gchar*     filter_decomb;
+    gchar*     filter_deinterlace;
+    gchar*     filter_denoise;
+    gchar*     filter_grayscale;
+    gchar*     filter_rotate;
+
+    gchar*     audio_encoder;
+    gint       audio_quality;
+    gint       audio_bitrate;
+
+    gchar*     video_encoder;
+    gint       video_quality;
+    gint       video_bitrate;
+    gchar*     video_framerate;
+    gchar*     video_framerate_control;
+    gboolean   video_turbo;
+    gboolean   video_two_pass;
 };
 
 struct config_set {
-    gboolean markers, autocrop, loose_crop, video_turbo, video_two_pass,
-             audio_encoder, decomb, deinterlace, denoise,
-             grayscale, rotate, format, anamorphic, video_encoder,
-             video_framerate, video_framerate_control, input_basedir,
-             audio_bitrate, audio_quality, video_bitrate, video_quality;
+    gboolean format;
+    gboolean markers;
+    gboolean input_basedir; // only used for local configs
+
+    gboolean picture_anamorphic;
+    gboolean picture_autocrop;
+    gboolean picture_loose_crop;
+
+    gboolean filter_decomb;
+    gboolean filter_deinterlace;
+    gboolean filter_denoise;
+    gboolean filter_grayscale;
+    gboolean filter_rotate;
+
+    gboolean audio_encoder;
+    gboolean audio_quality;
+    gboolean audio_bitrate;
+
+    gboolean video_encoder;
+    gboolean video_quality;
+    gboolean video_bitrate;
+    gboolean video_framerate;
+    gboolean video_framerate_control;
+    gboolean video_turbo;
+    gboolean video_two_pass;
 };
 
 struct config {
@@ -46,22 +86,22 @@ GKeyFile *parse_key_file(char *infile);
 struct config get_config(GKeyFile *key_file);
 struct config empty_config();
 void free_config(struct config c);
-gchar *get_key_value_string(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gboolean *set);
-gboolean get_key_value_boolean(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gboolean *set);
-gint get_key_value_integer(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gboolean *set);
-gdouble get_key_value_double(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gboolean *set);
-gchar **get_key_value_string_list(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gsize *length, gboolean *set);
-gboolean *get_key_value_boolean_list(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gsize *length, gboolean *set);
-gint *get_key_value_integer_list(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gsize *length, gboolean *set);
-gdouble *get_key_value_double_list(GKeyFile *key_file, const gchar *group_name,
-        const gchar *key, gsize *length, gboolean *set);
+gchar* get_key_value_string(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *set);
+gboolean get_key_value_boolean(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *set);
+gint get_key_value_integer(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *set);
+gdouble get_key_value_double(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *set);
+gchar** get_key_value_string_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gsize *length, gboolean *set);
+gboolean *get_key_value_boolean_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gsize *length, gboolean *set);
+gint *get_key_value_integer_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gsize *length, gboolean *set);
+gdouble *get_key_value_double_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gsize *length, gboolean *set);
 int outfile_count(void);
 int get_outfile_from_episode(int episode_number);
 
