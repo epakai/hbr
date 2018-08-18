@@ -40,7 +40,6 @@ else()
 		COMMAND echo FILE_PATTERNS = *.h *.c *.md >> doxyfile.inc
 		COMMAND ${DOXYGEN} ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.mk
 		)
-	ADD_DEPENDENCIES(doc hbr_xml_schema_h)
 	if(MARKDOWN)
 		ADD_DEPENDENCIES(doc readme_md)
 	endif()

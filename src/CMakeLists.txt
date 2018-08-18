@@ -9,6 +9,13 @@ install(
 
 # CUnit dependency via pkg-config
 find_package(PkgConfig)
+pkg_check_modules(GLIB_PKG glib-2.0)
+
+if (NOT GLIB_PKG_FOUND)
+    message(WARNING "glib-2.0 not found")
+endif()
+include_directories(${GLIB_PKG_INCLUDE_DIRS})
+
 pkg_check_modules(PC_CUNIT cunit)
 
 if(NOT PKG_CONFIG_FOUND OR NOT PC_CUNIT_FOUND)
