@@ -83,7 +83,8 @@ struct config {
 };
 
 GKeyFile *parse_key_file(char *infile);
-struct config get_config(GKeyFile *key_file);
+struct config get_local_config(GKeyFile *key_file);
+struct config get_global_config(GKeyFile *key_file);
 struct config empty_config();
 void free_config(struct config c);
 gchar* get_key_value_string(GKeyFile *key_file, const gchar* group_name,
@@ -94,14 +95,32 @@ gint get_key_value_integer(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gboolean *set);
 gdouble get_key_value_double(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gboolean *set);
-gchar** get_key_value_string_list(GKeyFile *key_file, const gchar* group_name,
+gchar ** get_key_value_string_list(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
-gboolean *get_key_value_boolean_list(GKeyFile *key_file, const gchar* group_name,
+gboolean * get_key_value_boolean_list(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
-gint *get_key_value_integer_list(GKeyFile *key_file, const gchar* group_name,
+gint * get_key_value_integer_list(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
 gdouble *get_key_value_double_list(GKeyFile *key_file, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
+
+void set_key_value_string(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gchar* value, gboolean *set);
+void set_key_value_boolean(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean value, gboolean *set);
+void set_key_value_integer(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gint value, gboolean *set);
+void set_key_value_double(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gdouble value, gboolean *set);
+void set_key_value_string_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gchar **values, gsize *length, gboolean *set);
+void set_key_value_boolean_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *values, gsize *length, gboolean *set);
+void set_key_value_integer_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gint *values, gsize *length, gboolean *set);
+void set_key_value_double_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gdouble *values, gsize *length, gboolean *set);
+
 int outfile_count(void);
 int get_outfile_from_episode(int episode_number);
 

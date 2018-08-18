@@ -49,7 +49,22 @@ GKeyFile* parse_key_file(char *infile)
     return key_file;
 }
 
-struct config get_config(GKeyFile* key_file)
+struct config get_local_config(GKeyFile* key_file)
+{
+    const gchar* group = "CONFIG";
+    //verify CONFIG group exists in file
+    if (!g_key_file_has_group(key_file, group))
+    {
+        return empty_config();
+    }
+    struct config c = get_global_config(key_file);
+
+    c.key.input_basedir = get_key_value_string(key_file, group,
+            "input_basedir", &c.set.input_basedir);
+    return c;
+}
+
+struct config get_global_config(GKeyFile* key_file)
 {
     const gchar* group = "CONFIG";
     struct config c;
@@ -62,8 +77,6 @@ struct config get_config(GKeyFile* key_file)
             "format", &c.set.format);
     c.key.markers = get_key_value_boolean(key_file, group,
             "markers", &c.set.markers);
-    c.key.input_basedir = get_key_value_string(key_file, group,
-            "input_basedir", &c.set.input_basedir);
 
     c.key.picture_anamorphic= get_key_value_string(key_file, group,
             "picture_anamorphic", &c.set.picture_anamorphic);
@@ -173,46 +186,230 @@ void free_config(struct config c)
         g_free(c.key.video_framerate_control);
 }
 
+
+/**
+ * @brief Get key value of type string
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return string value or NULL if not found
+ */
 gchar* get_key_value_string(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gchar *val = g_key_file_get_string (key_file, group_name, key, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
+
+/**
+ * @brief Get key value of type boolean
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return boolean value or NULL if not found
+ */
 gboolean get_key_value_boolean(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gboolean val = g_key_file_get_boolean(key_file, group_name, key, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
+
+/**
+ * @brief Get key value of type integer
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return integer value or NULL if not found
+ */
 gint get_key_value_integer(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gint val = g_key_file_get_integer(key_file, group_name, key, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
+
 }
+
+/**
+ * @brief Get key value of type double
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return double value or NULL if not found
+ */
 gdouble get_key_value_double(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gdouble val = g_key_file_get_double(key_file, group_name, key, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
 
+/**
+ * @brief Get key value of type string list
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return string list value or NULL if not found
+ */
 gchar** get_key_value_string_list(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gsize *length, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gchar** val = g_key_file_get_string_list(key_file, group_name, key, length, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
+
+/**
+ * @brief Get key value of type gboolean list
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return gboolean list value or NULL if not found
+ */
 gboolean* get_key_value_boolean_list(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gsize *length, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gboolean* val = g_key_file_get_boolean_list(key_file, group_name, key, length, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
+
+/**
+ * @brief Get key value of type integer list
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return integer list value or NULL if not found
+ */
 gint* get_key_value_integer_list(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gsize *length, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gint* val = g_key_file_get_integer_list(key_file, group_name, key, length, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
 }
+
+/**
+ * @brief Get key value of type double list
+ *
+ * @param key_file Parsed key file
+ * @param group_name Group to find key in
+ * @param key Key name
+ * @param set Optional, set true when a key value was found, pass NULL to ignore
+ *
+ * @return double list value or NULL if not found
+ */
 gdouble* get_key_value_double_list(GKeyFile *key_file, const gchar *group_name,
         const gchar *key, gsize *length, gboolean *set)
 {
-    // TODO
+    g_autoptr(GError) error = NULL;
+    gdouble* val = g_key_file_get_double_list(key_file, group_name, key, length, &error);
+    if (error == NULL && set != NULL)
+    {
+        *set = TRUE;
+    }
+    return val;
+}
+
+void set_key_value_string(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gchar* value, gboolean *set)
+{
+    //TODO
+}
+
+void set_key_value_boolean(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean value, gboolean *set)
+{
+    //TODO
+}
+
+void set_key_value_integer(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gint value, gboolean *set)
+{
+    //TODO
+}
+
+void set_key_value_double(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gdouble value, gboolean *set)
+{ 
+    //TODO
+}
+
+void set_key_value_string_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gchar **values, gsize *length, gboolean *set)
+{ 
+    //TODO
+}
+
+void set_key_value_boolean_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gboolean *values, gsize *length, gboolean *set)
+{ 
+    //TODO
+}
+
+void set_key_value_integer_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gint *values, gsize *length, gboolean *set)
+{ 
+    //TODO
+}
+
+void set_key_value_double_list(GKeyFile *key_file, const gchar* group_name,
+        const gchar* key, gdouble *values, gsize *length, gboolean *set)
+{ 
+    //TODO
 }
 
 /**
