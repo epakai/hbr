@@ -38,12 +38,12 @@ GKeyFile* parse_key_file(char *infile)
                 G_KEY_FILE_KEEP_COMMENTS, &error))
     {
         if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-            g_warning ("Error loading key file: %s", error->message);
+            g_warning ("Error loading file: %s", error->message);
         if (!g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE))
-            g_warning ("Error parsing key file: %s", error->message);
+            g_warning ("Error parsing file: %s", error->message);
         if (!g_error_matches (error, G_KEY_FILE_ERROR,
                     G_KEY_FILE_ERROR_UNKNOWN_ENCODING))
-            g_warning ("Key file has unknown encoding: %s", error->message);
+            g_warning ("File has unknown encoding: %s", error->message);
         return NULL;
     }
     return key_file;
@@ -82,7 +82,7 @@ struct config get_global_config(GKeyFile* key_file)
             "picture_anamorphic", &c.set.picture_anamorphic);
     c.key.picture_autocrop = get_key_value_boolean(key_file, group,
             "picture_autocrop", &c.set.picture_autocrop);
-    c.key.picture_loose_crop = get_key_value_boolean(key_file, group,
+    c.key.picture_loose_crop = get_key_value_integer(key_file, group,
             "picture_loose_crop", &c.set.picture_loose_crop);
 
     c.key.filter_decomb = get_key_value_string(key_file, group,

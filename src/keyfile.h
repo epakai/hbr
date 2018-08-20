@@ -28,7 +28,7 @@ struct config_keys {
 
     gchar*     picture_anamorphic;
     gboolean   picture_autocrop;
-    gboolean   picture_loose_crop;
+    gint       picture_loose_crop;
 
     gchar*     filter_decomb;
     gchar*     filter_deinterlace;
@@ -56,7 +56,7 @@ struct config_set {
 
     gboolean picture_anamorphic;
     gboolean picture_autocrop;
-    gboolean picture_loose_crop;
+    gint     picture_loose_crop;
 
     gboolean filter_decomb;
     gboolean filter_deinterlace;

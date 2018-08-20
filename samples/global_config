@@ -1,83 +1,76 @@
 # Example hbr config file with annotated keys
 # string,boolean,integer,double, _list of aformentioned
+#
+# this example config has the format
+# [type] (optional/required) <{default},option1,option2>
+#
+
 [CONFIG]
 
-# [string] (required)
-# <mkv,m4v>
+# [string] (required) <{mkv},m4v>
 format=mkv
 
-# [boolean] (required)
+# [boolean] (required) <true, {false}>
 markers=true
 
-# [string] (required)
-# <x264,x265,mpeg4,mpeg2,VP8,theora>
-video_encoder=x264
+# [string] (optional) <{off},strict,loose>
+# we don't handle custom option
+picture_anamorphic=strict
 
-# [string] (optional)
-# <source,5,10,12,15,23.976,24,25,29.97,30,50,59.94,60>
-# defaults to source if not specified
-video_framerate=
+# [boolean] (optional) <true, {false}>
+picture_autocrop=
 
-# [string] (optional)
-# <constant, variable, peak>
-# defaults to constant if framerate is not source and variable otherwise
-video_framerate_control=
+# [int] (optional) <...,{15},...>
+picture_loose_crop=
 
-# [int] (required, mutually exclusive with video_bitrate)
-# <range depends on video_encoder>
-video_quality=18
+# [string] (optional) <{none},default,fast,slow,slower,bob>
+filter_deinterlace=none
 
-# [int] (required, mutually exclusive with video_quality)
-# <0-20000>
-video_bitrate=2500
+# [string] (optional) <{none},default,fast,bob>
+filter_decomb=
 
-# [boolean] (optional, depends on video_bitrate being set)
-video_two_pass=
+# [string] (optional) <{none},default,ultralight,light,medium,strong>
+filter_denoise=
 
-# [boolean] (optional, depends on video_two_pass being true)
-video_turbo=
+# [boolean] (optional) <true,{false}>
+filter_grayscale=
 
-# [string] (required)
-# <av_aac,fdk_aac,fdk_haac,copy:aac,ac3,copy:ac3,copy:dts,copy:dtshd,mp3,copy:mp3,vorbis,flac16,flac24,copy>
-# fdk codecs are not compiled in by default
+# [string_list] (optional) <{none},vertical_flip,horizontal_flip,rotate_clockwise>
+filter_rotate=
+
+# [string] (required) <{av_aac},{mp3},fdk_aac,fdk_haac,copy:aac,ac3,copy:ac3,copy:dts,copy:dtshd,copy:mp3,vorbis,flac16,flac24,copy>
+# default depends on container format (mp4=av_aac, mkv=mp3). fdk codecs are not compiled in by default
 audio_encoder=av_aac 
 
-# [int] (optional, mutually exclusive with audio_quality)
-# <32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,512,576,640,768,960,1152,1344,1536,2304,3072,4608,6144>
-# bitrates depend on audio_encoder with lossless encoder having none
+# [int] (optional, mutually exclusive with audio_quality) <32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,512,576,640,768,960,1152,1344,1536,2304,3072,4608,6144>
+# defaults and available bitrates depend on audio_encoder with lossless encoder having none
 audio_bitrate=192 
 
 # [double] (optional, mutually exclusive with audio_bitrate)
-# range depends on audio_encoder, only supported by some encoders
+# defaults and range depends on audio_encoder, only supported by some encoders
 audio_quality=
 
-# [string] (optional)
-# <off,strict,loose,custom>
-# defaults to off if not specified
-anamorphic=strict
+# [string] (required) <x264,x265,{mpeg4},mpeg2,VP8,theora>
+video_encoder=x264
 
-# [boolean] (optional)
-autocrop=
+# [string] (optional) <{source},5,10,12,15,23.976,24,25,29.97,30,50,59.94,60>
+video_framerate=
 
-# [boolean] (optional)
-loose_crop=
+# [string] (optional) <constant, {variable}, peak>
+# defaults to variable unless a video_framerate specified
+video_framerate_control=
 
-# [string] (optional)
-# <default,fast,slow,slower,bob>
-deinterlace=none
+# [int] (required, mutually exclusive with video_bitrate) <range depends on video_encoder>
+# default is codec dependent
+video_quality=18
 
-# [string] (optional)
-# <default,fast,bob>
-decomb=
+# [int] (required, mutually exclusive with video_quality) <0-20000>
+# default is codec dependent
+video_bitrate=2500
 
-# [string] (optional)
-# <default,ultralight,light,medium,strong>
-denoise=
+# [boolean] (optional, depends on video_bitrate being set) <true, {false}>
+video_two_pass=
 
-# [boolean] (optional)
-grayscale=
-
-# [string_list] (optional)
-# <vertical_flip,horizontal_flip,rotate_clockwise>
-rotate=
-
+# [boolean] (optional, depends on video_two_pass being true) <true, {false}>
+# only applies to x264 codec
+video_turbo=

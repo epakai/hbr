@@ -379,7 +379,10 @@ gchar* out_dvdtitle(struct tag *dvdtitle, GKeyFile* keyfile, gchar* infile,
 gchar* out_crop(struct tag *crop_top, struct tag *crop_bottom,
 		struct tag *crop_left, struct tag *crop_right)
 {
-
+    // TODO autocrop option may interfere with perfile crop, may need some way
+    // remove the autocrop from hb_options if a specific crop is set
+    // TODO also try testing with --crop and --crop a:b:c:d to see which one
+    // takes effect
 	gchar *arg = g_strndup(" --crop ", 8);
 	arg = strncat(arg, crop_top->content, strlen(crop_top->content));
 	arg = strncat(arg, ":", 2);

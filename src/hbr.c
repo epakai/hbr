@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <glib.h>
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
+#include "keyfile.h"
 #include "hb_options.h"
 #include "out_options.h"
 
@@ -50,6 +51,7 @@ static struct argp_option enc_options[] = {
 /*
  * PROTOTYPES
  */
+struct config fetch_or_generate_config();
 void encode_loop(GKeyFile* keyfile, gchar *hb_options);
 static error_t parse_enc_opt (int token, char *arg, struct argp_state *);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
@@ -85,29 +87,56 @@ int main(int argc, char * argv[])
 	enc_arguments.debug = false;
 	enc_arguments.preview = 0;
 
+    // parse hbr config
+    struct config global_config = fetch_or_generate_config();
+
 	// parse normal options
 	argp_parse (&enc_argp, argc, argv, ARGP_NO_HELP, 0, &enc_arguments);
 	
-	// parse xml document to tree
+	// parse input file
 	GKeyFile* keyfile = parse_key_file(enc_arguments.args[0]);
 	if (keyfile == NULL) {
+        free_config(global_config);
 		return 1;
 	}
 
 	//assemble call to HandBrakeCLI
 	gchar *hb_options = NULL;
-	hb_options = hb_options_string(keyfile);
+	hb_options = hb_options_string(global_config, keyfile);
 	if ( hb_options == NULL){
+        free_config(global_config);
+        free_config(local_config);
 		g_free(hb_options);
 		g_free(keyfile);
 		return 1;
 	}
 
+    // encode each outfile
 	encode_loop(keyfile, hb_options);
 
+    // clean up and exit
+    free_config(global_config);
+    free_config(local_config);
 	g_free(keyfile);
 	g_free(hb_options);
 	return 0;
+}
+
+struct config fetch_or_generate_config()
+{
+    //TODO
+    // if $XDG_CONFIG_HOME set
+    // try $XDG_CONFIG_HOME/hbr/hbr.conf
+    // try $HOME/.config/hbr/hbr.conf
+    //
+    // if found
+    // keyfile = parse_key_file(path)
+    // return get_global_config(keyfile);
+    // else
+    // create default config
+    // try to write default config
+    // if write fails print error and continue with default config in memory
+    // return struct config
 }
 
 /**
@@ -304,7 +333,7 @@ int call_handbrake(gchar *hb_command, int out_count, bool overwrite)
 		char c;
 		printf("File: \"%s\" already exists.\n", filename);
 		printf("Run hbr with '-y' option to automatically overwrite.\n");
-		do{
+		do {
 			printf("Do you want to overwrite? (y/n) ");
 			scanf(" %c", &c);
 			c = toupper(c);
@@ -313,7 +342,7 @@ int call_handbrake(gchar *hb_command, int out_count, bool overwrite)
 			g_free(filename);
 			g_free(log_filename);
 			return 1;
-		}else {
+		} else {
 			int r = hb_fork(hb_command, log_filename, out_count);
 			g_free(filename);
 			g_free(log_filename);

@@ -21,23 +21,36 @@
 
 #include <ctype.h>
 #include <glib.h>
+#include "keyfile.h"
 
 
-gchar* hb_options_string(GKeyFile* keyfile);
+gchar* hb_options_string(struct config, GKeyFile*);
 gchar* get_format(GKeyFile*);
 gchar* get_input_basedir(GKeyFile*);
 
-gchar* hb_format(gchar* );
-gchar* hb_video_encoder(gchar* );
-gchar* hb_video_quality(gchar* , GKeyFile*);
-gchar* hb_audio_encoder(gchar* );
-gchar* hb_audio_quality(gchar* , GKeyFile*);
-gchar* hb_audio_bitrate(gchar* , GKeyFile*);
-gchar* hb_markers(gchar* );
-gchar* hb_anamorphic(gchar* );
-gchar* hb_deinterlace(gchar* );
-gchar* hb_decomb(gchar* );
-gchar* hb_denoise(gchar* );
+gchar* hb_format(struct config, struct config);
+gchar* hb_markers(struct config, struct config);
+
+gchar* hb_picture_anamorphic(struct config, struct config);
+gchar* hb_picture_autocrop(struct config, struct config);
+gchar* hb_picture_loose_crop(struct config, struct config);
+
+gchar* hb_filter_decomb(struct config, struct config);
+gchar* hb_filter_deinterlace(struct config, struct config);
+gchar* hb_filter_denoise(struct config, struct config);
+gchar* hb_filter_grayscale(struct config, struct config);
+gchar* hb_filter_rotate(struct config, struct config);
+
+gchar* hb_audio_encoder(struct config, struct config);
+gchar* hb_audio_quality(struct config, struct config);
+gchar* hb_audio_bitrate(struct config, struct config);
+
+gchar* hb_video_encoder(struct config, struct config);
+gchar* hb_video_quality(struct config, struct config);
+gchar* hb_video_bitrate(struct config, struct config);
+gchar* hb_video_framerate(struct config, struct config);
+gchar* hb_video_framerate_control(struct config, struct config);
+gchar* hb_video_turbo(struct config, struct config); // also sets two-pass option
 
 gboolean valid_bit_rate(int bitrate, int minimum, int maximum);
 
