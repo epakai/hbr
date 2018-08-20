@@ -1,13 +1,13 @@
 [CONFIG]
 input_basedir=/mnt/storage/video/iso/Mob Psycho 100/
 format=mkv
-markers=yes
+markers=true
+picture_anamorphic=strict
+filter_decomb=default
+audio_encoder=av_aac 
+audio_bitrate=192 
 video_encoder=x264
 video_quality=18
-audio_encoder=av_aac
-audio_bitrate=192
-anamorphic=strict
-decomb=default
 
 [OUTFILE1]
 type=series
