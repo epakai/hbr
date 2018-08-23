@@ -35,7 +35,7 @@ filter_decomb=
 filter_denoise=
 # [boolean] (optional) <true,{false}>
 filter_grayscale=
-# [string_list] (optional) <{none},vertical_flip,horizontal_flip,rotate_clockwise>
+# [string_list] (optional) <{none},default,vertical_flip,horizontal_flip,rotate_clockwise>
 filter_rotate=
 
 # [string] (required) <{av_aac},{mp3},fdk_aac,fdk_haac,copy:aac,ac3,copy:ac3,copy:dts,copy:dtshd,copy:mp3,vorbis,flac16,flac24,copy>
@@ -48,7 +48,7 @@ audio_bitrate=192
 # defaults and range depends on audio_encoder, only supported by some encoders
 audio_quality=
 
-# [string] (required) <x264,x265,{mpeg4},mpeg2,VP8,theora>
+# [string] (required) <{x264},x265,mpeg4,mpeg2,VP8,theora>
 video_encoder=x264
 # [string] (optional) <{source},5,10,12,15,23.976,24,25,29.97,30,50,59.94,60>
 video_framerate=

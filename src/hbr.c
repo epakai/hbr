@@ -26,8 +26,7 @@
 #include <glib.h>
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 #include "keyfile.h"
-#include "hb_options.h"
-#include "out_options.h"
+#include "build_args.h"
 
 /**
  * @brief argp info for help/usage output (-?/--help)
@@ -36,7 +35,7 @@ const char *argp_program_version = ""; //TODO pull version from one place
 const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
 static char enc_doc[] = "handbrake runner -- runs handbrake with setting from an "
 "key-value pair file with all encoded files placed in current directory";
-static char enc_args_doc[] = "<XML FILE>";
+static char enc_args_doc[] = "<INPUT FILE>";
 static struct argp_option enc_options[] = {
 	{"debug",     'd', 0,     0, "print the commands to be run instead of executing", 1},
 	{"episode",   'e', "NUM", 0, "only encodes for entry with matching episode number", 1},
@@ -52,10 +51,10 @@ static struct argp_option enc_options[] = {
  * PROTOTYPES
  */
 struct config fetch_or_generate_config();
-void encode_loop(GKeyFile* keyfile, gchar *hb_options);
+void encode_loop(GKeyFile* keyfile, struct config config);
 static error_t parse_enc_opt (int token, char *arg, struct argp_state *);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
-int call_handbrake(gchar *hb_command, int out_count, bool overwrite);
+int call_handbrake(gchar *hb_command, int out_count, bool overwrite, gchar *filename);
 int hb_fork(gchar *hb_command, gchar *log_filename, int out_count);
 
 /**
@@ -99,44 +98,56 @@ int main(int argc, char * argv[])
         free_config(global_config);
 		return 1;
 	}
-
-	//assemble call to HandBrakeCLI
-	gchar *hb_options = NULL;
-	hb_options = hb_options_string(global_config, keyfile);
-	if ( hb_options == NULL){
-        free_config(global_config);
-        free_config(local_config);
-		g_free(hb_options);
-		g_free(keyfile);
-		return 1;
-	}
-
-    // encode each outfile
-	encode_loop(keyfile, hb_options);
-
-    // clean up and exit
+    struct config local_config = get_local_config(keyfile);
+    struct config merged = merge_configs(local_config, global_config);
     free_config(global_config);
     free_config(local_config);
-	g_free(keyfile);
-	g_free(hb_options);
+    // encode each outfile
+	encode_loop(keyfile, merged);
+
+    // clean up and exit
+    free_config(merged);
+	g_key_file_free(keyfile);
 	return 0;
 }
 
 struct config fetch_or_generate_config()
 {
-    //TODO
-    // if $XDG_CONFIG_HOME set
-    // try $XDG_CONFIG_HOME/hbr/hbr.conf
-    // try $HOME/.config/hbr/hbr.conf
-    //
-    // if found
-    // keyfile = parse_key_file(path)
-    // return get_global_config(keyfile);
-    // else
-    // create default config
-    // try to write default config
-    // if write fails print error and continue with default config in memory
-    // return struct config
+    // Try $XDG_CONFIG_HOME, then home dir
+    GString *config_dir = g_string_new(NULL);
+    const gchar *xdg_home = g_getenv("XDG_CONFIG_HOME");
+    if (xdg_home) {
+        g_string_printf(config_dir, "%s%s", xdg_home, "/hbr/");
+    } else {
+        const gchar *home = g_get_home_dir();
+        g_string_printf(config_dir, "%s%s", home, "/.config/hbr/");
+    }
+    if (g_mkdir_with_parents(config_dir->str, 0700) == -1) {
+        fprintf(stderr, "Failed to create config at: %s\n", config_dir->str);
+        exit(1);
+    }
+    GString *config_file = g_string_new(NULL);
+    g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
+    g_string_free(config_dir, TRUE);
+    // parse config if it exists
+    if (g_file_test (config_file->str, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+        GKeyFile *keyfile = parse_key_file(config_file->str);
+        g_string_free(config_file, TRUE);
+        struct config fetched = get_global_config(keyfile);
+        g_key_file_free(keyfile);
+        return fetched;
+    } else {
+        // Create and write a default config
+        struct config d = default_config();
+        GKeyFile *keyfile = generate_key_file(d);
+        GError *error = NULL;
+        if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
+            g_warning ("Error writing config file: %s", error->message);
+        }
+        g_string_free(config_file, TRUE);
+        g_key_file_free(keyfile);
+        return d;
+    }
 }
 
 /**
@@ -145,68 +156,70 @@ struct config fetch_or_generate_config()
  * @param keyfile Document to read outfile specifications from
  * @param hb_options general option string for HandBrakeCLI
  */
-void encode_loop(GKeyFile* keyfile, gchar *hb_options) {
+void encode_loop(GKeyFile* keyfile, struct config config) {
 	// loop for each out_file tag in keyfile
-	int out_count = outfile_count(keyfile);
+    gsize out_count = 0;
+    gchar **outfiles = get_outfile_list(keyfile, &out_count);
 	if (out_count < 1) {
-		fprintf(stderr, "No valid outfiles found in \"%s\"\n", keyfile->URL);
+		fprintf(stderr, "No valid outfile sections found. Quitting.\n");
+        exit(1);
 	}
-	int i = 1; // start at outfile 1
+	int i = 0;
 	// Handle -e option to encode a single episode
 	if (enc_arguments.episode >= 0) {
 		// adjust parameters for following loop so it runs once
-		int outfile_number = get_outfile_from_episode(keyfile, enc_arguments.episode);
-		i = outfile_number;
-		out_count = outfile_number;
+		gchar *group = get_group_from_episode(keyfile, enc_arguments.episode);
+        if (group != NULL) {
+            // replace outfiles list with list of single episode
+            gchar ** new_outfiles = g_malloc(sizeof(gchar *));
+            new_outfiles[0] = g_strdup(group);
+            g_free(group);
+            g_strfreev(outfiles);
+            outfiles = new_outfiles;
+            out_count = 1;
+        } else {
+            fprintf(stderr, "Could not find episode %d. Quitting.\n", enc_arguments.episode);
+            exit(1);
+        }
 	}
 	// encode all the episodes if loop parameters weren't modified above
-	for (; i <= out_count; i++) {
-		gchar *out_options = out_options_string(keyfile, i);
-		if ( out_options == NULL){
-			xmlNode* outfile_node = get_outfile(keyfile, i);
-			fprintf(stderr,
-					"%d: Bad outfile element in \"%s\" line number: "
-					"%ld  was not encoded\n",
-					i, keyfile->URL, xmlGetLineNo(outfile_node));
-			g_free(out_options);
-			continue;
-		}
+	for (; i < out_count; i++) {
 		// build full HandBrakeCLI command
-		gchar *hb_command = g_strdup("HandBrakeCLI");
-		hb_command = strcat(hb_command, hb_options);
-		hb_command = strcat(hb_command, out_options);
+        struct outfile outfile = get_outfile(keyfile, outfiles[i]);
+        GString *args = build_args(outfile, config);
+        GString *hb_command = g_string_new(NULL);
+        g_string_printf(hb_command, "HandBrakeCLI %s", args->str);
+        g_string_free(args, TRUE);
+		GString *filename = build_filename(outfile, config);
 
-		const gchar *filename_start = strstr(hb_command, "-o")+4;
-		const gchar *filename_end = strstr(filename_start, "\"");
-		gchar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
-		
 		// output current encode information
 		printf("%c[1m", 27);
-		printf("Encoding: %d/%d: %s\n", i, out_count, filename);
+		printf("Encoding: %d/%d: %s\n", i+1, out_count, filename->str);
 		printf("%c[0m", 27);
 		if (enc_arguments.debug) {
 			// print full handbrake command
-			printf("%s\n", hb_command);
+			printf("%s\n", hb_command->str);
 		} else {
-			if (call_handbrake(hb_command, i, enc_arguments.overwrite) == -1) {
-				xmlNode* outfile_node = get_outfile(keyfile, i);
+			if (call_handbrake(hb_command->str, i, enc_arguments.overwrite, filename->str) == -1) {
 				fprintf(stderr,
-						"%d: Handbrake call failed in \"%s\" line number: "
-						"%ld  was not encoded\n",
-						i, keyfile->URL, xmlGetLineNo(outfile_node));
-				g_free(out_options);
-				g_free(hb_command);
+						"%d: Handbrake call failed for outfile: %s"
+						"%s was not encoded\n",
+						i, outfiles[i], filename->str);
+                g_string_free(filename, TRUE);
+				g_string_free(hb_command, TRUE);
+                free_outfile(outfile);
 				continue;
 			}
 		}
 		// produce a thumbnail
 		if (enc_arguments.preview) {
-			generate_thumbnail(filename, i, out_count);
+			generate_thumbnail(filename->str, i, out_count);
 		}
-		g_free(filename);
-		g_free(out_options);
-		g_free(hb_command);
+		g_string_free(filename, TRUE);
+		g_string_free(hb_command, TRUE);
+        free_outfile(outfile);
 	}
+    g_strfreev(outfiles);
 }
 
 /**
@@ -274,12 +287,9 @@ static error_t parse_enc_opt (int token, char *arg, struct argp_state *state)
  * @param total_outfiles Total number of outfiles being processed
  */
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
-	gchar *ft_command = g_strdup("ffmpegthumbnailer");
-	ft_command = strncat(ft_command, (gchar *) " -i \"", 5);
-	ft_command = strncat(ft_command, filename, strlen(filename));
-	ft_command = strncat(ft_command, (gchar *) "\" -o \"", 6);
-	ft_command = strncat(ft_command, filename, strlen(filename));
-	ft_command = strncat(ft_command, (gchar *) ".png\" -s0 -q10 &>/dev/null", 14);
+	GString *ft_command = g_string_new("ffmpegthumbnailer");
+	g_string_append_printf(ft_command,
+            " -i \"%s\" -o \"%s.png\" -so0 -q10 &>/dev/null", filename, filename);
 	printf("%c[1m", 27);
 	printf("Generating preview: %d/%d: %s.png\n", outfile_count, total_outfiles, filename);
 	printf("%c[0m", 27);
@@ -288,7 +298,7 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
 	} else {
 		system((char *) ft_command);
 	}
-	g_free(ft_command);
+	g_string_free(ft_command, TRUE);
 }
 
 /**
@@ -300,34 +310,28 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
  *
  * @return error status from hb_fork(), 0 is success
  */
-int call_handbrake(gchar *hb_command, int out_count, bool overwrite)
+int call_handbrake(gchar *hb_command, int out_count, bool overwrite, gchar *filename)
 {
-	// separate filename and construct log filename
-	const gchar *filename_start = strstr(hb_command, "-o")+4;
-	const gchar *filename_end = strstr(filename_start, "\"");
-	gchar *filename = xmlStrsub(filename_start, 0, filename_end-filename_start);
-	gchar *log_filename = g_strdup(filename);
-	log_filename = strcat(log_filename, ".log");
+	GString *log_filename = g_string_new(filename);
+	log_filename = g_string_append(log_filename, ".log");
 	// file doesn't exist, go ahead
 	if ( access((char *) filename, F_OK ) != 0 ) {
-		int r = hb_fork(hb_command, log_filename, out_count);
+		int r = hb_fork(hb_command, log_filename->str, out_count);
 		g_free(filename);
-		g_free(log_filename);
+		g_string_free(log_filename, TRUE);
 		return r;
 	}
 	// file isn't writable, error
 	if ( access((char *) filename, W_OK ) != 0 ) {
 		fprintf(stderr, "%d: filename: \"%s\" is not writable\n",
 				out_count, filename);
-		g_free(filename);
-		g_free(log_filename);
+		g_string_free(log_filename, TRUE);
 		return 1;
 	}
 	// overwrite option was set, go ahead
 	if (overwrite) {
-		int r = hb_fork(hb_command, log_filename, out_count);
-		g_free(filename);
-		g_free(log_filename);
+		int r = hb_fork(hb_command, log_filename->str, out_count);
+		g_string_free(log_filename, TRUE);
 		return r;
 	} else {
 		char c;
@@ -339,13 +343,11 @@ int call_handbrake(gchar *hb_command, int out_count, bool overwrite)
 			c = toupper(c);
 		} while (c != 'N' && c != 'Y');
 		if ( c == 'N' ) {
-			g_free(filename);
-			g_free(log_filename);
+			g_string_free(log_filename, TRUE);
 			return 1;
 		} else {
-			int r = hb_fork(hb_command, log_filename, out_count);
-			g_free(filename);
-			g_free(log_filename);
+			int r = hb_fork(hb_command, log_filename->str, out_count);
+			g_string_free(log_filename, TRUE);
 			return r;
 		}
 	}
