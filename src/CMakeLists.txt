@@ -9,13 +9,20 @@ install(
 
 # CUnit dependency via pkg-config
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB REQUIRED glib-2.0)
 
-if (NOT GLIB_PKG_FOUND)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+if (NOT GLIB2_FOUND)
     message(WARNING "glib-2.0 not found")
 endif()
-include_directories(${GLIB_INCLUDE_DIRS})
-target_link_libraries(hbr ${GLIB_LDFLAGS})
+include_directories(${GLIB2_INCLUDE_DIRS})
+target_link_libraries(hbr ${GLIB2_LDFLAGS})
+
+pkg_check_modules(GIO REQUIRED gio-2.0)
+if (NOT GIO_FOUND)
+    message(WARNING "gio-2.0 not found")
+endif()
+include_directories(${GIO_INCLUDE_DIRS})
+target_link_libraries(hbr ${GIO_LDFLAGS})
 
 pkg_check_modules(PC_CUNIT cunit)
 

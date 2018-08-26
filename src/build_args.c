@@ -53,6 +53,7 @@ GString * build_args(struct outfile outfile, struct config config)
             g_string_append_printf(args, " %d", config.key.picture_loose_crop);
         }
     }
+    // TODO handle crops individually (if only some crops are set, zero the others
     if (outfile.set.crop_top && outfile.set.crop_bottom &&
             outfile.set.crop_left && outfile.set.crop_right) {
         // try outfile crop first
@@ -65,15 +66,17 @@ GString * build_args(struct outfile outfile, struct config config)
         g_string_append_printf(args, " --crop %d:%d:%d:%d", config.key.picture_crop_top,
                 config.key.picture_crop_bottom, config.key.picture_crop_left,
                 config.key.picture_crop_right);
-    } else if (config.set.picture_autocrop) {
+    } else if (config.set.picture_autocrop && config.key.picture_autocrop) {
         g_string_append(args, " --crop");
     }
 
     // filter args
     if (config.set.filter_deinterlace) {
         if ( strcmp(config.key.filter_deinterlace, "none") == 0) {
+            // no arg
+        } else {
             gchar * list[] = {"fast", "slow", "slower", "bob"};
-            int list_count = (sizeof (list) / sizeof (const char *));
+            int list_count = (sizeof (list) / sizeof (gchar *));
             if (strcmp(config.key.filter_deinterlace, "default") == 0) {
                 g_string_append(args, " -d");
             } else if (strcmp_list(config.key.filter_deinterlace, list, list_count)){
@@ -106,7 +109,11 @@ GString * build_args(struct outfile outfile, struct config config)
     if (config.set.filter_rotate) {
         gint rotate_mode = 0;
         for (int i = 0; i < config.key.filter_rotate_count; i++) {
+            if (config.key.filter_rotate[i] == NULL) {
+                continue;
+            }
             if (strcmp(config.key.filter_rotate[i], "none") == 0) {
+                rotate_mode = -1;
                 break;
             }
             if (strcmp(config.key.filter_rotate[i], "default") == 0) {
@@ -125,7 +132,7 @@ GString * build_args(struct outfile outfile, struct config config)
         }
         if (rotate_mode == 0) {
             g_string_append(args, " --rotate");
-        } else {
+        } else if (rotate_mode != -1) {
             g_string_append_printf(args, " --rotate %d", rotate_mode);
         }
     }
@@ -222,21 +229,30 @@ GString * build_args(struct outfile outfile, struct config config)
     }
 
     // input file arg (depends on input_basedir, iso_filename)
-    g_string_append_printf(args, " -i \"%s%s\"", config.key.input_basedir,
-            outfile.key.iso_filename);
+    g_string_append_printf(args, " -i \"%s", config.key.input_basedir);
+    if (args->str[args->len-1] != G_DIR_SEPARATOR){
+        g_string_append(args, G_DIR_SEPARATOR_S);
+    }
+    g_string_append_printf(args, "%s\"", outfile.key.iso_filename);
     
     // output file arg (depends on type, name, year, season, episode_number, specific_name)
     g_string_append(args, " -o \"");
-    GString *filename = build_filename(outfile, config);
+    GString *filename = build_filename(outfile, config, TRUE);
     g_string_append(args, filename->str);
     g_string_free(filename, TRUE);
     g_string_append(args, "\"");
     return args;
 }
 
-GString * build_filename(struct outfile outfile, struct config config)
+GString * build_filename(struct outfile outfile, struct config config, gboolean full_path)
 {
     GString* args = g_string_new(NULL);
+    if (full_path && config.set.output_basedir) {
+        g_string_append(args, config.key.output_basedir);
+        if (args->str[args->len-1] != G_DIR_SEPARATOR){
+            g_string_append(args, G_DIR_SEPARATOR_S);
+        }
+    }
     g_string_append_printf(args, "%s", outfile.key.name);
     if (strcmp(outfile.key.type, "movie") == 0) {
         if (outfile.set.year) {

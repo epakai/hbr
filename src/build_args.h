@@ -23,7 +23,8 @@
 #include "keyfile.h"
 
 GString * build_args(struct outfile outfile, struct config config);
-GString * build_filename(struct outfile outfile, struct config config);
+GString * build_filename(struct outfile outfile, struct config config,
+        gboolean full_path);
 gboolean strcmp_list(gchar *s, gchar **list, gsize len);
 gboolean valid_bit_rate(int bitrate, int minimum, int maximum);
 

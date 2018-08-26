@@ -21,10 +21,56 @@
 #define _keyfile_h
 #include <glib.h>
 
+// attempt at ensuring no typos for these strings
+#define FORMAT                  "format"
+#define MARKERS                 "markers"
+#define INPUT_BASEDIR           "input_basedir"
+#define OUTPUT_BASEDIR          "output_basedir"
+#define PICTURE_ANAMORPHIC      "picture_anamorphic"
+#define PICTURE_AUTOCROP        "picture_autocrop"
+#define PICTURE_LOOSE_CROP      "picture_loose_crop"
+#define PICTURE_CROP_BOTTOM     "picture_crop_bottom"
+#define PICTURE_CROP_LEFT       "picture_crop_left"
+#define PICTURE_CROP_RIGHT      "picture_crop_right"
+#define PICTURE_CROP_TOP        "picture_crop_top"
+#define FILTER_DECOMB           "filter_decomb"
+#define FILTER_DEINTERLACE      "filter_deinterlace"
+#define FILTER_DENOISE          "filter_denoise"
+#define FILTER_GRAYSCALE        "filter_grayscale"
+#define FILTER_ROTATE           "filter_rotate"
+#define AUDIO_ENCODER           "audio_encoder"
+#define AUDIO_QUALITY           "audio_quality"
+#define AUDIO_BITRATE           "audio_bitrate"
+#define VIDEO_ENCODER           "video_encoder"
+#define VIDEO_QUALITY           "video_quality"
+#define VIDEO_BITRATE           "video_bitrate"
+#define VIDEO_FRAMERATE         "video_framerate"
+#define VIDEO_FRAMERATE_CONTROL "video_framerate_control"
+#define VIDEO_TURBO             "video_turbo"
+#define VIDEO_TWO_PASS          "video_two_pass"
+
+#define TYPE                    "type"
+#define ISO_FILENAME            "iso_filename"
+#define DVDTITLE                "dvdtitle"
+#define NAME                    "name"
+#define YEAR                    "year"
+#define SEASON                  "season"
+#define EPISODE_NUMBER          "episode_number"
+#define SPECIFIC_NAME           "specific_name"
+#define CROP_TOP                "crop_top"
+#define CROP_BOTTOM             "crop_bottom"
+#define CROP_LEFT               "crop_left"
+#define CROP_RIGHT              "crop_right"
+#define CHAPTERS_START          "chapters_start"
+#define CHAPTERS_END            "chapters_end"
+#define AUDIO                   "audio"
+#define SUBTITLE                "subtitle"
+
 struct config_keys {
     gchar*   format;
     gboolean markers;
     gchar*   input_basedir; // only used for local configs
+    gchar*   output_basedir; // only used for local configs
 
     gchar*   picture_anamorphic;
     gboolean picture_autocrop;
@@ -37,7 +83,7 @@ struct config_keys {
     gchar*   filter_decomb;
     gchar*   filter_deinterlace;
     gchar*   filter_denoise;
-    gchar*   filter_grayscale;
+    gboolean filter_grayscale;
     gchar**  filter_rotate;
     gsize    filter_rotate_count;
 
@@ -58,6 +104,7 @@ struct config_set {
     gboolean format;
     gboolean markers;
     gboolean input_basedir; // only used for local configs
+    gboolean output_basedir; // only used for local configs
 
     gboolean picture_anamorphic;
     gboolean picture_autocrop;
@@ -169,4 +216,31 @@ gint * get_key_value_integer_list(GKeyFile *keyfile, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
 gdouble *get_key_value_double_list(GKeyFile *keyfile, const gchar* group_name,
         const gchar* key, gsize *length, gboolean *set);
+
+gchar * merge_string_key(gchar *pref_val, gboolean pref_set, gchar* alt_val,
+        gboolean alt_set, gboolean *result_set);
+gboolean merge_boolean_key(gboolean pref_val, gboolean pref_set, gboolean alt_val,
+        gboolean alt_set, gboolean *result_set);
+gint merge_integer_key(gint pref_val, gboolean pref_set, gint alt_val,
+        gboolean alt_set, gboolean *result_set);
+gdouble merge_double_key(gdouble pref_val, gboolean pref_set, gdouble alt_val,
+        gboolean alt_set, gboolean *result_set);
+gchar ** merge_string_list_key(
+        gchar **pref_val, gboolean pref_set, gsize pref_count,
+        gchar **alt_val, gboolean alt_set, gsize alt_count,
+        gboolean *result_set, gsize *result_count);
+gboolean * merge_boolean_list_key(
+        gboolean *pref_val, gboolean pref_set, gsize pref_count,
+        gboolean *alt_val, gboolean alt_set, gsize alt_count,
+        gboolean *result_set, gsize *result_count);
+gint * merge_integer_list_key(
+        gint *pref_val, gboolean pref_set, gsize pref_count,
+        gint *alt_val, gboolean alt_set, gsize alt_count,
+        gboolean *result_set, gsize *result_count);
+gdouble * merge_double_list_key(
+        gdouble *pref_val, gboolean pref_set, gsize pref_count,
+        gdouble *alt_val, gboolean alt_set, gsize alt_count,
+        gboolean *result_set, gsize *result_count);
+
+
 #endif

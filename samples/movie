@@ -1,17 +1,6 @@
 [CONFIG]
-input_basedir=/mnt/storage/video/iso/Ghost in the Shell 2017/
-format=mkv
-markers=true
-picture_anamorphic=strict
-picture_crop_top=0
-picture_crop_bottom=0
-picture_crop_left=0
-picture_crop_right=0
-filter_decomb=default
-audio_encoder=av_aac 
-audio_bitrate=192 
-video_encoder=x264
-video_quality=18
+input_basedir=/mnt/storage/video/iso/Ghost in the Shell 2017
+output_basedir=/mnt/storage/video/movies/Ghost in the Shell/
 
 [OUTFILE1]
 type=movie
