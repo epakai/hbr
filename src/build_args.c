@@ -25,25 +25,25 @@ GString * build_args(struct outfile outfile, struct config config)
     GString* args = g_string_new(NULL);
     // base args (format, markers)
     if (config.set.format) {
-        if(strcmp(config.key.format, "mkv") == 0) {
+        if (strcmp(config.key.format, "mkv") == 0) {
             g_string_append(args, " -f av_mkv");
         }
-        else if(strcmp(config.key.format, "m4v") == 0) {
+        else if (strcmp(config.key.format, "m4v") == 0) {
             g_string_append(args, " -f av_m4v");
         }
     }
     if (config.set.markers) {
-        if(config.key.markers == TRUE) {
+        if (config.key.markers == TRUE) {
             g_string_append(args, " -m");
         }
     }
     
     // picture args (crop can come from outfile section)
     if (config.set.picture_anamorphic) {
-        if(strcmp(config.key.picture_anamorphic, "strict") == 0) {
+        if (strcmp(config.key.picture_anamorphic, "strict") == 0) {
             g_string_append(args, " --strict-anamorphic");
         }
-        else if(strcmp(config.key.picture_anamorphic, "loose") == 0) {
+        else if (strcmp(config.key.picture_anamorphic, "loose") == 0) {
             g_string_append(args, " --loose-anamorphic");
         }
     }
@@ -80,7 +80,7 @@ GString * build_args(struct outfile outfile, struct config config)
             if (strcmp(config.key.filter_deinterlace, "default") == 0) {
                 g_string_append(args, " -d");
             } else if (strcmp_list(config.key.filter_deinterlace, list, list_count)){
-                g_string_append_printf(args, " -d %s",config.key.filter_deinterlace);
+                g_string_append_printf(args, " -d %s", config.key.filter_deinterlace);
             }
         }
     } else if (config.set.filter_decomb) {
@@ -291,8 +291,9 @@ GString * build_filename(struct outfile outfile, struct config config, gboolean 
  */
 gboolean strcmp_list(gchar *s, gchar **list, gsize len) {
     for (gsize i = 0; i< len; i++) {
-        if (strcmp(s, list[i]) == 0)
+        if (strcmp(s, list[i]) == 0) {
             return TRUE;
+        }
     }
     return FALSE;
 }

@@ -131,7 +131,8 @@ int main(int argc, char * argv[])
             // check if path is a directory (also allows symlinks to directories)
             if (g_file_query_file_type(output_path, G_FILE_QUERY_INFO_NONE, NULL)
                     != G_FILE_TYPE_DIRECTORY) {
-                fprintf(stderr, "Output path is not a directory: %s\n", g_file_get_path(output_path));
+                fprintf(stderr, "Output path is not a directory: %s\n",
+                        g_file_get_path(output_path));
                 free_config(global_config);
                 g_object_unref(output_path);
                 exit(1);

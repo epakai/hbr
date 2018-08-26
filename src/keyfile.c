@@ -59,7 +59,7 @@ GKeyFile * parse_key_file(char *infile)
  *
  * @param c
  *
- * @return 
+ * @return
  */
 GKeyFile * generate_key_file(struct config c)
 {
@@ -67,192 +67,221 @@ GKeyFile * generate_key_file(struct config c)
     g_key_file_set_list_separator(k, ',');
     const gchar *g = "CONFIG";
     g_key_file_set_comment(k, NULL, NULL,
-            " hbr (handbrake runner) config file\n" 
+            " hbr (handbrake runner) config file\n"
             " Options mostly follow the naming from HandBrakeCLI --help\n"
             " See comments above each key for type and acceptable values\n"
             " [] indicates type, <> for potential values, {} for defaults", NULL);
 
-    if (c.set.format)
+    if (c.set.format) {
         g_key_file_set_string(k, g, FORMAT, c.key.format);
-    else
+    } else {
         g_key_file_set_string(k, g, FORMAT, "");
+    }
     g_key_file_set_comment(k, g, FORMAT,
             " Output container format\n"
             " [string] <{mkv},m4v>", NULL);
 
-    if (c.set.markers)
+    if (c.set.markers) {
         g_key_file_set_boolean(k, g, MARKERS, c.key.markers);
-    else
+    } else {
         g_key_file_set_string(k, g, MARKERS, "");
+    }
     g_key_file_set_comment(k, g, MARKERS,
             " Add chapter markers\n"
             " [boolean] <true, {false}>", NULL);
 
-    if (c.set.picture_anamorphic)
+    if (c.set.picture_anamorphic) {
         g_key_file_set_string(k, g, PICTURE_ANAMORPHIC, c.key.picture_anamorphic);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_ANAMORPHIC, "");
+    }
     g_key_file_set_comment(k, g, PICTURE_ANAMORPHIC,
             " How to store pixel aspect ratio\n"
             " [string] <{off},strict,loose>", NULL);
 
-    if (c.set.picture_autocrop)
+    if (c.set.picture_autocrop) {
         g_key_file_set_boolean(k, g, PICTURE_AUTOCROP, c.key.picture_autocrop);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_AUTOCROP, "");
+    }
     g_key_file_set_comment(k, g, PICTURE_AUTOCROP,
             " Determine crop values automatically\n"
             " [boolean] <true, {false}>", NULL);
 
-    if (c.set.picture_loose_crop)
+    if (c.set.picture_loose_crop) {
         g_key_file_set_integer(k, g, PICTURE_LOOSE_CROP, c.key.picture_loose_crop);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_LOOSE_CROP, "");
+    }
     g_key_file_set_comment(k, g, PICTURE_LOOSE_CROP,
-            " Max extra pixels to be cropped when rounding pixel dimensions\n" 
+            " Max extra pixels to be cropped when rounding pixel dimensions\n"
             " [int] <...,{15},...>", NULL);
 
-    if (c.set.picture_crop_top)
+    if (c.set.picture_crop_top) {
         g_key_file_set_integer(k, g, PICTURE_CROP_TOP, c.key.picture_crop_top);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_CROP_TOP, "");
+    }
     g_key_file_set_comment(k, g, PICTURE_CROP_TOP,
             " Crop values for each edge\n"
             " [int] <{0},...>", NULL);
-    if (c.set.picture_crop_bottom)
+    if (c.set.picture_crop_bottom) {
         g_key_file_set_integer(k, g, PICTURE_CROP_BOTTOM, c.key.picture_crop_bottom);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_CROP_BOTTOM, "");
-    if (c.set.picture_crop_left)
+    }
+    if (c.set.picture_crop_left) {
         g_key_file_set_integer(k, g, PICTURE_CROP_LEFT, c.key.picture_crop_left);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_CROP_LEFT, "");
-    if (c.set.picture_crop_right)
+    }
+    if (c.set.picture_crop_right) {
         g_key_file_set_integer(k, g, PICTURE_CROP_RIGHT, c.key.picture_crop_right);
-    else
+    } else {
         g_key_file_set_string(k, g, PICTURE_CROP_RIGHT, "");
+    }
 
-    if (c.set.filter_deinterlace)
+    if (c.set.filter_deinterlace) {
         g_key_file_set_string(k, g, FILTER_DEINTERLACE, c.key.filter_deinterlace);
-    else
+    } else {
         g_key_file_set_string(k, g, FILTER_DEINTERLACE, "");
+    }
     g_key_file_set_comment(k, g, FILTER_DEINTERLACE,
             " Deinterlace all frames\n"
             " [string] <{none},default,fast,slow,slower,bob>", NULL);
 
-    if (c.set.filter_decomb)
+    if (c.set.filter_decomb) {
         g_key_file_set_string(k, g, FILTER_DECOMB, c.key.filter_decomb);
-    else
+    } else {
         g_key_file_set_string(k, g, FILTER_DECOMB, "");
+    }
     g_key_file_set_comment(k, g, FILTER_DECOMB,
             " Deinterlace frames when combing is detected\n"
             " [string] <{none},default,fast,bob>", NULL);
 
-    if (c.set.filter_denoise)
+    if (c.set.filter_denoise) {
         g_key_file_set_string(k, g, FILTER_DENOISE, c.key.filter_denoise);
-    else
+    } else {
         g_key_file_set_string(k, g, FILTER_DENOISE, "");
+    }
     g_key_file_set_comment(k, g, FILTER_DENOISE,
             " Denoise video with hqdn3d filter\n"
             " [string] <{none},default,ultralight,light,medium,strong>", NULL);
 
-    if (c.set.filter_grayscale)
+    if (c.set.filter_grayscale) {
         g_key_file_set_boolean(k, g, FILTER_GRAYSCALE, c.key.filter_grayscale);
-    else
+    } else {
         g_key_file_set_string(k, g, FILTER_GRAYSCALE, "");
+    }
     g_key_file_set_comment(k, g, FILTER_GRAYSCALE,
             " Grayscale encoding\n"
             " [boolean] <true, {false}>", NULL);
 
     int count = 0;
-    while (c.key.filter_rotate[count] != NULL)
+    while (c.key.filter_rotate[count] != NULL) {
         count++;
-    if (c.set.filter_rotate)
+    }
+    if (c.set.filter_rotate) {
         g_key_file_set_string_list(k, g, FILTER_ROTATE, (const gchar * const *)
                 c.key.filter_rotate, count);
-    else
+    } else {
         g_key_file_set_string(k, g, FILTER_ROTATE, "");
+    }
     g_key_file_set_comment(k, g, FILTER_ROTATE,
             " Rotate image. Combine operations by listing them comma-separated\n"
             " [string_list] <{none},default,vertical_flip,horizontal_flip,rotate_clockwise>", NULL);
 
-    if (c.set.audio_encoder)
+    if (c.set.audio_encoder) {
         g_key_file_set_string(k, g, AUDIO_ENCODER, c.key.audio_encoder);
-    else
+    } else {
         g_key_file_set_string(k, g, AUDIO_ENCODER, "");
+    }
     g_key_file_set_comment(k, g, AUDIO_ENCODER,
-            " Audio encoder, default depends on format(mp4=av_aac, mkv=mp3). fdk codecs are not compiled in by default\n"
-            " [string] <{av_aac},{mp3},fdk_aac,fdk_haac,copy:aac,ac3,copy:ac3,copy:dts,copy:dtshd,copy:mp3,vorbis,flac16,flac24,copy>", NULL);
+            " Audio encoder, default depends on format(mp4=av_aac, mkv=mp3). "
+            "fdk codecs are not compiled in by default\n"
+            " [string] <{av_aac},{mp3},fdk_aac,fdk_haac,copy:aac,ac3,copy:ac3,"
+            "copy:dts,copy:dtshd,copy:mp3,vorbis,flac16,flac24,copy>", NULL);
 
-    if (c.set.audio_bitrate)
+    if (c.set.audio_bitrate) {
         g_key_file_set_integer(k, g, AUDIO_BITRATE, c.key.audio_bitrate);
-    else
+    } else {
         g_key_file_set_string(k, g, AUDIO_BITRATE, "");
+    }
     g_key_file_set_comment(k, g, AUDIO_BITRATE,
-            " Audio bitrate, Defaults and available bitrates depend on audio_encoder with lossless encoder having none\n" 
-            " [int] <32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,512,576,640,768,960,1152,1344,1536,2304,3072,4608,6144>", NULL);
+            " Audio bitrate, Defaults and available bitrates depend on "
+            "audio_encoder with lossless encoder having none\n"
+            " [int] <32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,"
+            "512,576,640,768,960,1152,1344,1536,2304,3072,4608,6144>", NULL);
 
-    if (c.set.audio_quality)
+    if (c.set.audio_quality) {
         g_key_file_set_double(k, g, AUDIO_QUALITY, c.key.audio_quality);
-    else
+    } else {
         g_key_file_set_string(k, g, AUDIO_QUALITY, "");
+    }
     g_key_file_set_comment(k, g, AUDIO_QUALITY,
-            " Audio quality, only available for some codecs, range varies by codec\n" 
+            " Audio quality, only available for some codecs, range varies by codec\n"
             " [double]", NULL);
 
-    if (c.set.video_encoder)
+    if (c.set.video_encoder) {
         g_key_file_set_string(k, g, VIDEO_ENCODER, c.key.video_encoder);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_ENCODER, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_ENCODER,
             " Video encoder\n"
             " [string] <{x264},x265,mpeg4,mpeg2,VP8,theora>", NULL);
 
-    if (c.set.video_framerate)
+    if (c.set.video_framerate) {
         g_key_file_set_string(k, g, VIDEO_FRAMERATE, c.key.video_framerate);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_FRAMERATE, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_FRAMERATE,
             " Specify encoded video framerate\n"
             " [string] <{source},5,10,12,15,23.976,24,25,29.97,30,50,59.94,60>", NULL);
 
-    if (c.set.video_framerate_control)
+    if (c.set.video_framerate_control) {
         g_key_file_set_string(k, g, VIDEO_FRAMERATE_CONTROL,
                 c.key.video_framerate_control);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_FRAMERATE_CONTROL, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_FRAMERATE_CONTROL,
             " Control how framerate limit is applied\n"
             " [string] <constant, {variable}, peak>", NULL);
 
-    if (c.set.video_quality)
+    if (c.set.video_quality) {
         g_key_file_set_integer(k, g, VIDEO_QUALITY, c.key.video_quality);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_QUALITY, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_QUALITY,
-            " Video quality, defaults and range depend on video_encoder\n" 
+            " Video quality, defaults and range depend on video_encoder\n"
             " [int]", NULL);
 
-    if (c.set.video_bitrate)
+    if (c.set.video_bitrate) {
         g_key_file_set_integer(k, g, VIDEO_BITRATE, c.key.video_bitrate);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_BITRATE, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_BITRATE,
-            " Video bitrate, defaults and range depend on video_encoder\n" 
+            " Video bitrate, defaults and range depend on video_encoder\n"
             " [int]", NULL);
 
-    if (c.set.video_two_pass)
+    if (c.set.video_two_pass) {
         g_key_file_set_boolean(k, g, VIDEO_TWO_PASS, c.key.video_two_pass);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_TWO_PASS, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_TWO_PASS,
             " Two-pass mode, only applies when video_bitrate is used\n"
             " [boolean] <true, {false}>", NULL);
 
-    if (c.set.video_turbo)
+    if (c.set.video_turbo) {
         g_key_file_set_boolean(k, g, VIDEO_TURBO, c.key.video_turbo);
-    else
+    } else {
         g_key_file_set_string(k, g, VIDEO_TURBO, "");
+    }
     g_key_file_set_comment(k, g, VIDEO_TURBO,
             " Turbo first pass, only applies when two-pass mode is used\n"
             " [boolean] <true, {false}>", NULL);
@@ -260,11 +289,11 @@ GKeyFile * generate_key_file(struct config c)
 }
 
 /**
- * @brief 
+ * @brief
  *
  * @param keyfile
  *
- * @return 
+ * @return
  */
 struct config get_local_config(GKeyFile* keyfile)
 {
@@ -285,11 +314,11 @@ struct config get_local_config(GKeyFile* keyfile)
 
 
 /**
- * @brief 
+ * @brief
  *
  * @param keyfile
  *
- * @return 
+ * @return
  */
 struct config get_global_config(GKeyFile* keyfile)
 {
@@ -332,7 +361,7 @@ struct config get_global_config(GKeyFile* keyfile)
             FILTER_GRAYSCALE, &c.set.filter_grayscale);
     c.key.filter_rotate = get_key_value_string_list(keyfile, group,
             FILTER_ROTATE, &c.key.filter_rotate_count, &c.set.filter_rotate);
-    
+
     c.key.audio_encoder = get_key_value_string(keyfile, group,
             AUDIO_ENCODER, &c.set.audio_encoder);
     c.key.audio_quality = get_key_value_integer(keyfile, group,
@@ -380,7 +409,7 @@ struct config merge_configs(struct config pref, struct config alt)
     merged.key.output_basedir = merge_string_key(pref.key.output_basedir,
             pref.set.output_basedir, alt.key.output_basedir, alt.set.output_basedir,
             &merged.set.output_basedir);
-    
+
     merged.key.picture_anamorphic = merge_string_key(pref.key.picture_anamorphic,
             pref.set.picture_anamorphic, alt.key.picture_anamorphic, alt.set.picture_anamorphic,
             &merged.set.picture_anamorphic);
@@ -402,7 +431,7 @@ struct config merge_configs(struct config pref, struct config alt)
     merged.key.picture_crop_right = merge_integer_key(pref.key.picture_crop_right,
             pref.set.picture_crop_right, alt.key.picture_crop_right,
             alt.set.picture_crop_right, &merged.set.picture_crop_right);
-    
+
     merged.key.filter_decomb = merge_string_key(pref.key.filter_decomb,
             pref.set.filter_decomb, alt.key.filter_decomb, alt.set.filter_decomb,
             &merged.set.filter_decomb);
@@ -419,7 +448,7 @@ struct config merge_configs(struct config pref, struct config alt)
             pref.key.filter_rotate, pref.set.filter_rotate, pref.key.filter_rotate_count,
             alt.key.filter_rotate, alt.set.filter_rotate, alt.key.filter_rotate_count,
             &merged.set.filter_rotate, &merged.key.filter_rotate_count);
-    
+
     merged.key.audio_encoder = merge_string_key(pref.key.audio_encoder,
             pref.set.audio_encoder, alt.key.audio_encoder, alt.set.audio_encoder,
             &merged.set.audio_encoder);
@@ -429,7 +458,7 @@ struct config merge_configs(struct config pref, struct config alt)
     merged.key.audio_bitrate = merge_integer_key(pref.key.audio_bitrate,
             pref.set.audio_bitrate, alt.key.audio_bitrate,
             alt.set.audio_bitrate, &merged.set.audio_bitrate);
-    
+
     merged.key.video_encoder = merge_string_key(pref.key.video_encoder,
             pref.set.video_encoder, alt.key.video_encoder, alt.set.video_encoder,
             &merged.set.video_encoder);
@@ -497,7 +526,7 @@ struct config empty_config()
 }
 
 /**
- * @brief Construct a config with defaults set where 
+ * @brief Construct a config with defaults set where
  *        applicable.
  *
  * @return struct config
@@ -558,34 +587,22 @@ struct config default_config()
 void free_config(struct config c)
 {
     // free all potentially allocated strings
-    if (c.set.format)
-        g_free(c.key.format);
-    if (c.set.input_basedir)
-        g_free(c.key.input_basedir);
-    if (c.set.output_basedir)
-        g_free(c.key.output_basedir);
-    
-    if (c.set.picture_anamorphic)
-        g_free(c.key.picture_anamorphic);
+    if (c.set.format)                  { g_free(c.key.format); }
+    if (c.set.input_basedir)           { g_free(c.key.input_basedir); }
+    if (c.set.output_basedir)          { g_free(c.key.output_basedir); }
 
-    if (c.set.filter_decomb)
-        g_free(c.key.filter_decomb);
-    if (c.set.filter_deinterlace)
-        g_free(c.key.filter_deinterlace);
-    if (c.set.filter_denoise)
-        g_free(c.key.filter_denoise);
-    if (c.set.filter_rotate)
-        g_strfreev(c.key.filter_rotate);
-    
-    if (c.set.audio_encoder)
-        g_free(c.key.audio_encoder);
-   
-    if (c.set.video_encoder)
-        g_free(c.key.video_encoder);
-    if (c.set.video_framerate)
-        g_free(c.key.video_framerate);
-    if (c.set.video_framerate_control)
-        g_free(c.key.video_framerate_control);
+    if (c.set.picture_anamorphic)      { g_free(c.key.picture_anamorphic); }
+
+    if (c.set.filter_decomb)           { g_free(c.key.filter_decomb); }
+    if (c.set.filter_deinterlace)      { g_free(c.key.filter_deinterlace); }
+    if (c.set.filter_denoise)          { g_free(c.key.filter_denoise); }
+    if (c.set.filter_rotate)           { g_strfreev(c.key.filter_rotate); }
+
+    if (c.set.audio_encoder)           { g_free(c.key.audio_encoder); }
+
+    if (c.set.video_encoder)           { g_free(c.key.video_encoder); }
+    if (c.set.video_framerate)         { g_free(c.key.video_framerate); }
+    if (c.set.video_framerate_control) { g_free(c.key.video_framerate_control); }
 }
 
 /**
@@ -612,7 +629,7 @@ gint get_outfile_count(GKeyFile *keyfile)
  *
  * @param keyfile
  *
- * @return 
+ * @return
  */
 gchar ** get_outfile_list(GKeyFile *keyfile, gsize *outfile_count)
 {
@@ -639,7 +656,7 @@ gchar ** get_outfile_list(GKeyFile *keyfile, gsize *outfile_count)
  *
  * @param episode_number Episode number to match.
  *
- * @return 
+ * @return
  */
 gchar * get_group_from_episode(GKeyFile *keyfile, int episode_number)
 {
@@ -717,7 +734,7 @@ struct outfile empty_outfile()
  * @param keyfile
  * @param group
  *
- * @return 
+ * @return
  */
 struct outfile get_outfile(GKeyFile *keyfile, gchar *group)
 {
@@ -769,20 +786,37 @@ struct outfile get_outfile(GKeyFile *keyfile, gchar *group)
  */
 void free_outfile(struct outfile o)
 {
-    if (o.set.type)
-        g_free(o.key.type);
-    if (o.set.iso_filename)
-        g_free(o.key.iso_filename);
-    if (o.set.name)
-        g_free(o.key.name);
-    if (o.set.year)
-        g_free(o.key.year);
-    if (o.set.specific_name)
-        g_free(o.key.specific_name);
-    if (o.set.audio)
-        g_free(o.key.audio);
-    if (o.set.subtitle)
-        g_free(o.key.subtitle);
+    if (o.set.type)          { g_free(o.key.type); }
+    if (o.set.iso_filename)  { g_free(o.key.iso_filename); }
+    if (o.set.name)          { g_free(o.key.name); }
+    if (o.set.year)          { g_free(o.key.year); }
+    if (o.set.specific_name) { g_free(o.key.specific_name); }
+    if (o.set.audio)         { g_free(o.key.audio); }
+    if (o.set.subtitle)      { g_free(o.key.subtitle); }
+}
+
+gboolean validate_key_file(gchar *infile, GKeyFile *keyfile, gboolean global)
+{
+    /* PRE-PARSING CHECKS */
+    // check for duplicate sections?? maybe impossible
+
+    /* PARSE AND REPORT ANY ERRORS */
+
+    /* POST_PARSING CHECKS */
+    // check CONFIG exists
+    // check for unknown sections
+    // check for unknown keys
+    // check required keys exist (independent)
+    // check required keys exist (dependent)
+    // check known keys values (independent)
+    // check known keys values (dependent)
+
+    /* NOT GLOBAL CONFIG */
+    // check at least one OUTFILE exists
+    // check required keys exist (independent)
+    // check required keys exist (dependent)
+    // check known keys values (independent)
+    // check known keys values (dependent)
 }
 
 /**
@@ -956,7 +990,7 @@ gboolean* get_key_value_boolean_list(GKeyFile *keyfile, const gchar *group_name,
             val = NULL;
         } else if (set != NULL) {
             *set = TRUE;
-        }   
+        }
     } else {
         g_error_free(error);
     }
@@ -1183,5 +1217,3 @@ gdouble * merge_double_list_key(
     }
     return temp;
 }
-
-

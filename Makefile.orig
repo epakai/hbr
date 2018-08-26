@@ -1,11 +1,11 @@
 PRGM_NAME = hbr
 CC = gcc
 CFLAGS =-g -Wall -Wextra
-SOURCE  = out_options.c hb_options.c gen_xml.c xml.c
-OBJECTS = out_options.o hb_options.o gen_xml.o xml.o
-DEPS = out_options.h hb_options.h gen_xml.h xml.h
-INCLUDES = `xml2-config --cflags` `pkg-config --cflags cunit`
-LFLAGS = `xml2-config --libs` `pkg-config --libs cunit`
+SOURCE  = src/build_args.c src/hbr.c src/keyfile.c
+OBJECTS = build_args.o keyfile.o
+DEPS = src/build_args.h src/keyfile.h
+INCLUDES = `pkg-config --cflags glib-2.0` `pkg-config --cflags gio-2.0` `pkg-config --cflags cunit`
+LFLAGS = `pkg-config --libs glib-2.0` `pkg-config --libs gio-2.0` `pkg-config --libs cunit`
 
 ifndef PREFIX
 	PREFIX = /usr/local
@@ -15,27 +15,21 @@ endif
 
 default: hbr test-gen test_hbr
 
-hbr: $(OBJECTS) hbr.o xsd.h
+hbr: $(OBJECTS) hbr.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o $(PRGM_NAME) hbr.o $(OBJECTS)
 
 # Build CUnit test suite
-test_hbr: $(OBJECTS) test_hbr.o xsd.h
+test_hbr: $(OBJECTS) test_hbr.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(LFLAGS) -o test_hbr test_hbr.o $(OBJECTS)
 
-%.o: %.c $(DEPS) xsd.h
+%.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
-xsd.h: hbr.xsd
-	echo \#ifndef _xsd_h > xsd.h
-	echo \#define _xsd_h >> xsd.h
-	xxd -i hbr.xsd >> xsd.h
-	echo \#endif >> xsd.h
 
 install: hbr
 	install -D hbr $(PREFIX)/bin/hbr
 
 clean:
-	- rm -f *.o *.gch *.plist .test-gen.xml hbr test_hbr doxyfile.inc doxygen_sqlite3.db README.md xsd.h
+	- rm -f *.o *.gch *.plist .test-gen.xml hbr test_hbr doxyfile.inc doxygen_sqlite3.db README.md
 	- rm -r html
 
 doxyfile.inc: Makefile
