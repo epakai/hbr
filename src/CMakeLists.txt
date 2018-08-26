@@ -10,7 +10,7 @@ install(
 # CUnit dependency via pkg-config
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0>=2.7)
 if (NOT GLIB2_FOUND)
     message(WARNING "glib-2.0 not found")
 endif()

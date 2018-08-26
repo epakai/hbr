@@ -18,9 +18,10 @@
  */
 
 #include "keyfile.h"
+#include <string.h>
+#include <stdio.h>
 #include <glib.h>
 #include <glib/gprintf.h>
-#include <string.h>
 
 
 /**
@@ -37,13 +38,14 @@ GKeyFile * parse_key_file(char *infile)
     if (!g_key_file_load_from_file (keyfile, infile,
                 G_KEY_FILE_KEEP_COMMENTS, &error))
     {
-        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-            g_warning ("Error loading file: %s", error->message);
-        if (!g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE))
-            g_warning ("Error parsing file: %s", error->message);
-        if (!g_error_matches (error, G_KEY_FILE_ERROR,
-                    G_KEY_FILE_ERROR_UNKNOWN_ENCODING))
-            g_warning ("File has unknown encoding: %s", error->message);
+        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
+            fprintf(stderr, "Error loading file (%s): %s\n", infile, error->message);
+        } else if (!g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE)) {
+            fprintf(stderr, "Error parsing file (%s): %s\n", infile, error->message);
+        } else if (!g_error_matches (error, G_KEY_FILE_ERROR,
+                    G_KEY_FILE_ERROR_UNKNOWN_ENCODING)) {
+            fprintf(stderr, "File has unknown encoding (%s): %s\n", infile, error->message);
+        }
         g_error_free(error);
         g_key_file_free(keyfile);
         return NULL;
