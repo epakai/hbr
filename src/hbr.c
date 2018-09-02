@@ -21,6 +21,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for NULL, stderr, stdout, etc
 #include <stdlib.h>                     // for exit
+#include <string.h>
 #include <glib.h>
 #include <gio/gio.h>
 #include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
@@ -35,13 +36,14 @@ void encode_loop(GKeyFile* keyfile, struct config config);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
 int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *filename);
 int hb_fork(gchar *hb_command, gchar *log_filename, int out_count);
+gboolean good_output_option_path();
 
 static gboolean opt_debug     = FALSE; // Print commands instead of executing
 static gboolean opt_preview   = FALSE; // Generate preview image using ffmpegthumbnailer
 static gboolean opt_overwrite = FALSE; // Default to overwriting previous encodes
 static int      opt_episode   = -1;    // Specifies a particular episode number to be encoded
 static gchar    *opt_output   = NULL;  // Override location to write output files
-static gchar    **input_files = NULL;  // List of files for hbr to use as input
+static gchar    **opt_input_files = NULL;  // List of files for hbr to use as input
 
 void print_version() {
     printf("hbr (handbrake runner) 0.0\n" //TODO someday we'll release and have a version number
@@ -66,7 +68,7 @@ static GOptionEntry entries[] =
         "override location to write output files", "PATH"},
     {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, &print_version,
         "prints version info and exit", NULL},
-    {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &input_files,
+    {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_input_files,
         NULL, NULL},
     { NULL }
 };
@@ -91,14 +93,23 @@ int main(int argc, char * argv[])
     GError *error = NULL;
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_print ("Option parsing failed: %s\n", error->message);
+        g_option_context_free(context);
         exit(1);
     }
 
     // print help when there are no file arguments to process
-    if (input_files == NULL) {
+    if (opt_input_files == NULL) {
         gchar *temp = g_option_context_get_help(context, TRUE, NULL);
         printf(temp);
         g_free(temp);
+        g_option_context_free(context);
+        g_strfreev(opt_input_files);
+        exit(1);
+    }
+
+    if (!good_output_option_path()) {
+        g_option_context_free(context);
+        g_strfreev(opt_input_files);
         exit(1);
     }
 
@@ -107,10 +118,11 @@ int main(int argc, char * argv[])
 
     // loop over each input file
     int i = 0;
-    while (input_files[i] != NULL) {
+    while (opt_input_files[i] != NULL) {
         // parse input file
-        GKeyFile* keyfile = parse_key_file(input_files[i]);
+        GKeyFile* keyfile = parse_key_file(opt_input_files[i]);
         if (keyfile == NULL) {
+            g_option_context_free(context);
             free_config(global_config);
             exit(1);
         }
@@ -120,29 +132,10 @@ int main(int argc, char * argv[])
 
         // override output path if option given
         if (opt_output != NULL) {
-            // check if path exists
-            GFile *output_path = g_file_new_for_commandline_arg(opt_output);
-            if (!g_file_query_exists(output_path, NULL)) {
-                fprintf(stderr, "Invalid output path: %s\n", g_file_get_path(output_path));
-                free_config(global_config);
-                g_object_unref(output_path);
-                exit(1);
-            }
-            // check if path is a directory (also allows symlinks to directories)
-            if (g_file_query_file_type(output_path, G_FILE_QUERY_INFO_NONE, NULL)
-                    != G_FILE_TYPE_DIRECTORY) {
-                fprintf(stderr, "Output path is not a directory: %s\n",
-                        g_file_get_path(output_path));
-                free_config(global_config);
-                g_object_unref(output_path);
-                exit(1);
-            }
-            // free old string in config
+                        // free old string in config
             g_free(merged.key.output_basedir);
-            // assign newly allocated string (will be free'd by free_config later)
-            merged.key.output_basedir = g_file_get_path(output_path);
+            merged.key.output_basedir = g_strdup(opt_output);
             merged.set.output_basedir = TRUE;
-            g_object_unref(output_path);
         }
 
         // encode each outfile
@@ -155,8 +148,31 @@ int main(int argc, char * argv[])
     }
     free_config(global_config);
     g_option_context_free(context);
-    g_strfreev(input_files);
+    g_strfreev(opt_input_files);
     exit(0);
+}
+
+gboolean good_output_option_path()
+{
+    if (opt_output != NULL) {
+        // check if path exists
+        GFile *output_path = g_file_new_for_commandline_arg(opt_output);
+        if (!g_file_query_exists(output_path, NULL)) {
+            fprintf(stderr, "Invalid output path: %s\n", g_file_get_path(output_path));
+            g_object_unref(output_path);
+            return FALSE;
+        }
+        // check if path is a directory (also allows symlinks to directories)
+        if (g_file_query_file_type(output_path, G_FILE_QUERY_INFO_NONE, NULL)
+                != G_FILE_TYPE_DIRECTORY) {
+            fprintf(stderr, "Output path is not a directory: %s\n",
+                    g_file_get_path(output_path));
+            g_object_unref(output_path);
+            return FALSE;
+        }
+    }
+    // no path is a good path
+    return TRUE;
 }
 
 struct config fetch_or_generate_config()
@@ -237,7 +253,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
         struct outfile outfile = get_outfile(keyfile, outfiles[i]);
         GString *args = build_args(outfile, config);
         GString *hb_command = g_string_new(NULL);
-        g_string_printf(hb_command, "HandBrakeCLI %s", args->str);
+        g_string_printf(hb_command, "HandBrakeCLI%s", args->str);
         g_string_free(args, TRUE);
         GString *filename = build_filename(outfile, config, FALSE);
 
@@ -371,7 +387,7 @@ int hb_fork(gchar *hb_command, gchar *log_filename, int out_count)
     errno = 0;
     FILE *logfile = fopen((const char *)log_filename, "w");
     if (logfile == NULL) {
-        perror("hb_fork(): Failed to open logfile");
+        fprintf(stderr, "hb_fork(): Failed to open logfile: %s: (%s)", strerror(errno), log_filename);
         free(cwd);
         return 1;
     }

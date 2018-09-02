@@ -780,7 +780,7 @@ struct outfile get_outfile(GKeyFile *keyfile, gchar *group)
 }
 
 /**
- * @brief Frees all allocatable members of a struct outfile
+ * @brief Frees all allocable members of a struct outfile
  *
  * @param o
  */
@@ -795,10 +795,19 @@ void free_outfile(struct outfile o)
     if (o.set.subtitle)      { g_free(o.key.subtitle); }
 }
 
+/**
+ * @brief TODO
+ *
+ * @param infile
+ * @param keyfile
+ * @param global
+ *
+ * @return 
+ */
 gboolean validate_key_file(gchar *infile, GKeyFile *keyfile, gboolean global)
 {
     /* PRE-PARSING CHECKS */
-    // check for duplicate sections?? maybe impossible
+    // check for duplicate sections
 
     /* PARSE AND REPORT ANY ERRORS */
 
