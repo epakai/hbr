@@ -34,14 +34,15 @@
 struct config fetch_or_generate_config();
 void encode_loop(GKeyFile* keyfile, struct config config);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
-int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *filename);
-int hb_fork(gchar *hb_command, gchar *log_filename, int out_count);
+int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename);
+int hb_fork(gchar *args[], gchar *log_filename, int out_count);
 gboolean good_output_option_path();
 
 static gboolean opt_debug     = FALSE; // Print commands instead of executing
 static gboolean opt_preview   = FALSE; // Generate preview image using ffmpegthumbnailer
 static gboolean opt_overwrite = FALSE; // Default to overwriting previous encodes
 static int      opt_episode   = -1;    // Specifies a particular episode number to be encoded
+static gchar    *opt_hbversion = NULL;  // Override handbrake version detection
 static gchar    *opt_output   = NULL;  // Override location to write output files
 static gchar    **opt_input_files = NULL;  // List of files for hbr to use as input
 
@@ -66,7 +67,9 @@ static GOptionEntry entries[] =
         "encodes first entry with matching episode number", "NUMBER"},
     {"output",    'o', 0, G_OPTION_ARG_FILENAME, &opt_output,
         "override location to write output files", "PATH"},
-    {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, &print_version,
+    {"hbversion", 'H', 0, G_OPTION_ARG_STRING,   &opt_hbversion,
+        "override handbrake version detection", "X.Y.Z"},
+    {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, print_version,
         "prints version info and exit", NULL},
     {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_input_files,
         NULL, NULL},
@@ -251,10 +254,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
     for (; i < out_count; i++) {
         // build full HandBrakeCLI command
         struct outfile outfile = get_outfile(keyfile, outfiles[i]);
-        GString *args = build_args(outfile, config);
-        GString *hb_command = g_string_new(NULL);
-        g_string_printf(hb_command, "HandBrakeCLI%s", args->str);
-        g_string_free(args, TRUE);
+        GPtrArray *args = build_args(outfile, config, opt_debug);
         GString *filename = build_filename(outfile, config, FALSE);
 
         // output current encode information
@@ -267,15 +267,17 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
         filename = build_filename(outfile, config, TRUE);
         if (opt_debug) {
             // print full handbrake command
-            printf("%s\n", hb_command->str);
+            gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
+            printf("HandBrakeCLI %s\n", temp);
+            g_free(temp);
         } else {
-            if (call_handbrake(hb_command->str, i, opt_overwrite, filename->str) == -1) {
+            if (call_handbrake(args, i, opt_overwrite, filename->str) == -1) {
                 fprintf(stderr,
                         "%d: Handbrake call failed for outfile: %s"
                         "%s was not encoded\n",
                         i, outfiles[i], filename->str);
                 g_string_free(filename, TRUE);
-                g_string_free(hb_command, TRUE);
+                g_ptr_array_free(args, TRUE);
                 free_outfile(outfile);
                 continue;
             }
@@ -285,7 +287,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
             generate_thumbnail(filename->str, i, out_count);
         }
         g_string_free(filename, TRUE);
-        g_string_free(hb_command, TRUE);
+        g_ptr_array_free(args, TRUE);
         free_outfile(outfile);
     }
     g_strfreev(outfiles);
@@ -316,19 +318,19 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
 /**
  * @brief Handle the logic around calling handbrake
  *
- * @param hb_command String containing complete call to HandBrakeCLI with all arguments
+ * @param args String containing argumenst HandBrakeCLI
  * @param out_count Which outfile section is being encoded
  * @param overwrite Overwrite existing files
  *
  * @return error status from hb_fork(), 0 is success
  */
-int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *filename)
+int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename)
 {
     GString *log_filename = g_string_new(filename);
     log_filename = g_string_append(log_filename, ".log");
     // file doesn't exist, go ahead
     if ( access((char *) filename, F_OK ) != 0 ) {
-        int r = hb_fork(hb_command, log_filename->str, out_count);
+        int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
         g_string_free(log_filename, TRUE);
         return r;
     }
@@ -341,7 +343,7 @@ int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *
     }
     // overwrite option was set, go ahead
     if (overwrite) {
-        int r = hb_fork(hb_command, log_filename->str, out_count);
+        int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
         g_string_free(log_filename, TRUE);
         return r;
     } else {
@@ -357,7 +359,7 @@ int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *
             g_string_free(log_filename, TRUE);
             return 1;
         } else {
-            int r = hb_fork(hb_command, log_filename->str, out_count);
+            int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
             g_string_free(log_filename, TRUE);
             return r;
         }
@@ -367,18 +369,19 @@ int call_handbrake(gchar *hb_command, int out_count, gboolean overwrite, gchar *
 /**
  * @brief Test write access, fork and exec, redirect output for logging
  *
- * @param hb_command String containing complete call to HandBrakeCLI with all arguments
+ * @param args String containing arguments to HandBrakeCLI
  * @param log_filename Filename to log to
  * @param out_count Which outfile section is being encoded
  *
  * @return 1 on error, 0 on success
  */
-int hb_fork(gchar *hb_command, gchar *log_filename, int out_count)
+int hb_fork(gchar *args[], gchar *log_filename, int out_count)
 {
     // check if current working directory is writeable
     char *cwd = getcwd(NULL, 0);
     if ( access((char *) cwd, W_OK|X_OK) != 0 ) {
-        fprintf(stderr, "%d: Current directory: \"%s\" is not writable\n", out_count, cwd);
+        fprintf(stderr, "%d: Current directory: \"%s\" is not writable\n",
+                out_count, cwd);
         free(cwd);
         return 1;
     }
@@ -387,7 +390,8 @@ int hb_fork(gchar *hb_command, gchar *log_filename, int out_count)
     errno = 0;
     FILE *logfile = fopen((const char *)log_filename, "w");
     if (logfile == NULL) {
-        fprintf(stderr, "hb_fork(): Failed to open logfile: %s: (%s)", strerror(errno), log_filename);
+        fprintf(stderr, "hb_fork(): Failed to open logfile: %s: (%s)",
+                strerror(errno), log_filename);
         free(cwd);
         return 1;
     }
@@ -413,7 +417,7 @@ int hb_fork(gchar *hb_command, gchar *log_filename, int out_count)
         dup2(hb_err[1], 2);
         close(hb_err[1]);
         //TODO fix so this errors before handbrake is called and outputs a log file
-        execl("/bin/sh", "sh", "-c", hb_command, (char *) NULL);
+        execvp("HandBrakeCLI", args);
         _exit(1);
     } else {
         perror("hb_fork(): Failed to fork");

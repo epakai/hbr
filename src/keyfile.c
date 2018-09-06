@@ -802,7 +802,7 @@ void free_outfile(struct outfile o)
  * @param keyfile
  * @param global
  *
- * @return 
+ * @return
  */
 gboolean validate_key_file(gchar *infile, GKeyFile *keyfile, gboolean global)
 {

@@ -81,7 +81,8 @@ gchar* out_options_string(GKeyFile* keyfile, int out_count)
 	gchar *out_options = g_strdup("\0");
 	gchar *options[10];
 	if ( strcmp(type.content, "series") == 0 ){
-		options[0] = out_series_output(&name, &season, &episode_number, &specific_name, keyfile, out_count);
+		options[0] = out_series_output(&name, &season, &episode_number,
+                &specific_name, keyfile, out_count);
 	} else if ( strcmp(type.content, "movie") == 0 ){
 		options[0] = out_movie_output(&name, &year, &specific_name, keyfile, out_count);
 	} else {

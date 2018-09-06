@@ -66,7 +66,7 @@ gchar* hb_options_string(struct config global_config, GKeyFile *keyfile)
     int i;
     for ( i = 0; i < 19; i++ ) {
         if ( options[i] == NULL ) {
-            fprintf(stderr, "Error while building handbrake options.\n"); 
+            fprintf(stderr, "Error while building handbrake options.\n");
             return NULL;
         }
         opt_str = strcat(opt_str, options[i]);
@@ -79,7 +79,7 @@ gchar* hb_options_string(struct config global_config, GKeyFile *keyfile)
 /**
  * @brief return handbrake option for file format (-f)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space, defaults to mkv on failure
@@ -113,7 +113,7 @@ gchar* hb_format(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for markers (-m)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -141,7 +141,7 @@ gchar* hb_markers(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for anamorphic (--strict-anamorphic or --loose-anamorphic)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -181,7 +181,7 @@ gchar* hb_picture_anamorphic(struct config global_config, struct config local_co
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_picture_autocrop(struct config global_config, struct config local_config)
 {
@@ -209,7 +209,7 @@ gchar* hb_picture_autocrop(struct config global_config, struct config local_conf
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_picture_loose_crop(struct config global_config, struct config local_config)
 {
@@ -232,7 +232,7 @@ gchar* hb_picture_loose_crop(struct config global_config, struct config local_co
 /**
  * @brief return handbrake option for decombing (-5)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -272,7 +272,7 @@ gchar* hb_filter_decomb(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for deinterlacing (-d)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -313,7 +313,7 @@ gchar* hb_filter_deinterlace(struct config global_config, struct config local_co
 /**
  * @brief return handbrake option for denoising (-8)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -350,7 +350,7 @@ gchar* hb_filter_denoise(struct config global_config, struct config local_config
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_filter_grayscale(struct config global_config, struct config local_config)
 {
@@ -363,7 +363,7 @@ gchar* hb_filter_grayscale(struct config global_config, struct config local_conf
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_filter_rotate(struct config global_config, struct config local_config)
 {
@@ -374,7 +374,7 @@ gchar* hb_filter_rotate(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for audio encoder (-E)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -411,7 +411,7 @@ gchar* hb_audio_encoder(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for audio quality (-Q)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -463,7 +463,7 @@ invalid_bitrate:
 /**
  * @brief return handbrake option for audio bitrate (-B)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -529,7 +529,7 @@ good_bitrate:
 /**
  * @brief return handbrake option for video encoder (-e)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -557,7 +557,7 @@ gchar* hb_video_encoder(struct config global_config, struct config local_config)
 /**
  * @brief return handbrake option for video quality (-q)
  *
- * @param global_config 
+ * @param global_config
  * @param local_config
  *
  * @return command line option string starting with a space
@@ -620,7 +620,7 @@ good_quality:
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_video_bitrate(struct config global_config, struct config local_config)
 {
@@ -633,7 +633,7 @@ gchar* hb_video_bitrate(struct config global_config, struct config local_config)
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_video_framerate(struct config global_config, struct config local_config)
 {
@@ -646,7 +646,7 @@ gchar* hb_video_framerate(struct config global_config, struct config local_confi
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_video_framerate_control(struct config global_config, struct config local_config)
 {
@@ -659,7 +659,7 @@ gchar* hb_video_framerate_control(struct config global_config, struct config loc
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_video_turbo(struct config global_config, struct config local_config)
 {
@@ -673,7 +673,7 @@ gchar* hb_video_turbo(struct config global_config, struct config local_config)
  * @param global_config
  * @param local_config
  *
- * @return 
+ * @return
  */
 gchar* hb_video(struct config global_config, struct config local_config)
 {

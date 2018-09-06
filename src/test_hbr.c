@@ -30,7 +30,7 @@
 int init_gen_xml(void) { return 0; }
 int clean_gen_xml(void) { return 0; }
 void test_parse_gen_opt(void) { CU_ASSERT(0); }
-void test_read_episode_list(void) { 
+void test_read_episode_list(void) {
 	// generate episode list
 	// 	potential lists
 	// 	good input, out of numerical order
