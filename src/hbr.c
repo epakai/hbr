@@ -31,8 +31,8 @@
 /*
  * PROTOTYPES
  */
-struct config fetch_or_generate_config();
-void encode_loop(GKeyFile* keyfile, struct config config);
+GKeyFile * fetch_or_generate_keyfile();
+void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename);
 int hb_fork(gchar *args[], gchar *log_filename, int out_count);
@@ -116,40 +116,51 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    // parse hbr config
-    struct config global_config = fetch_or_generate_config();
+    // setup options pointers and lookup tables
+    determine_handbrake_version();
+
+    // parse hbr config or create a default
+    GKeyFile *config = fetch_or_generate_keyfile();
 
     // loop over each input file
     int i = 0;
     while (opt_input_files[i] != NULL) {
+        if(!validate_input_file(opt_input_files[i])) {
+            //TODO error here (on top of whatever validate spits out
+            continue;
+        }
         // parse input file
-        GKeyFile* keyfile = parse_key_file(opt_input_files[i]);
-        if (keyfile == NULL) {
+        GKeyFile *current_infile = parse_key_file(opt_input_files[i]);
+        if (current_infile == NULL) {
             g_option_context_free(context);
-            free_config(global_config);
+            //TODO ERROR HERE
             exit(1);
         }
-        struct config local_config = get_local_config(keyfile);
-        struct config merged = merge_configs(local_config, global_config);
-        free_config(local_config);
+
+        // merge config sections from global config and current infile
+        GKeyFile *merged = merge_key_group(current_infile, "CONFIG",
+                config, "CONFIG", "MERGED_CONFIG");
 
         // override output path if option given
         if (opt_output != NULL) {
-                        // free old string in config
-            g_free(merged.key.output_basedir);
-            merged.key.output_basedir = g_strdup(opt_output);
-            merged.set.output_basedir = TRUE;
+            g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir", opt_output);
         }
 
         // encode each outfile
-        encode_loop(keyfile, merged);
+        encode_loop(current_infile, merged);
 
-        // clean up and exit
-        free_config(merged);
-        g_key_file_free(keyfile);
+        // clean up
+        g_key_file_free(current_infile);
+        g_key_file_free(merged);
         i++;
     }
-    free_config(global_config);
+    // destroy hash tables created by determine_handbrake_version()
+    g_hash_table_destroy(options_index);
+    g_hash_table_foreach(depends_index, free_slist_in_hash, NULL);
+    g_hash_table_destroy(depends_index);
+    g_hash_table_foreach(conflicts_index, free_slist_in_hash, NULL);
+    g_hash_table_destroy(conflicts_index);
+    g_key_file_free(config);
     g_option_context_free(context);
     g_strfreev(opt_input_files);
     exit(0);
@@ -178,7 +189,7 @@ gboolean good_output_option_path()
     return TRUE;
 }
 
-struct config fetch_or_generate_config()
+GKeyFile *fetch_or_generate_keyfile()
 {
     // Try $XDG_CONFIG_HOME, then home dir
     GString *config_dir = g_string_new(NULL);
@@ -198,22 +209,23 @@ struct config fetch_or_generate_config()
     g_string_free(config_dir, TRUE);
     // parse config if it exists
     if (g_file_test (config_file->str, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+        if(!validate_config_file(config_file->str)) {
+            // TODO Error, bad config
+            return NULL;
+        }
         GKeyFile *keyfile = parse_key_file(config_file->str);
         g_string_free(config_file, TRUE);
-        struct config fetched = get_global_config(keyfile);
-        g_key_file_free(keyfile);
-        return fetched;
+        return keyfile;
     } else {
         // Create and write a default config
-        struct config d = default_config();
-        GKeyFile *keyfile = generate_key_file(d);
+        GKeyFile *keyfile = generate_default_key_file();
         GError *error = NULL;
         if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
             g_warning ("Error writing config file: %s", error->message);
         }
         g_string_free(config_file, TRUE);
         g_key_file_free(keyfile);
-        return d;
+        return keyfile;
     }
 }
 
@@ -223,10 +235,10 @@ struct config fetch_or_generate_config()
  * @param keyfile Document to read outfile specifications from
  * @param hb_options general option string for HandBrakeCLI
  */
-void encode_loop(GKeyFile* keyfile, struct config config) {
+void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config) {
     // loop for each out_file tag in keyfile
     gsize out_count = 0;
-    gchar **outfiles = get_outfile_list(keyfile, &out_count);
+    gchar **outfiles = get_outfile_list(inkeyfile, &out_count);
     if (out_count < 1) {
         fprintf(stderr, "No valid outfile sections found. Quitting.\n");
         exit(1);
@@ -235,7 +247,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
     // Handle -e option to encode a single episode
     if (opt_episode >= 0) {
         // adjust parameters for following loop so it runs once
-        gchar *group = get_group_from_episode(keyfile, opt_episode);
+        gchar *group = get_group_from_episode(inkeyfile, opt_episode);
         if (group != NULL) {
             // replace outfiles list with list of single episode
             gchar ** new_outfiles = g_malloc(2*sizeof(gchar *));
@@ -252,19 +264,22 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
     }
     // encode all the episodes if loop parameters weren't modified above
     for (; i < out_count; i++) {
+        // merge current outfile section with config section
+        GKeyFile *current_outfile = merge_key_group(inkeyfile, outfiles[i],
+                merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
+        
         // build full HandBrakeCLI command
-        struct outfile outfile = get_outfile(keyfile, outfiles[i]);
-        GPtrArray *args = build_args(outfile, config, opt_debug);
-        GString *filename = build_filename(outfile, config, FALSE);
+        GPtrArray *args = build_args(current_outfile, "CURRENT_OUTFILE", opt_debug);
+        GString *filename = build_filename(current_outfile, "CURRENT_OUTFILE", FALSE);
 
-        // output current encode information
+        // output current encode information (codes are for bold text)
         printf("%c[1m", 27);
         printf("Encoding: %d/%d: %s\n", i+1, out_count, filename->str);
         printf("%c[0m", 27);
 
-        // grab filename with path for log and thumbnail creation
+        // grab filename with *full path* for log and thumbnail creation
         g_string_free(filename, TRUE);
-        filename = build_filename(outfile, config, TRUE);
+        filename = build_filename(current_outfile, "CURRENT_OUTFILE", TRUE);
         if (opt_debug) {
             // print full handbrake command
             gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
@@ -278,7 +293,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
                         i, outfiles[i], filename->str);
                 g_string_free(filename, TRUE);
                 g_ptr_array_free(args, TRUE);
-                free_outfile(outfile);
+                g_key_file_free(current_outfile);
                 continue;
             }
         }
@@ -288,7 +303,7 @@ void encode_loop(GKeyFile* keyfile, struct config config) {
         }
         g_string_free(filename, TRUE);
         g_ptr_array_free(args, TRUE);
-        free_outfile(outfile);
+        g_key_file_free(current_outfile);
     }
     g_strfreev(outfiles);
 }

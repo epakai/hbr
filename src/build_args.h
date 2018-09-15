@@ -24,6 +24,8 @@
 
 // missing versions share the same options with a previous version
 typedef struct option_s option_t;
+typedef struct conflict_s conflict_t;
+typedef struct depend_s depend_t;
 
 struct option_s {
     // long option name, prefixed with -- on command line
@@ -32,81 +34,135 @@ struct option_s {
     enum {no_argument, optional_argument, required_argument} arg_type;
     // how hbr tries to interpret values in the keyfile
     enum {k_string, k_boolean, k_integer, k_double, k_string_list,
-        k_boolean_list, k_integer_list, k_double_list} key_type;
+        k_integer_list, k_double_list} key_type;
     // TRUE if the option has a corresponding --no option
     // i.e. --markers and --no-markers
     gboolean negation_option;
     // function to validate argument
-    gboolean (* valid_input)(option_t *option, void *value_p);
+    gboolean (* valid_input)(option_t *option, GKeyFile *config, gchar *group);
     // array of valid values, actual type depends on key_type
     int valid_values_count;
     void *valid_values;
 };
 
-GPtrArray * build_args(struct outfile outfile, struct config config, gboolean quoted);
-GString * build_filename(struct outfile outfile, struct config config,
-        gboolean full_path);
+struct conflict_s {
+    // name of option being considered
+    gchar *name;
+    // option that name conflicts with
+    gchar *conflict_name;
+    // optional, specific value of conflict_name that we conflict with
+    gchar *conflict_value;
+};
+
+struct depend_s {
+    // name of option being considered
+    gchar *name;
+    // option that name depends on
+    gchar *depend_name;
+    // optional, specific value of conflict_name that we depend on
+    gchar *depend_value;
+};
+
+/*
+ * Pointers to be set by determine_handbrake_version()
+ */
+option_t *options;
+depend_t *depends;
+conflict_t *conflicts;
+
+/*
+ * Hash tables for looking up index given an option name.
+ * Indexes are stored as a int inside a pointer and must be
+ * accessed using the GPOINTER_TO_INT() macro.
+ */
+GHashTable *options_index;
+/*
+ * These are similar, but store an GSList of values because options may depend
+ * on, or conflict with multiple other keys/values.
+ * These values are also an int stored inside a pointers.
+ */
+GHashTable *depends_index;
+GHashTable *conflicts_index;
+
+GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted);
+GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path);
 static gboolean strcmp_list(gchar *s, gchar **list, gsize len);
-option_t * determine_handbrake_version();
+void determine_handbrake_version();
+void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data);
+
+/*
+ * Input validation for options that only apply to hbr.
+ * These aren't valid options to pass to HandBrakeCLI.
+ * They are used to generate file names or specify file locations
+ */
+gboolean valid_input_basedir(GKeyFile *);
+gboolean valid_output_basedir(GKeyFile *);
+gboolean valid_type(GKeyFile *);
+gboolean valid_iso_filename(GKeyFile *);
+gboolean valid_name(GKeyFile *);
+gboolean valid_year(GKeyFile *);
+gboolean valid_season(GKeyFile *);
+gboolean valid_episode_number(GKeyFile *);
+gboolean valid_specific_name(GKeyFile *);
 
 // general input validation routines
-gboolean valid_boolean(option_t *option, void *value_p);
+gboolean valid_boolean(option_t *option, GKeyFile *config, gchar *group);
 
-gboolean valid_integer_set(option_t *option, void *value_p);
-gboolean valid_integer_list(option_t *option, void *value_p);
-gboolean valid_integer_list_set(option_t *option, void *value_p);
-gboolean valid_positive_integer(option_t *option, void *value_p);
+gboolean valid_integer_set(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_integer_list(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_integer_list_set(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_positive_integer(option_t *option, GKeyFile *config, gchar *group);
 
-gboolean valid_positive_double_list(option_t *option, void *value_p);
+gboolean valid_positive_double_list(option_t *option, GKeyFile *config, gchar *group);
 
-gboolean valid_string(option_t *option, void *value_p);
-gboolean valid_string_set(option_t *option, void *value_p);
-gboolean valid_string_list_set(option_t *option, void *value_p);
-gboolean valid_string_list(option_t *option, void *value_p);
+gboolean valid_string(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_string_set(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_string_list_set(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_string_list(option_t *option, GKeyFile *config, gchar *group);
 
 // specific input validation routines
-gboolean valid_optimize(option_t *option, void *value_p);
-gboolean valid_filename_exists(option_t *option, void *value_p);
-gboolean valid_filename_exists_list(option_t *option, void *value_p);
-gboolean valid_filename_dne(option_t *option, void *value_p);
-gboolean valid_startstop_at(option_t *option, void *value_p);
-gboolean valid_previews(option_t *option, void *value_p);
-gboolean valid_audio(option_t *option, void *value_p);
-gboolean valid_audio_quality(option_t *option, void *value_p);
-gboolean valid_audio_bitrate(option_t *option, void *value_p);
-gboolean valid_video_quality(option_t *option, void *value_p);
-gboolean valid_video_bitrate(option_t *option, void *value_p);
-gboolean valid_crop(option_t *option, void *value_p);
-gboolean valid_pixel_aspect(option_t *option, void *value_p);
-gboolean valid_decomb(option_t *option, void *value_p);
-gboolean valid_denoise(option_t *option, void *value_p);
-gboolean valid_deblock(option_t *option, void *value_p);
-gboolean valid_deinterlace(option_t *option, void *value_p);
-gboolean valid_detelecine(option_t *option, void *value_p);
-gboolean valid_iso639(option_t *option, void *value_p);
-gboolean valid_iso639_list(option_t *option, void *value_p);
-gboolean valid_native_dub(option_t *option, void *value_p);
-gboolean valid_subtitle(option_t *option, void *value_p);
-gboolean valid_gain(option_t *option, void *value_p);
-gboolean valid_drc(option_t *option, void *value_p);
-gboolean valid_mixdown(option_t *option, void *value_p);
-gboolean valid_chapters(option_t *option, void *value_p);
-gboolean valid_encopts(option_t *option, void *value_p);
-gboolean valid_encoder_preset(option_t *option, void *value_p);
-gboolean valid_encoder_tune(option_t *option, void *value_p);
-gboolean valid_encoder_profile(option_t *option, void *value_p);
-gboolean valid_encoder_level(option_t *option, void *value_p);
-gboolean valid_nlmeans(option_t *option, void *value_p);
-gboolean valid_nlmeans_tune(option_t *option, void *value_p);
-gboolean valid_dither(option_t *option, void *value_p);
-gboolean valid_subtitle_forced(option_t *option, void *value_p);
-gboolean valid_codeset(option_t *option, void *value_p);
-gboolean valid_rotate(option_t *option, void *value_p);
-gboolean valid_qsv_decoding(option_t *option, void *value_p);
-gboolean valid_comb_detect(option_t *option, void *value_p);
-gboolean valid_pad(option_t *option, void *value_p);
-gboolean valid_unsharp(option_t *option, void *value_p);
-gboolean valid_filespec(option_t *option, void *value_p);
-gboolean valid_preset_name(option_t *option, void *value_p);
+gboolean valid_optimize(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_filename_exists(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_filename_exists_list(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_filename_dne(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_startstop_at(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_previews(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_audio(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_audio_quality(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_audio_bitrate(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_video_quality(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_video_bitrate(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_crop(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_pixel_aspect(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_decomb(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_denoise(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_deblock(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_deinterlace(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_detelecine(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_iso639(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_iso639_list(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_native_dub(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_subtitle(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_gain(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_drc(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_mixdown(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_chapters(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_encopts(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_encoder_preset(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_encoder_tune(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_encoder_profile(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_encoder_level(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_nlmeans(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_nlmeans_tune(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_dither(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_subtitle_forced(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_codeset(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_rotate(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_qsv_decoding(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_comb_detect(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_pad(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_unsharp(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_filespec(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_preset_name(option_t *option, GKeyFile *config, gchar *group);
 
 #endif
