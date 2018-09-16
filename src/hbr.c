@@ -96,6 +96,7 @@ int main(int argc, char * argv[])
     GError *error = NULL;
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_print ("Option parsing failed: %s\n", error->message);
+        g_error_free(error);
         g_option_context_free(context);
         exit(1);
     }
@@ -115,26 +116,26 @@ int main(int argc, char * argv[])
         g_strfreev(opt_input_files);
         exit(1);
     }
+    // parse hbr config or create a default
+    GKeyFile *config;
+    if ((config = fetch_or_generate_keyfile()) == NULL) {
+        g_option_context_free(context);
+        g_strfreev(opt_input_files);
+        exit(1);
+    }
 
     // setup options pointers and lookup tables
-    determine_handbrake_version();
-
-    // parse hbr config or create a default
-    GKeyFile *config = fetch_or_generate_keyfile();
+    determine_handbrake_version(NULL);
 
     // loop over each input file
     int i = 0;
     while (opt_input_files[i] != NULL) {
-        if(!validate_input_file(opt_input_files[i])) {
-            //TODO error here (on top of whatever validate spits out
-            continue;
-        }
         // parse input file
-        GKeyFile *current_infile = parse_key_file(opt_input_files[i]);
+        GKeyFile *current_infile = parse_validate_key_file(opt_input_files[i], config);
         if (current_infile == NULL) {
             g_option_context_free(context);
             //TODO ERROR HERE
-            exit(1);
+            exit(1); // TODO maybe just error here and skip the current infile
         }
 
         // merge config sections from global config and current infile
@@ -207,13 +208,15 @@ GKeyFile *fetch_or_generate_keyfile()
     GString *config_file = g_string_new(NULL);
     g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
     g_string_free(config_dir, TRUE);
-    // parse config if it exists
+    // check config file exists
     if (g_file_test (config_file->str, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
-        if(!validate_config_file(config_file->str)) {
-            // TODO Error, bad config
+        // parse config file
+        GKeyFile *keyfile = parse_validate_key_file(config_file->str, NULL);
+        if (keyfile == NULL) {
+            // Quit, parse_key_file() will report errors
+            g_string_free(config_file, TRUE);
             return NULL;
         }
-        GKeyFile *keyfile = parse_key_file(config_file->str);
         g_string_free(config_file, TRUE);
         return keyfile;
     } else {
@@ -222,9 +225,9 @@ GKeyFile *fetch_or_generate_keyfile()
         GError *error = NULL;
         if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
             g_warning ("Error writing config file: %s", error->message);
+            g_error_free(error);
         }
         g_string_free(config_file, TRUE);
-        g_key_file_free(keyfile);
         return keyfile;
     }
 }
@@ -267,13 +270,16 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config) {
         // merge current outfile section with config section
         GKeyFile *current_outfile = merge_key_group(inkeyfile, outfiles[i],
                 merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
-        
+
         // build full HandBrakeCLI command
         GPtrArray *args = build_args(current_outfile, "CURRENT_OUTFILE", opt_debug);
         GString *filename = build_filename(current_outfile, "CURRENT_OUTFILE", FALSE);
 
         // output current encode information (codes are for bold text)
         printf("%c[1m", 27);
+        if (opt_debug) {
+            printf("# ");
+        }
         printf("Encoding: %d/%d: %s\n", i+1, out_count, filename->str);
         printf("%c[0m", 27);
 

@@ -23,17 +23,18 @@
 #include "handbrake/options-1.0.0.h"
 #include "handbrake/options-1.1.0.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 /**
- * @brief 
+ * @brief Produce options to be passed to HandBrakeCLI
  *
- * @param outfile
- * @param config
- * @param quoted
+ * @param config Keyfile to build options from
+ * @param group Name of group in keyfile that contains key and values
+ * @param quoted Determines if filenames should be quoted (for debug mode)
  *
- * @return 
+ * @return GPtrArray pointer with one option per element
  */
 GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
 {
@@ -57,7 +58,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
          * in keyfile.c:validate_key_file()
          */
         assert(options[i].valid_input(&options[i], config, group));
-        
+
         gchar *string_value;
         gint integer_value;
         gdouble double_value;
@@ -79,16 +80,16 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                 break;
             case k_boolean:
                 // check for affirmative boolean (i.e. markers)
-                if(g_key_file_get_boolean(config, group, options[i].name, NULL)) {
+                if (g_key_file_get_boolean(config, group, options[i].name, NULL)) {
                     g_ptr_array_add(args, g_strdup_printf("--%s", options[i].name));
                 }
                 // check for negating boolean (i.e. no-markers)
                 if (options[i].negation_option) {
                     gchar * negation_name = g_strdup_printf("no-%s", options[i].name);
                     if (g_key_file_has_key(config, group, negation_name, NULL)) {
-                        if(g_key_file_get_boolean(config, group, negation_name, NULL)) {
+                        if (g_key_file_get_boolean(config, group, negation_name, NULL)) {
                             g_ptr_array_add(args, g_strdup_printf("--%s", negation_name));
-                        }   
+                        }
                     }
                 }
                 break;
@@ -109,11 +110,11 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int j = 0;
-                for (; j < count-1; j++) {
-                    g_string_append_printf(arg, "%s,", string_list_values[j]);
+                int m = 0;
+                for (; m < count-1; m++) {
+                    g_string_append_printf(arg, "%s,", string_list_values[m]);
                 }
-                g_string_append_printf(arg, "%s", string_list_values[j]);
+                g_string_append_printf(arg, "%s", string_list_values[m]);
                 g_strfreev(string_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
@@ -123,11 +124,11 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int k = 0;
-                for (; k < count-1; k++) {
-                    g_string_append_printf(arg, "%d,", integer_list_values[k]);
+                int n = 0;
+                for (; n < count-1; n++) {
+                    g_string_append_printf(arg, "%d,", integer_list_values[n]);
                 }
-                g_string_append_printf(arg, "%d", integer_list_values[k]);
+                g_string_append_printf(arg, "%d", integer_list_values[n]);
                 g_free(integer_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
@@ -137,11 +138,11 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int l = 0;
-                for (; l < count-1; l++) {
-                    g_string_append_printf(arg, "%.1f,", double_list_values[l]);
+                int o = 0;
+                for (; o < count-1; o++) {
+                    g_string_append_printf(arg, "%.1f,", double_list_values[o]);
                 }
-                g_string_append_printf(arg, "%.1f", double_list_values[l]);
+                g_string_append_printf(arg, "%.1f", double_list_values[o]);
                 g_free(double_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
@@ -184,7 +185,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
     }
     // Couldn't find documents saying GPtrArray is null terminated so we'll do that
     g_ptr_array_add(args, g_strdup(NULL));
-   
+
     return args;
 }
 
@@ -228,7 +229,7 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
     if (specific_name) {
         g_string_append_printf(filename, " - %s", specific_name);
     }
-    
+
     if (strcmp(format, "av_mkv") == 0 ) {
         g_string_append(filename, ".mkv");
     }
@@ -248,49 +249,65 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
     return filename;
 }
 
-
-/**
- * @brief Determine if s matches any strings in list
- *
- * @param s string to be tested
- * @param list string array to test against
- * @param len number of strings in list
- *
- * @return TRUE when s matches a string in list
- */
-static gboolean strcmp_list(gchar *s, gchar **list, gsize len) {
-    for (gsize i = 0; i< len; i++) {
-        if (strcmp(s, list[i]) == 0) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
 /**
  * @brief Find the appropriate set of options to work with
  *
- * @return pointer to matching option array
+ * @param arg_version Version passed as a command line option to hbr
  */
 void determine_handbrake_version(gchar *arg_version)
 {
     // check HandBrakeCLI is available
 
-    gchar *version;
+    gchar *version = NULL;
     // try version specified from -H/--hbversion
     if (arg_version) {
         version = arg_version;
     } else {
         // else try HandBrakeCLI --version
-        // TODO
-        // else try HandBrakeCLI --update and pick out version
-        // TODO
+        char *argv[] = { "HandBrakeCLI", "--version", NULL };
+        gchar *output = NULL;
+        gint exit_status;
+        if (g_spawn_sync (NULL, argv, NULL,
+                    G_SPAWN_SEARCH_PATH|G_SPAWN_STDERR_TO_DEV_NULL,
+                    NULL, NULL, &output, NULL, &exit_status, NULL)
+                && exit_status == 0) {
+            gchar **split_output = g_strsplit_set(output, " \n", 3);
+            g_free(output);
+            version = g_strdup(split_output[1]);
+            g_strfreev(split_output);
+        } else {
+            g_free(output);
+            output = NULL;
+            // try HandBrakeCLI --update and pick out version
+            char *argv[] = { "HandBrakeCLI", "--update", NULL };
+            // note: update errors and spits out a version on *STDERR*
+            if (g_spawn_sync (NULL, argv, NULL,
+                    G_SPAWN_SEARCH_PATH|G_SPAWN_STDOUT_TO_DEV_NULL,
+                    NULL, NULL, NULL, &output, &exit_status, NULL)) {
+                gchar **split_output = g_strsplit_set(output, " \n", -1);
+                g_free(output);
+                int i = 0;
+                // find "HandBrake" and take next string as version number
+                while (split_output[i] != NULL) {
+                    if (strcmp(split_output[i], "HandBrake") == 0) {
+                        version = g_strdup(split_output[i+1]);
+                        break;
+                    }
+                    i++;
+                }
+                g_strfreev(split_output);
+            }
+        }
     }
 
     gint major, minor, patch;
     //split version number
-    //TODO
-
+    gchar **split_version = g_strsplit(version, ".", 3);
+    major = atoi(split_version[0]);
+    minor = atoi(split_version[1]);
+    patch = atoi(split_version[2]);
+    g_free(version);
+    g_strfreev(split_version);
 
     /*
      * Baseline version if detection fails
@@ -300,7 +317,7 @@ void determine_handbrake_version(gchar *arg_version)
     conflicts = conflict_v0_9_9;
     /*
      * NOTE: This logic is over-simplified because versions where changes
-     * occured are tightly packed. Think hard about this when adding new
+     * occurred are tightly packed. Think hard about this when adding new
      * versions.
      */
     if (major > 1 || (major == 1 && minor > 1) ||

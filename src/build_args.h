@@ -84,12 +84,10 @@ GHashTable *options_index;
 GHashTable *depends_index;
 GHashTable *conflicts_index;
 
-GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted);
-GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path);
-static gboolean strcmp_list(gchar *s, gchar **list, gsize len);
-void determine_handbrake_version();
+GPtrArray *build_args(GKeyFile *config, gchar *group, gboolean quoted);
+GString *build_filename(GKeyFile *config, gchar *group, gboolean full_path);
+void determine_handbrake_version(gchar *arg_version);
 void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data);
-
 /*
  * Input validation for options that only apply to hbr.
  * These aren't valid options to pass to HandBrakeCLI.
@@ -107,14 +105,11 @@ gboolean valid_specific_name(GKeyFile *);
 
 // general input validation routines
 gboolean valid_boolean(option_t *option, GKeyFile *config, gchar *group);
-
 gboolean valid_integer_set(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_integer_list(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_integer_list_set(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_positive_integer(option_t *option, GKeyFile *config, gchar *group);
-
 gboolean valid_positive_double_list(option_t *option, GKeyFile *config, gchar *group);
-
 gboolean valid_string(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_string_set(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_string_list_set(option_t *option, GKeyFile *config, gchar *group);
