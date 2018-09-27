@@ -404,7 +404,7 @@ gboolean has_duplicate_groups(GDataInputStream *datastream, gchar *infile)
     gsize length;
     gint line_count = 0;
     GHashTable *group_hashes = g_hash_table_new_full(g_str_hash, g_str_equal,
-            NULL, g_free);
+            g_free, NULL);
     // parse each line
     while ((line = g_data_input_stream_read_line_utf8(datastream, &length, NULL,
                     NULL))) {

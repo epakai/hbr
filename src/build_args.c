@@ -51,6 +51,8 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
          * TODO add a check for empty or blank keys. this is probably where you
          * need to check arg_type, but I think some arg_type values taken from
          * test.c may be incorrect.
+         * example:
+         * aencoder=
          */
 
         /*
@@ -259,7 +261,7 @@ void determine_handbrake_version(gchar *arg_version)
     // check HandBrakeCLI is available
 
     gchar *version = NULL;
-    // try version specified from -H/--hbversion
+    // use version specified from -H or --hbversion
     if (arg_version) {
         version = arg_version;
     } else {
