@@ -104,7 +104,7 @@ int main(int argc, char * argv[])
     // print help when there are no file arguments to process
     if (opt_input_files == NULL) {
         gchar *temp = g_option_context_get_help(context, TRUE, NULL);
-        printf(temp);
+        printf("%s", temp);
         g_free(temp);
         g_option_context_free(context);
         g_strfreev(opt_input_files);
