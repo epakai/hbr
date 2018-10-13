@@ -1,0 +1,15 @@
+language: c
+
+compiler:
+    - clang
+    - gcc
+
+matrix:
+    include:
+        - os: linux
+            addons:
+                apt:
+                    packages:
+                        - libglib2.0-dev
+
+install: true
