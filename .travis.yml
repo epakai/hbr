@@ -4,12 +4,11 @@ compiler:
     - clang
     - gcc
 
-matrix:
-    include:
-        - os: linux
-            addons:
-                apt:
-                    packages:
-                        - libglib2.0-dev
+addons:
+    apt:
+        packages:
+            - libglib2.0-dev
+
+before_script: ./autogen.sh
 
 install: true
