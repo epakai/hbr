@@ -16,8 +16,6 @@ AC_CHECK_PROGS([DOXYGEN], [doxygen])
 AS_IF([test -z "$DOXYGEN"],
       [AC_MSG_WARN([Doxygen not found - Source documentation cannot be generated])],
       [
-       AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-       AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Makefile doc/Doxyfile])])
        # Dot for code graphs in source documentation
        AC_CHECK_PROGS([GRAPHVIZ], [dot])
        AS_IF([test -z "$GRAPHVIZ"],
@@ -47,6 +45,8 @@ AS_IF([test -z "$DOXYGEN"],
        AC_ARG_ENABLE([doxygen-latex],
                      AS_HELP_STRING([--enable-doxygen-latex], [Generate LaTeX documentation]))
        ])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Makefile doc/Doxyfile])])
 AS_IF([test "$enable_doxygen_html" != "no"], AC_SUBST([GENERATE_HTML], ["yes"]), 
 AC_SUBST([GENERATE_HTML], ["no"]))
 AS_IF([test "$enable_doxygen_xml" = "yes"], AC_SUBST([GENERATE_XML], ["yes"]), 
