@@ -280,7 +280,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config) {
         if (opt_debug) {
             printf("# ");
         }
-        printf("Encoding: %d/%d: %s\n", i+1, out_count, filename->str);
+        printf("Encoding: %d/%lu: %s\n", i+1, out_count, filename->str);
         printf("%c[0m", 27);
 
         // grab filename with *full path* for log and thumbnail creation

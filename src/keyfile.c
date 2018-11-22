@@ -201,7 +201,7 @@ void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
                         conflict.conflict_name, NULL);
             }
         }
-    } while (conflict_indexes = g_slist_next(conflict_indexes));
+    } while ((conflict_indexes = g_slist_next(conflict_indexes)));
 }
 
 /**
@@ -354,7 +354,7 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, GKeyFile *config_keyf
     // check required keys exist (depends)
     // check known keys values (independent)
     // check known keys values (dependent)
-
+    return TRUE;
 }
 
 gboolean post_validate_config_file(GKeyFile *keyfile)
@@ -369,7 +369,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile)
     // check depends
     // check conflicts
     // check negation type conflicts
-
+    return TRUE;
 }
 
 GDataInputStream * open_datastream(gchar *infile)

@@ -65,7 +65,6 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
         gint integer_value;
         gdouble double_value;
         gchar **string_list_values;
-        gboolean *boolean_list_values;
         gint *integer_list_values;
         gdouble *double_list_values;
         gsize count;
