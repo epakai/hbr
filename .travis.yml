@@ -2,18 +2,15 @@ language: c
 
 matrix:
     include:
+        compiler:
+            - clang
+            - gcc
         - name: "Base"
-          compiler:
-              - clang
-              - gcc
           addons:
               apt:
                   packages:
                       - libglib2.0-dev
         - name: "Base + Doxygen"
-          compiler:
-              - clang
-              - gcc
           addons:
               apt:
                   packages:
