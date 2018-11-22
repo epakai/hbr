@@ -11,4 +11,6 @@ clean-local:
 	$(MAKE) -C doc clean
 endif
 
+test: ;
+
 .PHONY: doc
