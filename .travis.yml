@@ -1,17 +1,19 @@
 language: c
 
-compiler:
-    - clang
-    - gcc
-
 matrix:
     include:
         - name: "Base"
+          compiler:
+              - clang
+              - gcc
           addons:
               apt:
                   packages:
                       - libglib2.0-dev
         - name: "Base + Doxygen"
+          compiler:
+              - clang
+              - gcc
           addons:
               apt:
                   packages:
@@ -19,6 +21,7 @@ matrix:
                       - doxygen
                       - graphviz
                       - markdown
+          script: ./configure && make && make doc && make test
 
 before_script: ./autogen.sh
 
