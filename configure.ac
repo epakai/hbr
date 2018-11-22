@@ -57,9 +57,9 @@ AS_IF([test "$enable_doxygen_latex" = "yes"], AC_SUBST([GENERATE_LATEX], ["yes"]
 AC_SUBST([GENERATE_LATEX], ["no"]))
 
 # Checks for libraries.
-AC_CHECK_LIB(GLIB2, g_keyfile_new)
+AC_CHECK_LIB(glib-2.0, g_keyfile_new)
 PKG_CHECK_MODULES(GLIB2, glib-2.0)
-AC_CHECK_LIB(GIO2, g_data_input_stream_new)
+AC_CHECK_LIB(gio-2.0, g_data_input_stream_new)
 PKG_CHECK_MODULES(GIO2, gio-2.0)
 
 # Checks for header files.
