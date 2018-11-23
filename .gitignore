@@ -6,9 +6,9 @@ samples/*
 /doc/Doxyfile.in
 /src/Makefile.in
 /src/Makefile
+/src/config.*
 /aclocal.m4
 /autom4te.cache/
-/config.*
 /compile
 /configure
 /depcomp
@@ -19,4 +19,5 @@ samples/*
 .deps/
 .dirstamp
 *.o
+*.gch
 *~

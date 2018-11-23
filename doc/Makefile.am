@@ -10,6 +10,8 @@ $(MAINPAGE_MDFILE): $(top_srcdir)/README
 CLEANFILES = doxyfile.stamp README.md
 
 all-local: doxyfile.stamp
+distclean-local:
+	-rm Doxyfile Makefile
 clean-local:
 	-rm -rf html latex rtf xml
 endif

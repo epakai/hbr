@@ -4,12 +4,24 @@
 AC_PREREQ([2.69])
 AC_INIT([hbr], [0.1], [https://github.com/epakai/hbr/issues])
 AC_CONFIG_SRCDIR([src/hbr.c])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([src/config.h])
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_STDC
 AC_PROG_INSTALL
+
+# Code check tools
+AC_CHECK_PROGS([CLANG], [clang])
+AM_CONDITIONAL([HAVE_CLANG], [test -n "$CLANG"])
+AC_CHECK_PROGS([CPPCHECK], [cppcheck])
+AM_CONDITIONAL([HAVE_CPPCHECK], [test -n "$CPPCHECK"])
+AC_CHECK_PROGS([VERAPP], [vera++])
+AM_CONDITIONAL([HAVE_VERAPP], [test -n "$VERAPP"])
+AC_CHECK_PROGS([PMCCABE], [pmccabe])
+AM_CONDITIONAL([HAVE_PMCCABE], [test -n "$PMCCABE"])
+AC_CHECK_PROGS([CODESPELL], [codespell])
+AM_CONDITIONAL([HAVE_CODESPELL], [test -n "$CODESPELL"])
 
 # Doxygen for source code documentation
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
@@ -76,8 +88,9 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([dup2 getcwd strchr strerror strtol])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+# no-portability added to use addprefix for $SOURCES in Makefile.am
+AM_INIT_AUTOMAKE([-Wall -Werror -Wsyntax -Wno-portability foreign subdir-objects])
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
