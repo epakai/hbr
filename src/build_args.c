@@ -16,6 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 #include "build_args.h"
 #include "handbrake/options-0.9.9.h"
 #include "handbrake/options-0.10.0.h"

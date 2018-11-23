@@ -22,10 +22,12 @@ doc:
 endif
 
 SOURCES := $(addprefix $(top_srcdir)/, $(hbr_SOURCES))
+PCH = $(addsuffix .gch, $(SOURCES))
 
 if HAVE_CLANG
 clang-analyzer:
 	- clang $(hbr_CFLAGS) --analyze $(SOURCES)
+	- rm $(PCH)
 	- rm *.plist
 else
 clang-analyzer:

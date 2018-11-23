@@ -1,8 +1,30 @@
+/*
+ * hbr - handbrake runner
+ * Copyright (C) 2016 Joshua Honeycutt
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#include "../build_args.h"
+
 static option_t option_v0_9_9[] =
 {
-    { "verbose", optional_argument, k_integer, FALSE, valid_integer_set, 2, (gint[]){0,1}},
+    { "verbose", optional_argument, k_integer, FALSE, valid_integer_set, 2, (gint[]){0, 1}},
     { "no-dvdnav", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
-    { "format", required_argument, k_string, FALSE, valid_string_set, 2, (gchar*[]){"av_mp4", "av_mkv"}},
+    { "format", required_argument, k_string, FALSE, valid_string_set, 2,
+        (gchar*[]){"av_mp4", "av_mkv"}},
     { "large-file", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL },
     { "optimize", no_argument, k_boolean, FALSE, valid_optimize, 0, NULL},
     { "ipod-atom", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
@@ -15,7 +37,8 @@ static option_t option_v0_9_9[] =
     { "markers", optional_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "audio", required_argument, k_string, FALSE, valid_audio, 0, NULL},
     { "mixdown", required_argument, k_string_list, FALSE, valid_mixdown, 0, NULL},
-    { "normalize-mix", required_argument, k_integer_list, FALSE, valid_integer_list_set, 2, (gint[]){0, 1}},
+    { "normalize-mix", required_argument, k_integer_list, FALSE, valid_integer_list_set, 2,
+        (gint[]){0, 1}},
     { "drc", required_argument, k_double, FALSE, valid_drc, 0, NULL},
     { "gain", required_argument, k_double, FALSE, valid_gain, 0, NULL},
     { "adither", required_argument, k_string, FALSE, valid_dither, 0, NULL},
@@ -30,8 +53,11 @@ static option_t option_v0_9_9[] =
     { "srt-default", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "native-language", required_argument, k_string, FALSE, valid_iso639, 0, NULL},
     { "native-dub", no_argument, k_boolean, FALSE, valid_native_dub, 0, NULL},
-    { "encoder", required_argument, k_string, FALSE, valid_string_set, 4, (gchar*[]){"x264", "ffmpeg4", "ffmpeg2", "theora"}},
-    { "aencoder", required_argument, k_string_list, FALSE, valid_string_list_set, 12, (gchar*[]){"av_aac", "copy:aac", "ac3", "copy:ac3", "copy:dts", "copy:dtshd", "mp3", "copy:mp3", "vorbis", "flac16", "flac24", "copy"}},
+    { "encoder", required_argument, k_string, FALSE, valid_string_set, 4,
+        (gchar*[]){"x264", "ffmpeg4", "ffmpeg2", "theora"}},
+    { "aencoder", required_argument, k_string_list, FALSE, valid_string_list_set, 12,
+        (gchar*[]){"av_aac", "copy:aac", "ac3", "copy:ac3", "copy:dts",
+            "copy:dtshd", "mp3", "copy:mp3", "vorbis", "flac16", "flac24", "copy"}},
     { "two-pass", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "deinterlace", optional_argument, k_string, FALSE, valid_deinterlace, 0, NULL},
     { "deblock", optional_argument, k_string, FALSE, valid_deblock, 0, NULL},
@@ -39,7 +65,8 @@ static option_t option_v0_9_9[] =
     { "detelecine", optional_argument, k_string, FALSE, valid_detelecine, 0, NULL},
     { "decomb", optional_argument, k_string, FALSE, valid_decomb, 0, NULL},
     { "grayscale", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
-    { "rotate", optional_argument, k_integer, FALSE, valid_integer_set, 7, (gint[]){1, 2, 3, 4, 5, 6, 7}},
+    { "rotate", optional_argument, k_integer, FALSE, valid_integer_set, 7,
+        (gint[]){1, 2, 3, 4, 5, 6, 7}},
     { "strict-anamorphic", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "loose-anamorphic", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "custom-anamorphic", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
@@ -57,15 +84,22 @@ static option_t option_v0_9_9[] =
     { "ab", required_argument, k_integer_list, FALSE, valid_audio_bitrate, 0, NULL},
     { "aq", required_argument, k_double_list, FALSE, valid_audio_quality, 0, NULL},
     { "ac", required_argument, k_double_list, FALSE, valid_positive_double_list, 0, NULL},
-    { "rate", required_argument, k_string, FALSE, valid_string_set, 12, (gchar*[]){"5", "10", "12", "15", "23.976", "24", "25", "29.97", "30", "50", "59.94", "60"}},
-    { "arate", required_argument, k_string_list, FALSE, valid_string_list_set, 9, (gchar*[]){"8", "11.025", "12", "16", "22.05", "24", "32", "44.1", "48"}},
+    { "rate", required_argument, k_string, FALSE, valid_string_set, 12,
+        (gchar*[]){"5", "10", "12", "15", "23.976", "24", "25", "29.97", "30",
+            "50", "59.94", "60"}},
+    { "arate", required_argument, k_string_list, FALSE, valid_string_list_set, 9,
+        (gchar*[]){"8", "11.025", "12", "16", "22.05", "24", "32", "44.1", "48"}},
     { "encopts", required_argument, k_string, FALSE, valid_encopts, 0, NULL},
     { "turbo", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "maxHeight", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "maxWidth", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "preset", required_argument, k_string, FALSE, valid_string_list, 11, (gchar*[]){"Universal", "iPod", "iPhone & iPod touch", "iPad", "AppleTV", "AppleTV 2", "AppleTV 3", "Android", "Android Tablet", "Normal", "High Profile"}},
+    { "preset", required_argument, k_string, FALSE, valid_string_list, 11,
+        (gchar*[]){"Universal", "iPod", "iPhone & iPod touch", "iPad",
+            "AppleTV", "AppleTV 2", "AppleTV 3", "Android", "Android Tablet",
+            "Normal", "High Profile"}},
     { "aname", required_argument, k_string_list, FALSE, valid_string_list, 0, NULL},
-    { "color-matrix", required_argument, k_string, FALSE, valid_string_set, 4, (gchar*[]){"709", "pal", "ntsc", "601"}},
+    { "color-matrix", required_argument, k_string, FALSE, valid_string_set, 4,
+        (gchar*[]){"709", "pal", "ntsc", "601"}},
     { "previews", required_argument, k_string, FALSE, valid_previews, 0, NULL},
     { "start-at-preview", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "start-at", required_argument, k_string, FALSE, valid_startstop_at, 0, NULL},
@@ -73,8 +107,10 @@ static option_t option_v0_9_9[] =
     { "vfr", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "cfr", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "pfr", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
-    { "audio-copy-mask", required_argument, k_string_list, FALSE, valid_string_list_set, 6, (gchar*[]){"all", "aac", "ac3", "dts", "dtshd", "mp3"}},
-    { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 6, (gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24"}},
+    { "audio-copy-mask", required_argument, k_string_list, FALSE, valid_string_list_set, 6,
+        (gchar*[]){"all", "aac", "ac3", "dts", "dtshd", "mp3"}},
+    { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 6,
+        (gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24"}},
     { NULL, 0, 0, 0, 0, 0}
 };
 
