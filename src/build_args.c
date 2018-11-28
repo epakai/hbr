@@ -185,7 +185,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
         g_ptr_array_add(args, filename->str);
         g_string_free(filename, FALSE); // keep string data, toss GString
     }
-    // Couldn't find documents saying GPtrArray is null terminated so we'll do that
+    // Null terminate the pointer array so we can use it without a count
     g_ptr_array_add(args, g_strdup(NULL));
 
     return args;
@@ -232,14 +232,14 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
         g_string_append_printf(filename, " - %s", specific_name);
     }
 
-    if (strcmp(format, "av_mkv") == 0 ) {
+    if (format != NULL && strcmp(format, "av_mkv") == 0 ) {
         g_string_append(filename, ".mkv");
     }
-    else if (strcmp(format, "av_mp4") == 0 ) {
+    else if (format != NULL && strcmp(format, "av_mp4") == 0 ) {
         g_string_append(filename, ".mp4");
     } else {
         // some default so files aren't left extension-less
-        // we should be verifying format is valid before we get here
+        // TODO we should be verifying format is valid before we get here
         g_string_append(filename, ".mkv");
     }
 
@@ -391,7 +391,7 @@ void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data)
 }
 
 //TODO add asserts that valid_values and valid_values_count are NULL/0
-//TODO add asserts throughout all vail_ functions because there's lots
+//TODO add asserts throughout all valid_ functions because there's lots
 // of ways to muck those files up
 //TODO all-subtiles/first-subtitle all-audio/first-audio conflict
 // but we don't have any way to handle this with valid_boolean

@@ -101,6 +101,15 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
+    // parse hbr config or create a default
+    GKeyFile *config;
+    if ((config = fetch_or_generate_keyfile()) == NULL) {
+        g_option_context_free(context);
+        g_strfreev(opt_input_files);
+        g_key_file_free(config);
+        exit(1);
+    }
+
     // print help when there are no file arguments to process
     if (opt_input_files == NULL) {
         gchar *temp = g_option_context_get_help(context, TRUE, NULL);
@@ -108,19 +117,15 @@ int main(int argc, char * argv[])
         g_free(temp);
         g_option_context_free(context);
         g_strfreev(opt_input_files);
+        g_key_file_free(config);
         exit(1);
     }
 
+    // check the output path
     if (!good_output_option_path()) {
         g_option_context_free(context);
         g_strfreev(opt_input_files);
-        exit(1);
-    }
-    // parse hbr config or create a default
-    GKeyFile *config;
-    if ((config = fetch_or_generate_keyfile()) == NULL) {
-        g_option_context_free(context);
-        g_strfreev(opt_input_files);
+        g_key_file_free(config);
         exit(1);
     }
 
@@ -134,6 +139,7 @@ int main(int argc, char * argv[])
         GKeyFile *current_infile = parse_validate_key_file(opt_input_files[i], config);
         if (current_infile == NULL) {
             g_option_context_free(context);
+            g_key_file_free(config);
             //TODO ERROR HERE
             exit(1); // TODO maybe just error here and skip the current infile
         }
@@ -224,8 +230,10 @@ GKeyFile *fetch_or_generate_keyfile()
         GKeyFile *keyfile = generate_default_key_file();
         GError *error = NULL;
         if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
-            g_warning ("Error writing config file: %s", error->message);
+            g_warning("Error writing config file: %s", error->message);
             g_error_free(error);
+        } else {
+            g_message("Default config file generated at: %s\n", config_file->str);
         }
         g_string_free(config_file, TRUE);
         return keyfile;
@@ -349,6 +357,8 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *fi
 {
     GString *log_filename = g_string_new(filename);
     log_filename = g_string_append(log_filename, ".log");
+
+    g_ptr_array_insert(args, 0, g_strdup("HandBrakeCLI"));
     // file doesn't exist, go ahead
     if ( access((char *) filename, F_OK ) != 0 ) {
         int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);

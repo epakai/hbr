@@ -1,135 +1,155 @@
 handbrake runner (hbr)                      https://github.com/epakai/hbr
 ================================================================================ 
 
-This is a tool for automating HandBrakeCLI runs. The goal is to allow for
-encodes to be re-run with modified settings.
+This is a tool for automating HandBrakeCLI runs. It takes a keyfile as input
+and runs HandBrakeCLI to encode videos.
+
+This method makes it easy to check previous encode settings. It also simplifies
+making changes and re-encoding a single file or your whole library.
 
 ================================================================================
 Building hbr
 ================================================================================
 
-Build dependencies:         cmake, libxml2-dev
-Test dependencies:          libcunit1-dev, libxml2-utils
-Documentation dependencies: markdown, doxygen, graphviz 
+Build dependencies:     libglib2.0-dev
 
-In order to build hbr: 
-	1) Create a build directory. (This can be inside the repository)
-	2) Run cmake. 
-	3) Run make.
+From release tarball:
+    ./configure
+    make
+    make install
 
-	mkdir build && cd build
-	cmake /path/to/hbr_repository/
-	make
-
-Then the tests may be built and run with:
-
-	make tests
-
-Doxygen documentation (programming reference) can be generated with:
-
-	make doc
+From git (requires autoconf/automake):
+    ./autogen.sh
+    ./configure
+    make
+    make install
 
 ================================================================================
 Usage
 ================================================================================
 
-Usage is to specify an xml file for all relevant settings.
+Runtime dependencies:   HandBrakeCLI, ffmpegthumbnailer (optional)
 
-    hbr show.xml
+hbr is a command line program that takes one or more keyfiles as input and runs
+HandBrakeCLI for each OUTFILE section in the keyfile.
 
-You may also specify a specific episode from the xml file to encode.
+hbr has a global config keyfile at $XDG_CONFIG_HOME/hbr/hbr.conf or
+$HOME/.config/hbr/hbr.conf. This file only has a CONFIG section. hbr generates
+a default config if it does not exist.
 
-    hbr show.xml -e 8
+Keyfiles are plaintext files with one CONFIG section, and one or more OUTFILE
+sections. Each section has one or more keys. Here is an example <Akira.hbr>:
 
-To generate an xml file, run hbr-gen with the -n or -l option. Some tags
-and options can be prefilled by the generator. See hbr-gen --help for a list.
-The output of hbr-gen is to standard output. Redirect it to a file.
+    [CONFIG]
+    input_basedir=/path/to/input_files
+    output_basedir=/path/to/output_files
+    type=movie
+    name=Akira
+    year=1988
 
-This generates a file with 12 outfile sections: 
+    [OUTFILE1]
+    iso_filename=Akira.iso
+    title=11
+    crop=10:10:0:0
+    chapters=1-18
+    audio=1,2,3
 
-    hbr-gen -n 12 --format=mkv --basedir=/video/iso > show.xml
+    [OUTFILE2]
+    iso_filename=Akira BD
+    title=1
+    markers=true
+    specific_name=1080p
+    chapters=1-23
+    audio=2,4,6
 
-Generation can also use an episode list in a separate file. 
-Each line of the episode list file is a episode number, then a space or tab 
-followed by the episode name. Each episode starts on a new line.
+When passed to hbr as in:
 
-    hbr-gen -l list_of_episode --format=mkv --basedir/video/iso > show.xml
+    hbr Akira.hbr
 
-Once you generate the xml edit it to complete all fields.
+hbr runs these commands:
+
+    HandBrakeCLI --title=11 --chapters=1-18 --audio=1,2,3 --crop=10:10:0:0
+        -i '/path/to/input_files/Akira.iso'
+        -o '/path/to/output_files/Akira (1988).mkv'
+    HandBrakeCLI --title=1 --chapters=1-23 --audio=2,4,6 --markers
+        -i '/path/to/input_files/Akira BD'
+        -o '/path/to/output_files/Akira (1988) - 1080p.mkv'
+
+Keys in the global hbr.conf also change the generated commands.  Respecifying a
+key in a more specific section overrides the more global setting. hbr tries to
+warn about conflicting or dependent keys, but this is incomplete.
+
+OUTFILE sections names are unique, and must start with OUTFILE. I append
+numbers to the section name in the above example, but you can use anything
+(even whitespace) after OUTFILE.
 
 ================================================================================
-Worflow description
+Key Names
 ================================================================================
 
-This is a basic description of the expected work flow for hbr:
+Most of the key names come from the related HandBrakeCLI arguments. Some are
+excluded because they do not make sense in the context of hbr. For a full list,
+run HandBrakeCLI --help.
 
-User has an iso or dvd and knows how to find which titles, chapters, audio
-tracks, etc. they want to be in their encode. We will base this example
-on manual editing of the xml file. Given 6 episodes to encode the user
-would run:
+These keys take values exactly as specified by HandBrakeCLI except for boolean
+arguments. For example, specify --markers/--no-markers as
+markers=true/markers=false in the keyfile. Boolean keys do not always have a
+corresponding negation value. For example, in older HandBrake versions
+--no-markers did not exist. In cases where there is no negation argument
+setting a key to false will not produce an argument to HandBrakeCLI, but it 
+overrides values set in the keyfile or global CONFIG section.
 
-    hbr-gen -n 6 > show_title.xml
+hbr has some special keys related to input and output file names. hbr tries to
+follow the Plex media preparation guidelines documented at:
+    https://support.plex.tv/articles/categories/media-preparation/
 
-This produces an xml file with a <handbrake_options> element with default
-values and 6 <outfile> elements. <handbrake_options> includes settings 
-that effect each encode. Each <outfile> is specific to one encode.
+Here is an overview of the hbr specific keys:
 
-Descriptions of the attributes of the the <handbrake_options> element:
+    input_basedir  - Path that specifies where to find iso_filename. Optional.
+                     iso_filename can specify a full path instead.
+    iso_filename   - The input file or device. Combined with input_basedir
+                     to make a full path.
+    type           - set to series or movie. Controls filename format.
+    output_basedir - Specifies the path for the output file. Path must already
+                     exist.
+    name           - Base name for the output file. Usually the title of the
+                     series or the movie name.
+    year           - 4-digit year used for movie filenames.
+    season         - season number used in series filenames.
+    episode_number - episode number used in series filenames.
+    specific_name  - extra name appended before the file extension. Useful for
+                     episode names or file specific metadata.
 
-    format        - must be mkv or mp4
-    video_encoder - may be x264, x265, mpeg4, mpeg2, VP8, or theora
-    video_quality - this is a number specific to each encoder
-                    I recommend looking in the handbrake gui to
-                    determine appropriate settings
-    audio_encoder - may be av_aac, fdk_aac, fdk_haac, copy:aac, ac3,
-                    copy:ac3, copy:dts, copy:dtshd, mp3, copy:mp3,
-                    vorbis, flac16, flac24, copy
-    audio_bitrate - Codec dependent. Handbrake gui is the best reference
-                    Each codec works in a range of these potential values:
-                    40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224,
-                    256, 320, 384, 448, 512, 576, 640, 768, 960, 1152,
-                    1344, 1536, 2304, 3072, 4608, 6144
-    audio_quality - Only valid for mp3 and vorbis
-                    Values are [0,10] for and [-2,10] for vorbis.
-                    quality overrides bitrate
-    anamorphic    - loose or strict
-                    There is also a custom option not implemented in hbr
-    deinterlace   - fast, slow, slower, bob, none
-                    deinterlace overrides decomb
-    decomb        - fast, bob, default or none
-    denoise       - ultralight, light, medium, strong, default, none
-	markers       - yes or no
-    input_basedir - Path that specifies where to find <iso_filename>
-                    for each <outfile>
+Filenames depend on the type specified.
+For type=movie the output filename will be:
 
-Since it is tedious to fill these out. The user can combine the -g option 
-with other options to fill out common elements across all <outfile> elements.
-See the output of hbr --help for a full list of options.
+    name (year) - specific_name.mkv
+    OR
+    name (year).mp4
 
-The user configures each outfile. Here are descriptions of each element:
+For type=series the output filename will be:
 
-    <type>            - series or movie, Affects the output filename
-    <iso_filename>    - The input file or device. Combined with input_basedir
-                        from <handbrake_options>: 
-    <dvdtitle>        - A single dvd title number
-    <name>            - Freeform Series or Movie name
-    <year>              - Year, four digit year used only in Movie filename
-    <season>          - Season, a number used only in series filename
-    <episode_number>  - Episode, a number used only in series filename
-    <specific_name>   - Freeform name like an episode title or specific
-                        version of a movie
-    <crop>            - Amount to crop off each edge
-                        top:bottom:left:right
-    <chapters>        - Chapters to encode, specified as a single number 
-                        or range (i.e. 3 or 5-8)
-    <audio>           - Audio tracks to encode, comma separated
-    <subtitle>        - Subtitle tracks to encode, comma separated
+    name - s01e001 - specific_name.mkv
 
-Once the xml specification file is complete run hbr. Files are output in
-the current working directory. hbr should produce the encoded video files
-as well as a log file with HandBrakeCLI's output.
+where season and episode_number provide the values after s and e.
 
-    hbr ./show_title.xml
+================================================================================
+Troubleshooting
+================================================================================
 
-Output file names use Plex's media preparation guidelines:
-https://support.plex.tv/hc/en-us/categories/200028098-Media-Preparation
+If things are not working out you can try checking the command hbr outputs with 
+debug mode:
+
+    hbr -d Akira.hbr
+
+hbr also logs HandBrakeCLI output to the output filename with .log appended. It
+is a good idea to check it over to see how HandBrake is interpreting the
+command, and for potential errors with the encode source. In the above example
+the log filename would be:
+
+    /path/to/output_files/Akira (1988).mkv.log
+
+Finally, if you can isolate the problem to hbr's command generation please file
+a bug at:
+
+    https://github.com/epakai/hbr/issues

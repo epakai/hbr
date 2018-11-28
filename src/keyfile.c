@@ -221,25 +221,48 @@ GKeyFile * generate_default_key_file()
             " hbr (handbrake runner) config file\n"
             " Options follow the naming from HandBrakeCLI --help\n", NULL);
 
-    g_key_file_set_string(k, g, "format", "mp4");
-    g_key_file_set_string(k, g, "quality", "20.0");
-    g_key_file_set_string(k, g, "x264-preset", "veryfast");
-    g_key_file_set_string(k, g, "h264-profile", "main");
-    g_key_file_set_string(k, g, "h264-level", "4.0");
+    /*
+     * These options are based on the "High profile" preset which is
+     * taken from 'HandBrakeCLI --preset-list' in version 0.10.5
+     */
+    // TODO use a newer profile, but this is workable for now
 
-    g_key_file_set_boolean(k, g, "markers", TRUE);
-    g_key_file_set_boolean(k, g, "loose-anamorphic", TRUE);
-    g_key_file_set_string(k, g, "modulus", "2");
-
-    g_key_file_set_string(k, g, "aencoder", "ffaac");
-    g_key_file_set_string(k, g, "ab", "160");
+    // -e x264
     g_key_file_set_string(k, g, "encoder", "x264");
-    g_key_file_set_string(k, g, "mixdown", "dpl2");
-    g_key_file_set_string(k, g, "arate", "Auto");
-    g_key_file_set_string(k, g, "drc", "0.0");
+    // -q 20.0
+    g_key_file_set_string(k, g, "quality", "20.0");
+    // -a 1,1
+    g_key_file_set_string(k, g, "audio", "1,1");
+    // -E ffaac,copy:ac3
+    g_key_file_set_string(k, g, "aencoder", "ffaac,copy:ac3");
+    // -B 160,160
+    g_key_file_set_string(k, g, "ab", "160,160");
+    // -6 dpl2,none
+    g_key_file_set_string(k, g, "mixdown", "dpl2,none");
+    // -R Auto,Auto
+    g_key_file_set_string(k, g, "arate", "Auto,Auto");
+    // -D 0.0,0.0
+    g_key_file_set_string(k, g, "drc", "0.0,0.0");
+    // --audio-copy-mask aac,ac3,dtshd,dts,mp3
     g_key_file_set_string(k, g, "audio-copy-mask", "aac,ac3,dtshd,dts,mp3");
+    // --audio-fallback ffac3
     g_key_file_set_string(k, g, "audio-fallback", "ffac3");
-
+    // -f mp4
+    g_key_file_set_string(k, g, "format", "mp4");
+    // --decomb
+    g_key_file_set_boolean(k, g, "decomb", TRUE);
+    // --loose-anamorphic
+    g_key_file_set_boolean(k, g, "loose-anamorphic", TRUE);
+    // --modulus 2
+    g_key_file_set_string(k, g, "modulus", "2");
+    // -m
+    g_key_file_set_boolean(k, g, "markers", TRUE);
+    // --x264-preset medium
+    g_key_file_set_string(k, g, "x264-preset", "medium");
+    // --h264-profile high
+    g_key_file_set_string(k, g, "h264-profile", "high");
+    // --h264-level 4.1
+    g_key_file_set_string(k, g, "h264-level", "4.1");
     return k;
 }
 
