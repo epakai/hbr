@@ -116,7 +116,7 @@ Here is an overview of the hbr specific keys:
                      series or the movie name.
     year           - 4-digit year used for movie filenames.
     season         - season number used in series filenames.
-    episode_number - episode number used in series filenames.
+    episode        - episode number used in series filenames.
     specific_name  - extra name appended before the file extension. Useful for
                      episode names or file specific metadata.
 
@@ -131,7 +131,7 @@ For type=series the output filename will be:
 
     name - s01e001 - specific_name.mkv
 
-where season and episode_number provide the values after s and e.
+where season and episode provide the values after s and e.
 
 ================================================================================
 Troubleshooting

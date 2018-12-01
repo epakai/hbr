@@ -43,15 +43,15 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
 
     int i = 0;
     while (options[i].name != NULL) {
-        // Skip keys not in file
+        // Skip keys not used in the current outfile
         if (!g_key_file_has_key(config, group, options[i].name, NULL)){
             i++;
             continue;
         }
         /*
          * TODO add a check for empty or blank keys. this is probably where you
-         * need to check arg_type, but I think some arg_type values taken from
-         * test.c may be incorrect.
+         * need to check option.arg_type, but I think some arg_type values taken
+         * from test.c may be incorrect.
          * example:
          * aencoder=
          */
@@ -191,6 +191,17 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
     return args;
 }
 
+
+/**
+ * @brief Generate a filename with optional path for an OUTFILE group
+ *
+ * @param config    keyfile that contains group
+ * @param group     group name to generate a filename for
+ * @param full_path determines whether the filename includes the path in
+ *                  output_basedir
+ *
+ * @return filename or full path with filename
+ */
 GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
 {
     GString* filename = g_string_new(NULL);
@@ -353,11 +364,23 @@ void determine_handbrake_version(gchar *arg_version)
         fprintf(stderr, "Could not match a supported HandBrake version.\n"
                 "Trying oldest release available (0.9.9).\n");
     }
+}
 
+/**
+ * @brief Generate hash tables to for look up of options, depends,
+ *        and conflicts.
+ */
+void arg_hash_generate()
+{
     // generate hash tables
     options_index = g_hash_table_new(g_str_hash, g_str_equal);
+    // HandBrakeCLI options
     for (int i = 0; options[i].name != NULL; i++) {
         g_hash_table_insert(options_index, options[i].name, GINT_TO_POINTER(i));
+    }
+    // hbr options
+    for (int i = 0; hbr_options[i].name != NULL; i++) {
+        g_hash_table_insert(options_index, hbr_options[i].name, GINT_TO_POINTER(i));
     }
     /*
      * We cannot specify the value_destroy_func as g_slist_free() for our hash
@@ -366,18 +389,45 @@ void determine_handbrake_version(gchar *arg_version)
      * the table.
      */
     depends_index = g_hash_table_new(g_str_hash, g_str_equal);
+    // HandBrakeCLI depends
     for (int i = 0; depends[i].name != NULL; i++) {
         g_hash_table_insert(depends_index, depends[i].name,
                 g_slist_prepend(g_hash_table_lookup(depends_index,
                         depends[i].name), GINT_TO_POINTER(i)));
     }
+    // hbr depends
+    for (int i = 0; hbr_depends[i].name != NULL; i++) {
+        g_hash_table_insert(depends_index, hbr_depends[i].name,
+                g_slist_prepend(g_hash_table_lookup(depends_index,
+                        hbr_depends[i].name), GINT_TO_POINTER(i)));
+    }
+
     conflicts_index = g_hash_table_new(g_str_hash, g_str_equal);
+    // HandBrakeCLI conflicts
     for (int i = 0; conflicts[i].name != NULL; i++) {
         g_hash_table_insert(conflicts_index, conflicts[i].name,
                 g_slist_prepend(g_hash_table_lookup(conflicts_index,
                         conflicts[i].name), GINT_TO_POINTER(i)));
     }
+    // hbr conflicts
+    for (int i = 0; hbr_conflicts[i].name != NULL; i++) {
+        g_hash_table_insert(conflicts_index, hbr_conflicts[i].name,
+                g_slist_prepend(g_hash_table_lookup(conflicts_index,
+                        hbr_conflicts[i].name), GINT_TO_POINTER(i)));
+    }
     return;
+}
+
+/**
+ * @brief Free hash tables and lists created by arg_hash_generate()
+ */
+void arg_hash_cleanup()
+{
+    g_hash_table_destroy(options_index);
+    g_hash_table_foreach(depends_index, free_slist_in_hash, NULL);
+    g_hash_table_destroy(depends_index);
+    g_hash_table_foreach(conflicts_index, free_slist_in_hash, NULL);
+    g_hash_table_destroy(conflicts_index);
 }
 
 /**
@@ -396,62 +446,82 @@ void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data)
 //TODO all-subtiles/first-subtitle all-audio/first-audio conflict
 // but we don't have any way to handle this with valid_boolean
 // may need to give them their own valid_function
+
+gboolean valid_readable_path(option_t *option, GKeyFile *config, gchar *group)
+{
+    return FALSE;
+}
+
+gboolean valid_writable_path(option_t *option, GKeyFile *config, gchar *group)
+{
+    return FALSE;
+}
+
+gboolean valid_filename_string(option_t *option, GKeyFile *config, gchar *group)
+{
+    return FALSE;
+}
+
 gboolean valid_boolean(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
+gboolean valid_integer(option_t *option, GKeyFile *config, gchar *group)
+{
+    return FALSE;
+}
 
 gboolean valid_integer_set(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_integer_list(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_integer_list_set(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_positive_integer(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
 
 gboolean valid_positive_double_list(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_string(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_string_set(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_string_list_set(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_string_list(option_t *option, GKeyFile *config, gchar *group)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    return TRUE;
+    return FALSE;
 }
 
 
@@ -460,188 +530,188 @@ gboolean valid_optimize(option_t *option, GKeyFile *config, gchar *group)
     // TODO this and other valid functions may be unnecessary
     // Once conflict and depend checking is implemented we can treat
     // this like any other boolean option
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_filename_exists(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_filename_exists_list(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_filename_dne(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_startstop_at(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_previews(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_audio(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_audio_quality(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_audio_bitrate(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_video_quality(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_video_bitrate(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_crop(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_pixel_aspect(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_decomb(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_denoise(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_deblock(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_deinterlace(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_detelecine(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_iso639(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_iso639_list(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 
 gboolean valid_native_dub(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_subtitle(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_gain(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_drc(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_mixdown(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_chapters(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_encopts(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_encoder_preset(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_encoder_tune(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_encoder_profile(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_encoder_level(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_nlmeans(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_nlmeans_tune(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_dither(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_subtitle_forced(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_codeset(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_rotate(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_qsv_decoding(option_t *option, GKeyFile *config, gchar *group)
@@ -650,30 +720,30 @@ gboolean valid_qsv_decoding(option_t *option, GKeyFile *config, gchar *group)
      * this function validates enable and disable
      * it should verify conflicting options aren't on the same level
      */
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_comb_detect(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_pad(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_unsharp(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_filespec(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }
 
 gboolean valid_preset_name(option_t *option, GKeyFile *config, gchar *group)
 {
-    return TRUE;
+    return FALSE;
 }

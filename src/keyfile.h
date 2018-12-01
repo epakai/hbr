@@ -35,8 +35,11 @@ gint get_outfile_count(GKeyFile *keyfile);
 gchar **get_outfile_list(GKeyFile *keyfile, gsize *outfile_count);
 gchar *get_group_from_episode(GKeyFile *keyfile, int episode_number);
 gboolean pre_validate_key_file(gchar *infile);
-gboolean post_validate_input_file(GKeyFile *input_keyfile, GKeyFile *config_keyfile);
-gboolean post_validate_config_file(GKeyFile *keyfile);
+gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
+        GKeyFile *config_keyfile);
+gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile);
+gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
+        GKeyFile *config_keyfile);
 GDataInputStream *open_datastream(gchar *infile);
 gboolean has_duplicate_groups(GDataInputStream *datastream, gchar *infile);
 

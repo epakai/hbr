@@ -23,7 +23,6 @@
 #include <glib.h>
 #include "keyfile.h"
 
-// missing versions share the same options with a previous version
 typedef struct option_s option_t;
 typedef struct conflict_s conflict_t;
 typedef struct depend_s depend_t;
@@ -32,7 +31,7 @@ struct option_s {
     // long option name, prefixed with -- on command line
     gchar *name;
     // argument type as given to getopt in HandBrake
-    enum {no_argument, optional_argument, required_argument} arg_type;
+    enum {no_argument, optional_argument, required_argument, hbr_only} arg_type;
     // how hbr tries to interpret values in the keyfile
     enum {k_string, k_boolean, k_integer, k_double, k_string_list,
         k_integer_list, k_double_list} key_type;
@@ -80,7 +79,7 @@ GHashTable *options_index;
 /*
  * These are similar, but store an GSList of values because options may depend
  * on, or conflict with multiple other keys/values.
- * These values are also an int stored inside a pointers.
+ * These values are also ints stored inside pointers.
  */
 GHashTable *depends_index;
 GHashTable *conflicts_index;
@@ -88,24 +87,20 @@ GHashTable *conflicts_index;
 GPtrArray *build_args(GKeyFile *config, gchar *group, gboolean quoted);
 GString *build_filename(GKeyFile *config, gchar *group, gboolean full_path);
 void determine_handbrake_version(gchar *arg_version);
+void arg_hash_generate();
+void arg_hash_cleanup();
 void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data);
+
 /*
- * Input validation for options that only apply to hbr.
- * These aren't valid options to pass to HandBrakeCLI.
- * They are used to generate file names or specify file locations
+ * Input validation for hbr specific options
  */
-gboolean valid_input_basedir(GKeyFile *);
-gboolean valid_output_basedir(GKeyFile *);
-gboolean valid_type(GKeyFile *);
-gboolean valid_iso_filename(GKeyFile *);
-gboolean valid_name(GKeyFile *);
-gboolean valid_year(GKeyFile *);
-gboolean valid_season(GKeyFile *);
-gboolean valid_episode_number(GKeyFile *);
-gboolean valid_specific_name(GKeyFile *);
+gboolean valid_readable_path(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_writable_path(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_filename_string(option_t *option, GKeyFile *config, gchar *group);
 
 // general input validation routines
 gboolean valid_boolean(option_t *option, GKeyFile *config, gchar *group);
+gboolean valid_integer(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_integer_set(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_integer_list(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_integer_list_set(option_t *option, GKeyFile *config, gchar *group);
@@ -160,5 +155,38 @@ gboolean valid_pad(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_unsharp(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_filespec(option_t *option, GKeyFile *config, gchar *group);
 gboolean valid_preset_name(option_t *option, GKeyFile *config, gchar *group);
+
+/*
+ * hbr specific options tables
+ * These aren't valid options to pass to HandBrakeCLI.
+ * They are used to generate file names or specify file locations
+ */
+
+static option_t hbr_options[] =
+{
+    { "type", hbr_only, k_string, FALSE, valid_string_set, 2, (gchar*[]){"series", "movie"}},
+    { "input_basedir", hbr_only, k_string, FALSE, valid_readable_path, 0, NULL},
+    { "output_basedir", hbr_only, k_string, FALSE, valid_writable_path, 0, NULL},
+    { "iso_filename", hbr_only, k_string, FALSE, valid_filename_string, 0, NULL},
+    { "name", hbr_only, k_string, FALSE, valid_filename_string, 0, NULL},
+    { "year", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
+    { "season", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
+    { "episode", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
+    { "specific_name", hbr_only, k_string, FALSE, valid_filename_string, 0, NULL},
+    { NULL, 0, 0, 0, 0, 0}
+};
+
+static depend_t hbr_depends[] =
+{
+    {"year", "type", "movie"},
+    {"season", "type", "series"},
+    {"episode", "type", "series"},
+    { NULL, 0, 0}
+};
+
+static conflict_t hbr_conflicts[] =
+{
+    { NULL, 0, 0}
+};
 
 #endif

@@ -46,6 +46,8 @@ static gchar    *opt_hbversion = NULL;  // Override handbrake version detection
 static gchar    *opt_output   = NULL;  // Override location to write output files
 static gchar    **opt_input_files = NULL;  // List of files for hbr to use as input
 
+static gchar    *config_file_path = NULL;
+
 void print_version() {
     printf("hbr (handbrake runner) 0.0\n" //TODO someday we'll release and have a version number
             "Copyright (C) 2018 Joshua Honeycutt\n"
@@ -115,6 +117,7 @@ int main(int argc, char * argv[])
         gchar *temp = g_option_context_get_help(context, TRUE, NULL);
         printf("%s", temp);
         g_free(temp);
+
         g_option_context_free(context);
         g_strfreev(opt_input_files);
         g_key_file_free(config);
@@ -131,6 +134,7 @@ int main(int argc, char * argv[])
 
     // setup options pointers and lookup tables
     determine_handbrake_version(NULL);
+    arg_hash_generate();
 
     // loop over each input file
     int i = 0;
@@ -148,6 +152,17 @@ int main(int argc, char * argv[])
         GKeyFile *merged = merge_key_group(current_infile, "CONFIG",
                 config, "CONFIG", "MERGED_CONFIG");
 
+        /*
+         * merged may be null if both CONFIG sections are empty or
+         * one group doesn't exist (CONFIG groups are already validated
+         * to exist at this point though)
+         */
+        if (merged == NULL) {
+            g_printerr("Failed to produce a valid CONFIG from \"%s\" and" \
+                    " \"%s\".\n", opt_input_files[i], config_file_path); 
+            goto skip_encode;
+        }
+
         // override output path if option given
         if (opt_output != NULL) {
             g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir", opt_output);
@@ -157,22 +172,24 @@ int main(int argc, char * argv[])
         encode_loop(current_infile, merged);
 
         // clean up
+skip_encode:
         g_key_file_free(current_infile);
         g_key_file_free(merged);
         i++;
     }
-    // destroy hash tables created by determine_handbrake_version()
-    g_hash_table_destroy(options_index);
-    g_hash_table_foreach(depends_index, free_slist_in_hash, NULL);
-    g_hash_table_destroy(depends_index);
-    g_hash_table_foreach(conflicts_index, free_slist_in_hash, NULL);
-    g_hash_table_destroy(conflicts_index);
+    arg_hash_cleanup();
     g_key_file_free(config);
     g_option_context_free(context);
     g_strfreev(opt_input_files);
     exit(0);
 }
 
+
+/**
+ * @brief Verifies output paths exists and is (symlink to) a directory
+ *
+ * @return TRUE when path is good
+ */
 gboolean good_output_option_path()
 {
     if (opt_output != NULL) {
@@ -196,6 +213,11 @@ gboolean good_output_option_path()
     return TRUE;
 }
 
+/**
+ * @brief Tries to read an existing config file or generate a new one
+ *
+ * @return Parsed config keyfile
+ */
 GKeyFile *fetch_or_generate_keyfile()
 {
     // Try $XDG_CONFIG_HOME, then home dir
@@ -211,6 +233,7 @@ GKeyFile *fetch_or_generate_keyfile()
         fprintf(stderr, "Failed to create config at: %s\n", config_dir->str);
         exit(1);
     }
+    // TODO we don't actually try $HOME/.config/hbr if $XDG_CONFIG_HOME is valid
     GString *config_file = g_string_new(NULL);
     g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
     g_string_free(config_dir, TRUE);
@@ -219,10 +242,11 @@ GKeyFile *fetch_or_generate_keyfile()
         // parse config file
         GKeyFile *keyfile = parse_validate_key_file(config_file->str, NULL);
         if (keyfile == NULL) {
-            // Quit, parse_key_file() will report errors
+            // Quit, parse_validate_key_file() will report errors
             g_string_free(config_file, TRUE);
             return NULL;
         }
+        config_file_path = g_strdup(config_file->str);
         g_string_free(config_file, TRUE);
         return keyfile;
     } else {
@@ -230,11 +254,13 @@ GKeyFile *fetch_or_generate_keyfile()
         GKeyFile *keyfile = generate_default_key_file();
         GError *error = NULL;
         if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
-            g_warning("Error writing config file: %s", error->message);
+            g_printerr("Error writing config file: %s\n", error->message);
             g_error_free(error);
+            return NULL;
         } else {
-            g_message("Default config file generated at: %s\n", config_file->str);
+            g_print("Default config file generated at: %s\n", config_file->str);
         }
+        config_file_path = g_strdup(config_file->str);
         g_string_free(config_file, TRUE);
         return keyfile;
     }
@@ -243,8 +269,8 @@ GKeyFile *fetch_or_generate_keyfile()
 /**
  * @brief Loops through each encode or the specified encode
  *
- * @param keyfile Document to read outfile specifications from
- * @param hb_options general option string for HandBrakeCLI
+ * @param inkeyfile     Input keyfile
+ * @param merged_config Input keyfile mergede with global config
  */
 void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config) {
     // loop for each out_file tag in keyfile
@@ -347,9 +373,10 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
 /**
  * @brief Handle the logic around calling handbrake
  *
- * @param args String containing argumenst HandBrakeCLI
+ * @param args      String containing argumenst HandBrakeCLI
  * @param out_count Which outfile section is being encoded
  * @param overwrite Overwrite existing files
+ * @param filename  output filename (also used to generate log filename)
  *
  * @return error status from hb_fork(), 0 is success
  */

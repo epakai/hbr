@@ -1,6 +1,6 @@
 if HAVE_DOXYGEN
 
-doxyfile.stamp: Doxyfile README.md
+doxyfile.stamp: Doxyfile README.md $(top_srcdir)/src/*
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp
 
