@@ -40,6 +40,7 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
 gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile);
 gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
         GKeyFile *config_keyfile);
+gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile);
 GDataInputStream *open_datastream(gchar *infile);
 gboolean has_duplicate_groups(GDataInputStream *datastream, gchar *infile);
 

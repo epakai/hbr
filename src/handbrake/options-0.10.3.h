@@ -142,8 +142,6 @@ static depend_t depend_v0_10_3[] =
     { "two-pass", "vb", NULL},
     { "turbo", "two-pass", NULL},
     { "nlmeans-tune", "nlmeans", NULL},
-    { "unsharp-tune", "unsharp", NULL},
-    { "lapsharp-tune", "lapsharp", NULL},
     { "keep-display-aspect", "custom-anamorphic", NULL},
     { "pixel-aspect", "custom-anamorphic", NULL},
     { NULL, 0, 0}

@@ -108,6 +108,7 @@ GKeyFile * copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group)
 
     // check group exists
     if (!g_key_file_has_group(keyfile, group)) {
+        g_key_file_free(k);
         return NULL;
     }
 
@@ -118,6 +119,7 @@ GKeyFile * copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group)
     // check group is not empty
     // (cannot make a new empty group via GKeyFile API)
     if (key_count == 0) {
+        g_key_file_free(k);
         return NULL;
     }
 
@@ -165,6 +167,10 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
         g_printerr("Failed to merge two empty sections \"%s\" and \"%s\".\n",
                 p_group, a_group);
         return NULL;
+    } else if (k == NULL){
+        // make a new keyfile if the copy failed, but pref still has good keys
+        k = g_key_file_new();
+        g_key_file_set_list_separator(k, ',');
     }
 
     // copy each key and value to new group in new key file overwriting
@@ -409,7 +415,28 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
         valid = FALSE; // any errors are printed during post_validate_config_section()
     }
 
-    // TODO check at least one OUTFILE section exists
+    // check at least one OUTFILE section exists
+    if (get_outfile_count(input_keyfile) < 1) {
+        valid = FALSE;
+        g_printerr("Keyfile (%s) must contain at least one OUTFILE section.\n", infile);
+    }
+
+    // check for invalid keys in OUTFILE sections
+    gchar ** groups = (g_key_file_get_groups(input_keyfile, NULL));
+    int i = 0;
+    while (groups[i] != NULL) {
+        gchar **keys = g_key_file_get_keys(input_keyfile, groups[i], NULL, NULL);
+        int j = 0;
+        while (keys[j] != NULL) {
+            if (!g_hash_table_contains(options_index, keys[j])) {
+                g_printerr("Invalid key \"%s\" in section \"%s\" in file \"%s\"\n",
+                        keys[j], groups[i], infile);
+            }
+            j++;
+        }
+        i++;
+    }
+
     // TODO check required keys exist (type, file naming stuff)
     // TODO check required keys exist (depends)
     // TODO check known keys values
@@ -434,8 +461,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
     }
 
     // check only CONFIG exists
-    gsize group_count;
-    gchar **group_names = (g_key_file_get_groups(keyfile, &group_count));
+    gchar **group_names = (g_key_file_get_groups(keyfile, NULL));
     int i = 0;
     while (group_names[i] != NULL) {
         if (strcmp(group_names[i], "CONFIG") != 0) {
@@ -473,7 +499,7 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
     int i = 0;
     /*
      * check config_keyfile because we already checked for unwanted sections
-     * in the global config
+     * in the global config (only check input keyfiles)
      */
     while (group_names[i] != NULL && config_keyfile != NULL) {
         if (strcmp(group_names[i], "CONFIG") != 0 && strncmp(group_names[i], "OUTFILE", 7) != 0) {
@@ -484,13 +510,44 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
         }
         i++;
     }
-    // TODO check for unknown keys
-    // TODO check required keys exist
+    // check for unknown keys
+    if (unknown_keys_exist(keyfile, infile)) {
+        valid = FALSE;
+    }
+    // TODO check keys that don't belong in global config
+    // TODO check keys that don't belong in local config
+    // TODO check required keys exist (there aren't really any, but having none between hbr.conf and infile is not workable)
     // TODO check known keys values
     // TODO check depends
     // TODO check conflicts
     // TODO check negation type conflicts
     return valid;
+}
+
+/**
+ * @brief Checks a keyfile for unknown key names and prints errors
+ *
+ * @param keyfile keyfile to be checked
+ * @param infile  path to keyfile (for error printing)
+ *
+ * @return TRUE if unknown keys exist
+ */
+gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile)
+{
+    gchar **groups = g_key_file_get_groups(keyfile, NULL);
+    int i = 0;
+    while (groups[i] != NULL) {
+        gchar **keys = g_key_file_get_keys(keyfile, groups[i], NULL, NULL);
+        int j = 0;
+        while (keys[j] != NULL) {
+            if (!g_hash_table_contains(options_index, keys[j])) {
+                g_printerr("Invalid key \"%s\" in group \"%s\" in file \"%s\"\n",
+                        keys[j], groups[i], infile);
+            }
+            j++;
+        }
+        i++;
+    }
 }
 
 /**

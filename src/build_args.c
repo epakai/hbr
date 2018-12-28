@@ -58,7 +58,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
 
         /*
          * Check for valid input. Failure here means we failed to validate
-         * in keyfile.c:validate_key_file()
+         * in keyfile.c:parse_validate_key_file()
          */
         assert(options[i].valid_input(&options[i], config, group));
 

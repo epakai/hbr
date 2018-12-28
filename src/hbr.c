@@ -267,7 +267,7 @@ GKeyFile *fetch_or_generate_keyfile()
 }
 
 /**
- * @brief Loops through each encode or the specified encode
+ * @brief Loops through each encode or the specified encode to call handbrake
  *
  * @param inkeyfile     Input keyfile
  * @param merged_config Input keyfile mergede with global config
