@@ -5,6 +5,7 @@ AC_PREREQ([2.69])
 AC_INIT([hbr], [0.1], [https://github.com/epakai/hbr/issues])
 AC_CONFIG_SRCDIR([src/hbr.c])
 AC_CONFIG_HEADERS([src/config.h])
+AX_CHECK_ENABLE_DEBUG()
 
 # Checks for programs.
 AC_PROG_CC

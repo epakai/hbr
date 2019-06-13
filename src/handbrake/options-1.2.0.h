@@ -20,7 +20,7 @@
 #include "../build_args.h"
 #include "../validate.h"
 
-static option_t option_v1_1_0[] =
+static option_t option_v1_2_0[] =
 {
     { "verbose", optional_argument, k_integer, FALSE, valid_integer_set, 2, (gint[]){0, 1}},
     { "no-dvdnav", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
@@ -61,7 +61,7 @@ static option_t option_v1_1_0[] =
     { "first-subtitle", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "subtitle", required_argument, k_string, FALSE, valid_subtitle, 0, NULL},
     { "subtitle-forced", optional_argument, k_string, FALSE, valid_subtitle_forced, 0, NULL},
-    { "subtitle-burned", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
+    { "subtitle-burned", optional_argument, k_integer, FALSE, valid_subtitle_burned, 0, NULL},
     { "subtitle-default", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "srt-file", required_argument, k_string_list, FALSE, valid_filename_exists_list, 0, NULL},
     { "srt-codeset", required_argument, k_string_list, FALSE, valid_codeset, 0, NULL},
@@ -158,7 +158,7 @@ static option_t option_v1_1_0[] =
     { NULL, 0, 0, 0, 0, 0}
 };
 
-static depend_t depend_v1_1_0[] =
+static depend_t depend_v1_2_0[] =
 {
     { "qsv-async-depth", "enable-qsv-decoding", NULL},
     { "qsv-baseline", "enable-qsv-decoding", NULL},
@@ -183,7 +183,7 @@ static depend_t depend_v1_1_0[] =
     { NULL, 0, 0}
 };
 
-static conflict_t conflict_v1_1_0[] =
+static conflict_t conflict_v1_2_0[] =
 {
     { "enable-qsv-decoding", "disable-qsv-decoding", NULL},
     { "main-feature", "scan", NULL},

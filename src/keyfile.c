@@ -17,11 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "keyfile.h"
-#include "build_args.h"
 #include <string.h>
 #include <stdio.h>
 
+#include "util.h"
+#include "keyfile.h"
+#include "validate.h"
 
 /**
  * @brief Parses and validates the key value file.
@@ -35,26 +36,30 @@
 GKeyFile * parse_validate_key_file(char *infile, GKeyFile *config)
 {
     gboolean valid = TRUE;
+    GKeyFile *keyfile = NULL;
     // check file is readable and does not have duplicate group names
     if (!pre_validate_key_file(infile)) {
         valid = FALSE;
-    }
-    
-    GKeyFile *keyfile = parse_key_file(infile);
-
-    if (config == NULL) {
-        // validate a global config
-        if (!post_validate_config_file(keyfile, infile)) {
-            valid = FALSE;
-        }
     } else {
-        // validate an input file
-        if (!post_validate_input_file(keyfile, infile, config)) {
-            valid = FALSE;
+        keyfile = parse_key_file(infile);
+
+        if (config == NULL) {
+            // validate a global config
+            if (!post_validate_config_file(keyfile, infile)) {
+                valid = FALSE;
+            }
+        } else {
+            // validate an input file
+            if (!post_validate_input_file(keyfile, infile, config)) {
+                valid = FALSE;
+            }
         }
     }
-    if (valid) {
+    if (valid && keyfile) {
         return keyfile;
+    } else if (keyfile){
+        g_key_file_free(keyfile);
+        return NULL;
     } else {
         return NULL;
     }
@@ -75,13 +80,14 @@ GKeyFile * parse_key_file(char *infile)
     if (!g_key_file_load_from_file (keyfile, infile,
                 G_KEY_FILE_KEEP_COMMENTS, &error))
     {
-        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
-            fprintf(stderr, "Error loading file (%s): %s\n", infile, error->message);
-        } else if (!g_error_matches (error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE)) {
-            fprintf(stderr, "Error parsing file (%s): %s\n", infile, error->message);
-        } else if (!g_error_matches (error, G_KEY_FILE_ERROR,
+        if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
+            hbr_error("Error loading file", infile, NULL, NULL, NULL);
+        } else if (g_error_matches (error, G_KEY_FILE_ERROR,
+                    G_KEY_FILE_ERROR_PARSE)) {
+            hbr_error("Error parsing file", infile, NULL, NULL, NULL);
+        } else if (g_error_matches (error, G_KEY_FILE_ERROR,
                     G_KEY_FILE_ERROR_UNKNOWN_ENCODING)) {
-            fprintf(stderr, "File has unknown encoding (%s): %s\n", infile, error->message);
+            hbr_error("File has unknown encoding", infile, NULL, NULL, NULL);
         }
         g_error_free(error);
         g_key_file_free(keyfile);
@@ -164,8 +170,11 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
 
     // check if both groups are empty (copy_group_new() returns NULL on empty)
     if (k == NULL && key_count == 0) {
-        g_printerr("Failed to merge two empty sections \"%s\" and \"%s\".\n",
-                p_group, a_group);
+        /* FIXME This is a programmer error. Should I just assert() so the user
+         * build returns NULL and caller acts appropriately?
+         */
+        hbr_error("Failed to merge two empty sections \"%s\" and \"%s\".",
+                NULL, NULL, NULL, NULL);
         return NULL;
     } else if (k == NULL){
         // make a new keyfile if the copy failed, but pref still has good keys
@@ -297,7 +306,7 @@ GKeyFile * generate_default_key_file()
  *
  * @param keyfile Keyfile to count outfile sections in
  *
- * @return Number of outfile sections
+ * @return Number of outfile sections (0 or greater)
  */
 gint get_outfile_count(GKeyFile *keyfile)
 {
@@ -305,7 +314,7 @@ gint get_outfile_count(GKeyFile *keyfile)
     gsize len = 0;
     gchar **groups = g_key_file_get_groups(keyfile, &len);
     for (gint i = 0; i < len; i++) {
-        if (strncmp("OUTFILE", groups[i], 7) == 0) {
+        if (strncmp("OUTFILE", groups[i], sizeof("OUTFILE")-1) == 0) {
             count++;
         }
     }
@@ -324,20 +333,29 @@ gint get_outfile_count(GKeyFile *keyfile)
 gchar ** get_outfile_list(GKeyFile *keyfile, gsize *outfile_count)
 {
     gsize count = 0;
+    // Fetch all groups
     gchar **groups = g_key_file_get_groups(keyfile, &count);
     gchar **filter_groups;
     *outfile_count = get_outfile_count(keyfile);
-    // Copy outfile groups to new list
-    filter_groups = g_malloc(sizeof(gchar*)*(*outfile_count+1));
+    // allocate extra pointer for NULL terminated array
+    /*
+     * g_malloc0() is used because clang seems to think some filter_groups
+     * values may be uninitialized. I think this is due to the conditional
+     * in the following for loop. I could not think of any set of inputs
+     * that actually causes uninitialized values so I chose to zero the
+     * memory allocation to stop that warning.
+     */
+    filter_groups = g_malloc0(sizeof(gchar*)*(*outfile_count+1));
+    // Copy only outfile groups to new list
     for (int i = 0, j = 0; i < count; i++) {
-        if (strncmp("OUTFILE", groups[i], 7) == 0) {
+        if (strncmp("OUTFILE", groups[i], sizeof("OUTFILE")-1) == 0) {
             filter_groups[j] = g_strdup(groups[i]);
             j++;
         }
     }
+    g_strfreev(groups);
     // NULL terminate string array so g_strfreev can free it later
     filter_groups[*outfile_count] = NULL;
-    g_strfreev(groups);
     return filter_groups;
 }
 
@@ -364,274 +382,4 @@ gchar * get_group_from_episode(GKeyFile *keyfile, int episode)
     }
     g_strfreev(groups);
     return NULL;
-}
-
-/**
- * @brief Check that a file can be read, and no group names are duplicate
- *
- * @param infile filename to be checked
- *
- * @return TRUE when a keyfile is readable, and has no duplicate groups
- */
-gboolean pre_validate_key_file(gchar *infile)
-{
-    // check and read file
-    GDataInputStream * datastream = open_datastream(infile);
-    if (!datastream || has_duplicate_groups(datastream, infile)) {
-        g_input_stream_close((GInputStream *)datastream, NULL, NULL);
-        g_object_unref(datastream);
-        return FALSE;
-    }
-    // TODO add a check for duplicate keys in the same group
-    g_input_stream_close((GInputStream *)datastream, NULL, NULL);
-    g_object_unref(datastream);
-    return TRUE;
-}
-
-
-/**
- * @brief Validates an input keyfile. Checks for valid groups, key names,
- *        key values, key dependencies, and key conflicts.
- *
- * @param input_keyfile  keyfile to be validated
- * @param infile         path to keyfile being validated (for error printing)
- * @param config_keyfile global config keyfile, used to check dependencies of
- *                       the input_keyfile
- *
- * @return TRUE when a keyfile is valid
- */
-gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
-        GKeyFile *config_keyfile)
-{
-    gboolean valid = TRUE;
-
-    // check CONFIG exists
-    if (!g_key_file_has_group(input_keyfile, "CONFIG")) {
-        valid = FALSE;
-        g_printerr("Keyfile (%s) missing [CONFIG] section.\n", infile);
-    }
-    // validate config section
-    if (!post_validate_common(input_keyfile, infile, config_keyfile)) {
-        valid = FALSE; // any errors are printed during post_validate_config_section()
-    }
-
-    // check at least one OUTFILE section exists
-    if (get_outfile_count(input_keyfile) < 1) {
-        valid = FALSE;
-        g_printerr("Keyfile (%s) must contain at least one OUTFILE section.\n", infile);
-    }
-
-    // check for invalid keys in OUTFILE sections
-    gchar ** groups = (g_key_file_get_groups(input_keyfile, NULL));
-    int i = 0;
-    while (groups[i] != NULL) {
-        gchar **keys = g_key_file_get_keys(input_keyfile, groups[i], NULL, NULL);
-        int j = 0;
-        while (keys[j] != NULL) {
-            if (!g_hash_table_contains(options_index, keys[j])) {
-                g_printerr("Invalid key \"%s\" in section \"%s\" in file \"%s\"\n",
-                        keys[j], groups[i], infile);
-            }
-            j++;
-        }
-        i++;
-    }
-
-    // TODO check required keys exist (type, file naming stuff)
-    // TODO check required keys exist (depends)
-    // TODO check known keys values
-    return valid;
-}
-
-/**
- * @brief Validates a global config keyfile.
- *
- * @param keyfile global config keyfile to be validated
- * @param infile  path to keyfile being validated (for error printing)
- *
- * @return TRUE when a global config keyfile is valid
- */
-gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
-{
-    gboolean valid = TRUE;
-    // check CONFIG exists
-    if (!g_key_file_has_group(keyfile, "CONFIG")) {
-        valid = FALSE;
-        g_printerr("Keyfile (%s) missing [CONFIG] section.\n", infile);
-    }
-
-    // check only CONFIG exists
-    gchar **group_names = (g_key_file_get_groups(keyfile, NULL));
-    int i = 0;
-    while (group_names[i] != NULL) {
-        if (strcmp(group_names[i], "CONFIG") != 0) {
-            valid = FALSE;
-            g_printerr("Invalid section \"[%s]\" in %s. hbr config should" \
-                    " only contain the [CONFIG] section.\n", group_names[i], infile);
-        }
-        i++;
-    }
-    if (!post_validate_common(keyfile, infile, NULL)) {
-        valid = FALSE; // any errors are printed during post_validate_config_section()
-    }
-    return valid;
-}
-
-
-/**
- * @brief Validates items common to global config and input keyfiles. Handles
- *        input keyfiles or global config keyfiles depending on
- *        config_keyfile's value.
- *
- * @param keyfile         keyfile to be validated
- * @param infile          path to keyfile being validated (for error printing)
- * @param config_keyfile  global config keyfile or NULL if keyfile is a global
- *                        config
- *
- * @return TRUE when a config section is valid
- */
-gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
-    GKeyFile *config_keyfile)
-{
-    gboolean valid = TRUE;
-    // check for unknown sections
-    gchar **group_names = (g_key_file_get_groups(keyfile, NULL));
-    int i = 0;
-    /*
-     * check config_keyfile because we already checked for unwanted sections
-     * in the global config (only check input keyfiles)
-     */
-    while (group_names[i] != NULL && config_keyfile != NULL) {
-        if (strcmp(group_names[i], "CONFIG") != 0 && strncmp(group_names[i], "OUTFILE", 7) != 0) {
-            valid = FALSE;
-            g_printerr("Invalid section \"[%s]\" in %s. Keyfile should" \
-                    " only contain the [CONFIG] section and one or more" \
-                    " [OUTFILE...] sections.\n", group_names[i], infile);
-        }
-        i++;
-    }
-    // check for unknown keys
-    if (unknown_keys_exist(keyfile, infile)) {
-        valid = FALSE;
-    }
-    // TODO check keys that don't belong in global config
-    // TODO check keys that don't belong in local config
-    // TODO check required keys exist (there aren't really any, but having none between hbr.conf and infile is not workable)
-    // TODO check known keys values
-    // TODO check depends
-    // TODO check conflicts
-    // TODO check negation type conflicts
-    return valid;
-}
-
-/**
- * @brief Checks a keyfile for unknown key names and prints errors
- *
- * @param keyfile keyfile to be checked
- * @param infile  path to keyfile (for error printing)
- *
- * @return TRUE if unknown keys exist
- */
-gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile)
-{
-    gchar **groups = g_key_file_get_groups(keyfile, NULL);
-    int i = 0;
-    while (groups[i] != NULL) {
-        gchar **keys = g_key_file_get_keys(keyfile, groups[i], NULL, NULL);
-        int j = 0;
-        while (keys[j] != NULL) {
-            if (!g_hash_table_contains(options_index, keys[j])) {
-                g_printerr("Invalid key \"%s\" in group \"%s\" in file \"%s\"\n",
-                        keys[j], groups[i], infile);
-            }
-            j++;
-        }
-        i++;
-    }
-}
-
-/**
- * @brief Opens a file as a data stream for reading
- *
- * @param infile path of file to be read
- *
- * @return data stream, free'd with g_object_unref()
- */
-GDataInputStream * open_datastream(gchar *infile)
-{
-    GFile *file = g_file_new_for_path(infile);
-    GError *error = NULL;
-    GFileInputStream *filestream = g_file_read(file, NULL, &error);
-    g_object_unref(file);
-    if (error != NULL) {
-        if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
-            fprintf(stderr, "Error file not found (%s): %s\n",
-                    infile, error->message);
-        } else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY)) {
-            fprintf(stderr, "Error file is a directory (%s): %s\n",
-                    infile, error->message);
-        } else {
-            fprintf(stderr, "Error reading file (%s): %s\n",
-                    infile, error->message);
-        }
-        g_error_free(error);
-        return NULL;
-    }
-    GDataInputStream *datastream = g_data_input_stream_new((GInputStream *) filestream);
-    g_object_unref(filestream);
-    return datastream;
-}
-
-
-/**
- * @brief Checks a keyfile for duplicate groups via manual parsing
- *        This is necessary because GKeyFile silently merges duplicate groups
- *
- * @param datastream stream of file to be parsed
- * @param infile     path to file (for error messages)
- *
- * @return TRUE if file contains duplicate groups
- */
-gboolean has_duplicate_groups(GDataInputStream *datastream, gchar *infile)
-{
-    // check for duplicate group sections
-    gchar *line;
-    gint line_count = 0;
-    GHashTable *group_hashes = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, NULL);
-
-    gboolean duplicates = FALSE;
-    // parse each line
-    while ((line = g_data_input_stream_read_line_utf8(datastream, NULL, NULL,
-                    NULL))) {
-        line_count++;
-        // get group name
-        g_strchug(line); // remove leading whitespace
-        gint length = strlen(line);
-        const gchar *group_name_start = NULL;
-        const gchar *group_name_end = line+length-1;
-        if (line[0] == '[') {
-            group_name_start = line+1;
-            while (*group_name_end != ']' && group_name_end > group_name_start) {
-                group_name_end--;
-            }
-        } else {
-            g_free(line);
-            continue;
-        }
-        gchar *group_name = g_strndup (group_name_start,
-                group_name_end - group_name_start);
-        g_free(line);
-        // check for a duplicate hash of current group
-        if (g_hash_table_contains(group_hashes, group_name)) {
-            fprintf(stderr, "Keyfile (%s) contains duplicate group "
-                    "\"[%s]\" at line %d\n", infile, group_name, line_count);
-            g_free(group_name);
-            duplicates = TRUE;
-        } else {
-            g_hash_table_add(group_hashes, group_name);
-        }
-    }
-    g_hash_table_destroy(group_hashes);
-    return duplicates;
 }

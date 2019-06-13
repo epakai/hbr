@@ -24,16 +24,16 @@ from shutil import which
 
 # Check for dependencies
 baddep=False
-if (which("udisksctl") == None):
+if (which("udisksctl") is None):
     print("Could not find udisksctl command (install udisks2)")
     baddep=True
-if (which("wget") == None):
+if (which("wget") is None):
     print("Could not find wget command (install wget)")
     baddep=True
-if (which("xmlformat") == None):
+if (which("xmlformat") is None):
     print("Could not find xmlformat command (install xmlformat-perl)")
     baddep=True
-if (which("dvdid") == None):
+if (which("dvdid") is None):
     print("Could not find dvdid command (install dvdid from http://dvdid.cjkey.org.uk/)")
     baddep=True
 if (baddep):

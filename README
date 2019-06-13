@@ -119,6 +119,7 @@ Here is an overview of the hbr specific keys:
     episode        - episode number used in series filenames.
     specific_name  - extra name appended before the file extension. Useful for
                      episode names or file specific metadata.
+    preview        - generate a preview image from the output file.
 
 Filenames depend on the type specified.
 For type=movie the output filename will be:

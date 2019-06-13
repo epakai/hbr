@@ -18,6 +18,7 @@
  */
 
 #include "../build_args.h"
+#include "../validate.h"
 
 static option_t option_v0_9_9[] =
 {
@@ -26,7 +27,7 @@ static option_t option_v0_9_9[] =
     { "format", required_argument, k_string, FALSE, valid_string_set, 2,
         (gchar*[]){"av_mp4", "av_mkv"}},
     { "large-file", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL },
-    { "optimize", no_argument, k_boolean, FALSE, valid_optimize, 0, NULL},
+    { "optimize", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "ipod-atom", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "title", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "min-duration", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
@@ -36,7 +37,9 @@ static option_t option_v0_9_9[] =
     { "angle", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "markers", optional_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "audio", required_argument, k_string, FALSE, valid_audio, 0, NULL},
-    { "mixdown", required_argument, k_string_list, FALSE, valid_mixdown, 0, NULL},
+    { "mixdown", required_argument, k_string_list, FALSE, valid_string_list_set, 11,
+        (gchar*[]){"mono", "left_only", "right_only", "stereo", "dpl1", "dpl2",
+        "5point1", "6point1", "7point1", "5_2_lfe", "none"}},
     { "normalize-mix", required_argument, k_integer_list, FALSE, valid_integer_list_set, 2,
         (gint[]){0, 1}},
     { "drc", required_argument, k_double, FALSE, valid_drc, 0, NULL},
@@ -49,13 +52,13 @@ static option_t option_v0_9_9[] =
     { "srt-file", required_argument, k_string_list, FALSE, valid_filename_exists_list, 0, NULL},
     { "srt-codeset", required_argument, k_string_list, FALSE, valid_codeset, 0, NULL},
     { "srt-offset", required_argument, k_integer_list, FALSE, valid_integer_list, 0, NULL},
-    { "srt-lang", required_argument, k_string_list, FALSE, valid_iso639, 0, NULL},
+    { "srt-lang", required_argument, k_string_list, FALSE, valid_iso_639, 0, NULL},
     { "srt-default", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "native-language", required_argument, k_string, FALSE, valid_iso639, 0, NULL},
+    { "native-language", required_argument, k_string, FALSE, valid_iso_639, 0, NULL},
     { "native-dub", no_argument, k_boolean, FALSE, valid_native_dub, 0, NULL},
     { "encoder", required_argument, k_string, FALSE, valid_string_set, 4,
         (gchar*[]){"x264", "ffmpeg4", "ffmpeg2", "theora"}},
-    { "aencoder", required_argument, k_string_list, FALSE, valid_string_list_set, 12,
+    { "aencoder", required_argument, k_string_list, FALSE, valid_audio_encoder, 12,
         (gchar*[]){"av_aac", "copy:aac", "ac3", "copy:ac3", "copy:dts",
             "copy:dtshd", "mp3", "copy:mp3", "vorbis", "flac16", "flac24", "copy"}},
     { "two-pass", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
@@ -80,15 +83,15 @@ static option_t option_v0_9_9[] =
     { "crop", required_argument, k_string, FALSE, valid_crop, 0, NULL},
     { "loose-crop", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "vb", required_argument, k_integer, FALSE, valid_video_bitrate, 0, NULL},
-    { "quality", required_argument, k_integer, FALSE, valid_video_quality, 0, NULL},
+    { "quality", required_argument, k_double, FALSE, valid_video_quality, 0, NULL},
     { "ab", required_argument, k_integer_list, FALSE, valid_audio_bitrate, 0, NULL},
     { "aq", required_argument, k_double_list, FALSE, valid_audio_quality, 0, NULL},
     { "ac", required_argument, k_double_list, FALSE, valid_positive_double_list, 0, NULL},
     { "rate", required_argument, k_string, FALSE, valid_string_set, 12,
         (gchar*[]){"5", "10", "12", "15", "23.976", "24", "25", "29.97", "30",
             "50", "59.94", "60"}},
-    { "arate", required_argument, k_string_list, FALSE, valid_string_list_set, 9,
-        (gchar*[]){"8", "11.025", "12", "16", "22.05", "24", "32", "44.1", "48"}},
+    { "arate", required_argument, k_string_list, FALSE, valid_string_list_set, 10,
+        (gchar*[]){"auto", "8", "11.025", "12", "16", "22.05", "24", "32", "44.1", "48"}},
     { "encopts", required_argument, k_string, FALSE, valid_encopts, 0, NULL},
     { "turbo", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "maxHeight", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},

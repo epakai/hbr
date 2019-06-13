@@ -17,22 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _keyfile_h
-#define _keyfile_h
+#ifndef _util_h
+#define _util_h
 
 #include <glib.h>
+#include <stdarg.h>
 
-GKeyFile *parse_validate_key_file(char *infile, GKeyFile *config);
-GKeyFile *parse_key_file(char *infile);
-GKeyFile *copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group);
-GKeyFile *merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
-        gchar *a_group, gchar *new_group);
-void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
-        GKeyFile *checked_keyfile, gchar *check_group);
-GKeyFile *generate_default_key_file(void);
+void hbr_error(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, ...);
+void hbr_verror(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, va_list argp);
 
-gint get_outfile_count(GKeyFile *keyfile);
-gchar **get_outfile_list(GKeyFile *keyfile, gsize *outfile_count);
-gchar *get_group_from_episode(GKeyFile *keyfile, int episode_number);
+void hbr_warn(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, ...);
+void hbr_vwarn(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, va_list argp);
+
+void hbr_info(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, ...);
+void hbr_vinfo(gchar *format, gchar *path, gchar *section, gchar *key,
+        gchar *value, va_list argp);
 
 #endif
