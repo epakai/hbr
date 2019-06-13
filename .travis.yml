@@ -10,6 +10,7 @@ matrix:
           addons:
               apt:
                   packages:
+                      - libtool
                       - autoconf-archive
                       - libglib2.0-dev
                       - doxygen

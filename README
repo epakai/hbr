@@ -18,7 +18,7 @@ From release tarball:
     make
     make install
 
-From git (requires autoconf/automake):
+From git (requires autoconf/automake/libtool/autoconf-archive):
     ./autogen.sh
     ./configure
     make
