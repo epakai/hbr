@@ -648,7 +648,7 @@ gboolean valid_filename_component(option_t *option, gchar *group,
                 hbr_error("Filename component contains control character",
                         config_path, group, option->name, NULL);
             }
-            // shell metacharacters 
+            // shell metacharacters
             gchar *metachar = "*?:[]\"<>|(){}&'!\\;$";
             size_t metachar_len = strlen(metachar);
             for (int j = 0; j < metachar_len; j++) {

@@ -86,7 +86,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
             i++;
             continue;
         }
- 
+
         // Skip keys not used in the current outfile
         if (!g_key_file_has_key(config, group, options[i].name, NULL)) {
             i++;

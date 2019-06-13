@@ -161,7 +161,7 @@ int main(int argc, char * argv[])
          * to exist at this point though)
          */
         if (merged == NULL) {
-            hbr_error("Failed to global config (%s) and local config",
+            hbr_error("Failed to merge global config (%s) and local config",
                     opt_input_files[i], NULL, NULL, NULL, config_file_path);
         } else {
 
