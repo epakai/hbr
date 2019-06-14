@@ -265,7 +265,7 @@ GKeyFile *fetch_or_generate_keyfile()
             g_string_free(config_file, TRUE);
             return NULL;
         } else {
-            g_info("Default config file generated", config_file->str, NULL,
+            hbr_info("Default config file generated", config_file->str, NULL,
                     NULL, NULL);
         }
         config_file_path = g_strdup(config_file->str);

@@ -1661,7 +1661,7 @@ gboolean valid_chapters(option_t *option, gchar *group, GKeyFile *config,
     g_key_file_set_list_separator(config, ',');
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
     
-    if (chapter_range == NULL && error != NULL || chapter_range_count > 2 ||
+    if ((chapter_range == NULL && error != NULL) || chapter_range_count > 2 ||
             chapter_range_count < 1) {
         valid = FALSE;
         hbr_error("Value should be a chapter number or range of chapter numbers"
