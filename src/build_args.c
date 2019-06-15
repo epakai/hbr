@@ -164,9 +164,11 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                 g_string_append_printf(arg, "--%s=", options[i].name);
                 int m = 0;
                 for (; m < count-1; m++) {
-                    g_string_append_printf(arg, "%s,", string_list_values[m]);
+                    g_string_append_printf(arg, "%s,",
+                            g_strstrip(string_list_values[m]));
                 }
-                g_string_append_printf(arg, "%s", string_list_values[m]);
+                g_string_append_printf(arg, "%s",
+                        g_strstrip(string_list_values[m]));
                 g_strfreev(string_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);

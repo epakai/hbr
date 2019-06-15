@@ -63,6 +63,8 @@ gboolean valid_integer_list_set(option_t *option, gchar *group, GKeyFile *config
         gchar *config_path);
 gboolean valid_positive_integer(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
+gboolean valid_double_list(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path);
 gboolean valid_positive_double_list(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_string(option_t *option, gchar *group, GKeyFile *config,
@@ -93,9 +95,13 @@ gboolean valid_audio_quality(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_audio_bitrate(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
+gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path);
 gboolean valid_video_quality(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_video_bitrate(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path);
+gboolean valid_video_framerate(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
