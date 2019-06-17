@@ -33,7 +33,7 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
         GKeyFile *config_keyfile);
 gboolean has_required_keys(GKeyFile *input_keyfile, gchar *infile,
         GKeyFile *config_keyfile);
-gboolean has_depends(GKeyFile *input_keyfile, gchar *infile,
+gboolean has_requires(GKeyFile *input_keyfile, gchar *infile,
         GKeyFile *config_keyfile);
 gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile);
 GDataInputStream *open_datastream(gchar *infile);
@@ -43,6 +43,8 @@ gboolean has_duplicate_keys(gchar *infile);
 /*
  * Input validation for hbr specific options
  */
+gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path);
 gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_writable_path(option_t *option, gchar *group, GKeyFile *config,
@@ -152,6 +154,8 @@ gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_subtitle_forced(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_subtitle_burned(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path);
+gboolean valid_subtitle_default(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);
 gboolean valid_codeset(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path);

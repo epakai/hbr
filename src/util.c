@@ -45,9 +45,9 @@ void hbr_verror(gchar *format, gchar *path, gchar *section, gchar *key,
     }
     if (key) {
         if (value) {
-            fprintf(stderr, " %s=%s.\n", key, value);
+            fprintf(stderr, " %s=%s\n", key, value);
         } else {
-            fprintf(stderr, " %s= .\n", key);
+            fprintf(stderr, " %s= \n", key);
         }
     } else {
         fprintf(stderr, "\n");
@@ -76,9 +76,9 @@ void hbr_vwarn(gchar *format, gchar *path, gchar *section, gchar *key,
     }
     if (key) {
         if (value) {
-            fprintf(stderr, " %s=%s.\n", key, value);
+            fprintf(stderr, " %s=%s\n", key, value);
         } else {
-            fprintf(stderr, " %s= .\n", key);
+            fprintf(stderr, " %s= \n", key);
         }
     } else {
         fprintf(stderr, "\n");
@@ -107,9 +107,9 @@ void hbr_vinfo(gchar *format, gchar *path, gchar *section, gchar *key,
     }
     if (key) {
         if (value) {
-            fprintf(stderr, " %s=%s.\n", key, value);
+            fprintf(stderr, " %s=%s\n", key, value);
         } else {
-            fprintf(stderr, " %s= .\n", key);
+            fprintf(stderr, " %s= \n", key);
         }
     } else {
         fprintf(stderr, "\n");

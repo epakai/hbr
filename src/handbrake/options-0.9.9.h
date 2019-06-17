@@ -35,7 +35,7 @@ static option_t option_v0_9_9[] =
     { "main-feature", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "chapters", required_argument, k_string, FALSE, valid_chapters, 0, NULL},
     { "angle", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "markers", optional_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
+    { "markers", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "audio", required_argument, k_string, FALSE, valid_audio, 0, NULL},
     { "mixdown", required_argument, k_string_list, FALSE, valid_string_list_set, 11,
         (gchar*[]){"mono", "left_only", "right_only", "stereo", "dpl1", "dpl2",
@@ -47,9 +47,9 @@ static option_t option_v0_9_9[] =
     { "adither", required_argument, k_string_list, FALSE, valid_dither, 6,
         (gchar*[]){"auto", "none", "rectangular", "triangular", "triangular_hp", "lipshitz_ns"}},
     { "subtitle", required_argument, k_string, FALSE, valid_subtitle, 0, NULL},
-    { "subtitle-forced", optional_argument, k_string, FALSE, valid_subtitle_forced, 0, NULL},
-    { "subtitle-burned", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "subtitle-default", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
+    { "subtitle-forced", optional_argument, k_string_list, FALSE, valid_subtitle_forced, 0, NULL},
+    { "subtitle-burned", optional_argument, k_string, FALSE, valid_subtitle_burned, 0, NULL},
+    { "subtitle-default", optional_argument, k_string, FALSE, valid_subtitle_default, 0, NULL},
     { "srt-file", required_argument, k_string_list, FALSE, valid_filename_exists_list, 0, NULL},
     { "srt-codeset", required_argument, k_string_list, FALSE, valid_codeset, 0, NULL},
     { "srt-offset", required_argument, k_integer_list, FALSE, valid_integer_list, 0, NULL},
@@ -118,7 +118,7 @@ static option_t option_v0_9_9[] =
     { NULL, 0, 0, 0, 0, 0}
 };
 
-static depend_t depend_v0_9_9[] =
+static require_t require_v0_9_9[] =
 {
     { "optimize", "format", "av_mp4"},
     { "ipod-atom", "format", "av_mp4"},

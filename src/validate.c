@@ -98,12 +98,11 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
         valid = FALSE; // errors printed during has_required_keys()
     }
 
-    // check required keys exist (depends)
-    if (!has_depends(input_keyfile, infile, config_keyfile)) {
-        valid = FALSE; // errors printed during has_depends()
+    // check required keys exist (requires)
+    if (!has_requires(input_keyfile, infile, config_keyfile)) {
+        valid = FALSE; // errors printed during has_requires()
     }
 
-    // TODO check known keys values
     return valid;
 }
 
@@ -143,7 +142,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
     if (!has_required_keys(keyfile, infile, NULL)) {
         valid = FALSE; // errors printed during has_required_keys()
     }
-
+    
     return valid;
 }
 
@@ -164,14 +163,12 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
     GKeyFile *config_keyfile)
 {
     gboolean valid = TRUE;
+    gboolean checking_local_config = config_keyfile != NULL;
     // check for unknown sections
+    // only check input keyfiles (when config_keyfile is a valid pointer)
     gchar **group_names = (g_key_file_get_groups(keyfile, NULL));
     int i = 0;
-    /*
-     * check config_keyfile because we already checked for unwanted sections
-     * in the global config (only check input keyfiles)
-     */
-    while (group_names[i] != NULL && config_keyfile != NULL) {
+    while (group_names[i] != NULL && checking_local_config) {
         if (strcmp(group_names[i], "CONFIG") != 0 &&
                 strncmp(group_names[i], "OUTFILE", 7) != 0) {
             valid = FALSE;
@@ -185,14 +182,19 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
         valid = FALSE;
     }
     // TODO check keys that don't belong in global config
+    if (!checking_local_config) {
+    }
     // TODO check keys that don't belong in local config
+    if (checking_local_config) {
+    }
     // TODO check required keys exist (there aren't really any, but having none
     //      between hbr.conf and infile is not workable)
-    // TODO check known keys values
-    // TODO check depends (requires merging for local configs)
+    
+    
+    // TODO check requires (requires merging for local configs)
     // TODO check conflicts (requires merging for local configs)
     // TODO check negation type conflicts (requires merging for local configs)
-    // call valid_input function
+    // call valid_input function (requires merging for complex validation)
     i = 0;
     while (group_names[i] != NULL) {
         int j = 0;
@@ -211,18 +213,17 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
     return valid;
 }
 
-
 /**
  * @brief Verifies merged result of each outfile has all keys that any other
- *        defined keys depend on.
+ *        defined keys require.
  *
  * @param input_keyfile File to be tested
  * @param infile Path for input_keyfile (for error messages)
  * @param config_keyfile Global config or NULL
  *
- * @return TRUE when all depends are fulfilled
+ * @return TRUE when all requires are fulfilled
  */
-gboolean has_depends(GKeyFile *input_keyfile, gchar *infile,
+gboolean has_requires(GKeyFile *input_keyfile, gchar *infile,
         GKeyFile *config_keyfile) {
     gboolean valid = TRUE;
     gchar **group_names = g_key_file_get_groups(input_keyfile, NULL);
@@ -245,14 +246,14 @@ gboolean has_depends(GKeyFile *input_keyfile, gchar *infile,
                 // no config section. just update pointer
                 test_keyfile = input_keyfile;
             }
-            // check each key for depends
+            // check each key for requires
             gchar **keys = g_key_file_get_keys(test_keyfile, group_names[i],
                     NULL, NULL);
             int j = 0;
             while (keys[j] != NULL) {
                 /* Special case to skip boolean keys that can be negated
-                 * This ignores depends when a option is specified as false
-                 * (this should mean it's not enabled, and it's depends are not
+                 * This ignores requires when a option is specified as false
+                 * (this should mean it's not enabled, and it's requires are not
                  * necessary)
                  */
                 gint option_index = GPOINTER_TO_INT(
@@ -265,42 +266,42 @@ gboolean has_depends(GKeyFile *input_keyfile, gchar *infile,
                         continue;
                     }
                 }
-                GSList* depends_list = g_hash_table_lookup(depends_index, keys[j]);
-                if (depends_list != NULL) {
+                GSList* requires_list = g_hash_table_lookup(requires_index, keys[j]);
+                if (requires_list != NULL) {
                     /* iterate over gslist (pointers are actually int which
-                       are the index to the depends table) */
+                       are the index to the requires table) */
                     int k = 0;
                     do {
-                        gint index = GPOINTER_TO_INT(depends_list->data);
-                        // check if depend is defined
+                        gint index = GPOINTER_TO_INT(requires_list->data);
+                        // check if require is defined
                         if (!g_key_file_has_key(test_keyfile, group_names[i],
-                                    depends[index].depend_name,
+                                    requires[index].require_name,
                                     NULL)) {
                             gchar *value = g_key_file_get_value(
                                     test_keyfile, group_names[i], keys[j], NULL);
-                            hbr_error("Key \"%s\" depends on \"%s\" but it is not"
+                            hbr_error("Key \"%s\" requires \"%s\" but it is not"
                                     " set", infile, group_names[i], keys[j], value,
-                                    keys[j], depends[index].depend_name);
+                                    keys[j], requires[index].require_name);
                             valid = FALSE;
                             g_free(value);
                         } else {
-                            // if depend has specific value check it
-                            gchar *depends_value = g_key_file_get_value(
+                            // if require has specific value check it
+                            gchar *requires_value = g_key_file_get_value(
                                     test_keyfile, group_names[i],
-                                    depends[index].depend_name, NULL);
-                            if (depends[index].depend_value != NULL &&
-                                strcmp(depends_value,
-                                    depends[index].depend_value) != 0) {
+                                    requires[index].require_name, NULL);
+                            if (requires[index].require_value != NULL &&
+                                strcmp(requires_value,
+                                    requires[index].require_value) != 0) {
                                     hbr_error("Key \"%s\" requires setting \"%s=%s\"",
                                             infile, group_names[i], keys[j], NULL,
-                                            keys[j], depends[index].depend_name,
-                                            depends[index].depend_value);
+                                            keys[j], requires[index].require_name,
+                                            requires[index].require_value);
                                     valid = FALSE;
                             }
-                            g_free(depends_value);
+                            g_free(requires_value);
                         }
-                        depends_list = depends_list->next;
-                    } while (depends_list != NULL);
+                        requires_list = requires_list->next;
+                    } while (requires_list != NULL);
                 }
                 j++;
             }
@@ -595,6 +596,29 @@ gboolean has_duplicate_keys(gchar *infile)
 // of ways to muck those files up
 // TODO remove pointless print after testing (in all valid_ functions)
 
+gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path)
+{
+    gboolean valid = valid_string_list_set(option, group, config, config_path);
+    gchar *type = g_key_file_get_value(config, group, option->name, NULL);
+    if (strcmp(type, "series") == 0) {
+        gboolean has_season = g_key_file_has_key(config, group, "season", NULL);
+        gboolean has_episode = g_key_file_has_key(config, group, "episode", NULL);
+        if (!has_season && !has_episode) {
+            hbr_warn("Season and episode number not specified", config_path,
+                    group, option->name, type);
+        } else if (!has_season) {
+            hbr_warn("Season number not specified", config_path, group,
+                    option->name, type);
+        } else if (!has_episode) {
+            hbr_warn("Episode number not specified", config_path, group,
+                    option->name, type);
+        }
+    }
+    g_free(type);
+    return valid;
+}
+
 gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path)
 {
@@ -626,18 +650,41 @@ gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_writable_path(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path)
 {
-    gchar *value = g_key_file_get_value(config, group, option->name, NULL);
+    gchar *orig_path = g_key_file_get_value(config, group, option->name, NULL);
 
-    // check for write/read access
-    if (g_access(value, W_OK|R_OK) == 0) {
-        g_free(value);
-        return TRUE;
-    } else {
-        hbr_error("Unwriteable path specified by key", config_path, group,
-                option->name, value);
-        g_free(value);
-        return FALSE;
+    // check parents
+    gchar *path = g_strdup(orig_path);
+    while (strcmp(path, "/") != 0 && strcmp(path, "") != 0) {
+        // check directory exists and is writeable
+        if (g_file_test(path, G_FILE_TEST_IS_DIR) &&
+                g_access(path, W_OK|R_OK) == 0) {
+            g_free(orig_path);
+            g_free(path);
+            return TRUE;
+        } else {
+            // error on regular files
+            if (g_file_test("path", G_FILE_TEST_IS_REGULAR)) {
+                hbr_error("Regular file specified instead of path", config_path,
+                        group, option->name, orig_path);
+                g_free(path);
+                g_free(orig_path);
+                return FALSE;
+            }
+            // directory doesn't exist, try parent next
+            char *lastslash = strrchr(path, G_DIR_SEPARATOR);
+            if (lastslash != NULL) {
+                // strip last directory from path
+                *lastslash = '\0';
+            } else {
+                break;
+            }
+        }
     }
+    hbr_error("Unwriteable path specified by key", config_path, group,
+            option->name, orig_path);
+    g_free(path);
+    g_free(orig_path);
+    return FALSE;
 }
 
 gboolean valid_filename_component(option_t *option, gchar *group,
@@ -665,6 +712,8 @@ gboolean valid_filename_component(option_t *option, gchar *group,
                         config_path, group, option->name, NULL);
             }
             // shell metacharacters
+            // Found this too annoying, so it's disabled
+            /* 
             gchar *metachar = "*?:[]\"<>|(){}&'!\\;$";
             size_t metachar_len = strnlen(metachar, sizeof("*?:[]\"<>|(){}&'!\\;$"));
             for (int j = 0; j < metachar_len; j++) {
@@ -674,6 +723,7 @@ gboolean valid_filename_component(option_t *option, gchar *group,
                             config_path, group, option->name, component);
                 }
             }
+            */
         }
     }
     return valid;
@@ -2215,6 +2265,13 @@ gboolean valid_subtitle_burned(option_t *option, gchar *group, GKeyFile *config,
     return FALSE; //TODO incomplete
 }
 
+gboolean valid_subtitle_default(option_t *option, gchar *group, GKeyFile *config,
+        gchar *config_path)
+{
+    g_print("valid_subtitle_default: %s\n", option->name);  //TODO REMOVE
+    return FALSE; //TODO incomplete
+}
+
 gboolean valid_codeset(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path)
 {
@@ -2318,8 +2375,97 @@ gboolean valid_qsv_decoding(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
         gchar *config_path)
 {
-    g_print("valid_comb_detect: %s\n", option->name);  //TODO REMOVE
-    return FALSE; //TODO incomplete
+    gboolean valid_boolean = TRUE, valid_preset = TRUE, valid_custom = TRUE;
+    // check for boolean value
+    GError *error = NULL;
+    g_key_file_get_boolean(config, group, option->name, &error);
+    if (error != NULL) {
+        valid_boolean = FALSE;
+        g_error_free(error);
+    }
+
+    // check for presets (permissive, fast)
+    error = NULL;
+    gchar* value = g_key_file_get_string(config, group, option->name, &error);
+    if (error == NULL) {
+        if (strcmp(value, "permissive") != 0 && strcmp(value, "fast") != 0
+                && strcmp(value, "default") != 0 && strcmp(value, "off") != 0
+           ) {
+            valid_preset = FALSE;
+        }
+    } else {
+        valid_preset = FALSE;
+        g_error_free(error);
+    }
+
+    // check for filter
+    // change separator temporarily to parse colon separated list
+    g_key_file_set_list_separator(config, ':');
+    error = NULL;
+    gsize filter_count = 0;
+    gchar **filters = g_key_file_get_string_list(config, group,
+            option->name, &filter_count, &error);
+    gchar *filter_names[] = {"mode", "spatial-metric", "motion-thresh",
+        "spatial-thresh", "filter-mode", "block-thresh", "block-width",
+        "block-height", "disable", NULL};
+    if (error != NULL) {
+        valid_custom = FALSE;
+        g_error_free(error);
+    } else {
+        for (int i = 0; i < filter_count; i++) {
+            g_strstrip(filters[i]);
+            // split string on '=' into 2 tokens
+            gchar **tokens = g_strsplit(filters[i], "=", 2);
+            if (tokens[0] == NULL) {
+                valid_custom = FALSE;
+            } else if (tokens[1] == NULL) {
+                valid_custom = FALSE;
+                g_strfreev(tokens);
+            } else {
+                // verify first token is one of filter_names
+                int j = 0;
+                while (filter_names[j] != NULL) {
+                    if (strcmp(tokens[0], filter_names[j]) == 0) {
+                        break;
+                    }
+                    j++;
+                }
+                if (filter_names[j] == NULL) {
+                    valid_custom = FALSE;
+                }
+                // verify second token is a valid integer
+                int k = 0;
+                while (tokens[1][k] != '\0') {
+                    if (!g_ascii_isdigit(tokens[1][k])) {
+                        valid_custom = FALSE;
+                    }
+                    k++;
+                }
+                gchar *endptr = NULL;
+                gint64 number = g_ascii_strtoll(tokens[1], &endptr, 10);
+                if ((number == G_MAXINT64 || number == G_MININT64)
+                        && errno == ERANGE) {
+                    // value would cause overflow
+                    valid_custom = FALSE;
+                }
+                if (number == 0 && endptr == tokens[1]) {
+                    // string conversion failed
+                    valid_custom = FALSE;
+                }
+                g_strfreev(tokens);
+            }
+        }
+    }
+    g_strfreev(filters);
+    // reset separator
+    g_key_file_set_list_separator(config, ',');
+
+    if (!valid_boolean && !valid_preset && !valid_custom) {
+        hbr_error("Invalid decomb option", config_path, group, option->name,
+                value);
+    }
+    g_free(value);
+    return (valid_boolean || valid_preset || valid_custom);
 }
 
 gboolean valid_pad(option_t *option, gchar *group, GKeyFile *config,

@@ -41,7 +41,7 @@ static option_t option_v1_1_0[] =
     { "main-feature", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "chapters", required_argument, k_string, FALSE, valid_chapters, 0, NULL},
     { "angle", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "markers", optional_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
+    { "markers", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "inline-parameter-sets", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "align-av", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "audio-lang-list", required_argument, k_string_list, FALSE, valid_iso_639_list, 0, NULL},
@@ -61,9 +61,9 @@ static option_t option_v1_1_0[] =
     { "all-subtitles", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "first-subtitle", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "subtitle", required_argument, k_string, FALSE, valid_subtitle, 0, NULL},
-    { "subtitle-forced", optional_argument, k_string, FALSE, valid_subtitle_forced, 0, NULL},
-    { "subtitle-burned", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "subtitle-default", optional_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
+    { "subtitle-forced", optional_argument, k_string_list, FALSE, valid_subtitle_forced, 0, NULL},
+    { "subtitle-burned", optional_argument, k_string, FALSE, valid_subtitle_burned, 0, NULL},
+    { "subtitle-default", optional_argument, k_string, FALSE, valid_subtitle_default, 0, NULL},
     { "srt-file", required_argument, k_string_list, FALSE, valid_filename_exists_list, 0, NULL},
     { "srt-codeset", required_argument, k_string_list, FALSE, valid_codeset, 0, NULL},
     { "srt-offset", required_argument, k_integer_list, FALSE, valid_integer_list, 0, NULL},
@@ -105,14 +105,14 @@ static option_t option_v1_1_0[] =
     { "loose-anamorphic", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "custom-anamorphic", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "display-width", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
-    { "keep-display-aspect", optional_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
+    { "keep-display-aspect", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "pixel-aspect", required_argument, k_string, FALSE, valid_pixel_aspect, 0, NULL},
     { "modulus", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "itu-par", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "width", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "height", required_argument, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "crop", required_argument, k_string, FALSE, valid_crop, 0, NULL},
-    { "loose-crop", optional_argument, k_integer, TRUE, valid_positive_integer, 0, NULL},
+    { "loose-crop", no_argument, k_integer, TRUE, valid_positive_integer, 0, NULL},
     { "pad", required_argument, k_string, TRUE, valid_pad, 0, NULL},
     { "encoder-preset", required_argument, k_string, FALSE, valid_encoder_preset, 0, NULL},
     { "encoder-tune", required_argument, k_string, FALSE, valid_encoder_tune, 0, NULL},
@@ -161,7 +161,7 @@ static option_t option_v1_1_0[] =
     { NULL, 0, 0, 0, 0, 0}
 };
 
-static depend_t depend_v1_1_0[] =
+static require_t require_v1_1_0[] =
 {
     { "qsv-async-depth", "enable-qsv-decoding", NULL},
     { "qsv-baseline", "enable-qsv-decoding", NULL},

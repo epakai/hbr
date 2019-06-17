@@ -26,7 +26,7 @@
 
 typedef struct option_s option_t;
 typedef struct conflict_s conflict_t;
-typedef struct depend_s depend_t;
+typedef struct require_s require_t;
 
 /**
  * @brief Data about options that get passed to HandBrakeCLI.
@@ -90,40 +90,40 @@ struct conflict_s {
 };
 
 /**
- * @brief Data about which options depend on others.
- *        name may repeat for options with multiple depends.
+ * @brief Data about which options require others.
+ *        name may repeat for options with multiple requires.
  */
-struct depend_s {
+struct require_s {
     /**
      * @brief name of option being considered
      */
     gchar *name;
     /**
-     * @brief option that name depends on
+     * @brief option that name requires
      */
-    gchar *depend_name;
+    gchar *require_name;
     /**
-     * @brief optional, specific value of depend_name that we depend on
+     * @brief optional, specific value of require_name that we require
      */
-    gchar *depend_value;
+    gchar *require_value;
 };
 
 /*
  * Pointers to be set by determine_handbrake_version()
  */
 option_t *version_options;
-depend_t *version_depends;
+require_t *version_requires;
 conflict_t *version_conflicts;
 size_t version_options_size;
-size_t version_depends_size;
+size_t version_requires_size;
 size_t version_conflicts_size;
 
 /*
  * Pointers for dynamically allocated array that combines
- * options/hbr_options, depends/hbr_depends, and conflicts/hbr_conflicts
+ * options/hbr_options, requires/hbr_requires, and conflicts/hbr_conflicts
  */
 option_t *options;
-depend_t *depends;
+require_t *requires;
 conflict_t *conflicts;
 
 /*
@@ -133,11 +133,11 @@ conflict_t *conflicts;
  */
 GHashTable *options_index;
 /*
- * These are similar, but store an GSList of values because options may depend
- * on, or conflict with multiple other keys/values.
+ * These are similar, but store an GSList of values because options may require
+ * or conflict with multiple other keys/values.
  * These values are also ints stored inside pointers.
  */
-GHashTable *depends_index;
+GHashTable *requires_index;
 GHashTable *conflicts_index;
 
 GPtrArray *build_args(GKeyFile *config, gchar *group, gboolean quoted);

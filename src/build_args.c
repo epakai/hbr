@@ -40,7 +40,7 @@
 
 static option_t hbr_options[] =
 {
-    { "type", hbr_only, k_string, FALSE, valid_string_set, 2, (gchar*[]){"series", "movie"}},
+    { "type", hbr_only, k_string, FALSE, valid_type, 2, (gchar*[]){"series", "movie"}},
     { "input_basedir", hbr_only, k_string, FALSE, valid_readable_path, 0, NULL},
     { "output_basedir", hbr_only, k_string, FALSE, valid_writable_path, 0, NULL},
     { "iso_filename", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
@@ -53,11 +53,11 @@ static option_t hbr_options[] =
     { NULL, 0, 0, 0, 0, 0}
 };
 
-static depend_t hbr_depends[] =
+static require_t hbr_requires[] =
 {
-    {"year", "type", "movie"},
-    {"season", "type", "series"},
-    {"episode", "type", "series"},
+    { "year", "type", "movie"},
+    { "season", "type", "series"},
+    { "episode", "type", "series"},
     { NULL, 0, 0}
 };
 
@@ -121,8 +121,35 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
         GString *arg;
         switch (options[i].key_type) {
             case k_string:
+                // handle boolean values for keys without optional arguments
+                if (options[i].arg_type == optional_argument) {
+                    GError *error = NULL;
+                    gboolean b = g_key_file_get_boolean(config, group,
+                            options[i].name, &error);
+                    if (error == NULL) {
+                        if (b == TRUE) {
+                            g_ptr_array_add(args, g_strdup_printf("--%s",
+                                        options[i].name));
+                        } else if (options[i].negation_option){
+                            gchar * negation_name = g_strdup_printf("no-%s",
+                                    options[i].name);
+                            if (g_key_file_has_key(config, group, negation_name,
+                                        NULL)) {
+                                if (g_key_file_get_boolean(config, group,
+                                            negation_name, NULL)) {
+                                    g_ptr_array_add(args,
+                                            g_strdup_printf("--%s",
+                                                negation_name));
+                                }
+                            }
+                            g_free(negation_name);
+                        }
+                        break;
+                    }
+                }
+                // regular string option
                 string_value = g_key_file_get_string(config, group,
-                        options[i].name, NULL);
+                    options[i].name, NULL);
                 if (string_value != NULL) {
                     g_ptr_array_add(args, g_strdup_printf("--%s=%s",
                                 options[i].name, string_value));
@@ -146,8 +173,37 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                 }
                 break;
             case k_integer:
+                // special case for keys with arg_type optional_argument
+                // if integer value is 0 or 1, take integer value
+                // otherwise interpret as boolean and output bare option if true
                 integer_value = g_key_file_get_integer(config, group,
                         options[i].name, NULL);
+                if (options[i].arg_type == optional_argument &&
+                        integer_value != 0 && integer_value != 1) {
+                    GError *error = NULL;
+                    gboolean b = g_key_file_get_boolean(config, group,
+                            options[i].name, &error);
+                    if (error == NULL) {
+                        if (b == TRUE) {
+                            g_ptr_array_add(args, g_strdup_printf("--%s",
+                                        options[i].name));
+                        } else if (options[i].negation_option){
+                            gchar * negation_name = g_strdup_printf("no-%s",
+                                    options[i].name);
+                            if (g_key_file_has_key(config, group, negation_name,
+                                        NULL)) {
+                                if (g_key_file_get_boolean(config, group,
+                                            negation_name, NULL)) {
+                                    g_ptr_array_add(args,
+                                            g_strdup_printf("--%s",
+                                                negation_name));
+                                }
+                            }
+                            g_free(negation_name);
+                        }
+                        break;
+                    }
+                }
                 g_ptr_array_add(args, g_strdup_printf("--%s=%d",
                             options[i].name, integer_value));
                 break;
@@ -158,6 +214,32 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                             options[i].name, double_value));
                 break;
             case k_string_list:
+                // handle boolean values for keys with optional arguments
+                if (options[i].arg_type == optional_argument) {
+                    GError *error = NULL;
+                    gboolean b = g_key_file_get_boolean(config, group,
+                            options[i].name, &error);
+                    if (error == NULL) {
+                        if (b == TRUE) {
+                            g_ptr_array_add(args, g_strdup_printf("--%s",
+                                        options[i].name));
+                        } else if (options[i].negation_option){
+                            gchar * negation_name = g_strdup_printf("no-%s",
+                                    options[i].name);
+                            if (g_key_file_has_key(config, group, negation_name,
+                                        NULL)) {
+                                if (g_key_file_get_boolean(config, group,
+                                            negation_name, NULL)) {
+                                    g_ptr_array_add(args,
+                                            g_strdup_printf("--%s",
+                                                negation_name));
+                                }
+                            }
+                            g_free(negation_name);
+                        }
+                        break;
+                    }
+                }
                 string_list_values = g_key_file_get_string_list(config, group,
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
@@ -227,7 +309,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
         g_string_free(infile, FALSE); // keep string data, toss GString
     }
 
-    // output file arg (depends on type, name, year, season, episode_number, specific_name)
+    // output file arg (depends on type, name, year, season, episode, specific_name)
     g_ptr_array_add(args, g_strdup("-o"));
     GString *filename = build_filename(config, group, TRUE);
     if (quoted) {
@@ -271,7 +353,7 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
     gchar* type = g_key_file_get_string(config, group, "type", NULL);
     gchar* year = g_key_file_get_string(config, group, "year", NULL);
     gint season = g_key_file_get_integer(config, group, "season", NULL);
-    gint episode_number = g_key_file_get_integer(config, group, "episode_number", NULL);
+    gint episode = g_key_file_get_integer(config, group, "episode", NULL);
     gchar* specific_name = g_key_file_get_string(config, group, "specific_name", NULL);
     gchar* format = g_key_file_get_string(config, group, "format", NULL);
 
@@ -281,13 +363,13 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
             g_string_append_printf(filename, " (%s)", year);
         }
     } else if ( strcmp(type, "series") == 0) {
-        if (season || episode_number) {
+        if (season || episode) {
             g_string_append(filename, " - ");
             if (season) {
                 g_string_append_printf(filename, "s%02d", season);
             }
-            if (episode_number) {
-                g_string_append_printf(filename, "e%03d", episode_number);
+            if (episode) {
+                g_string_append_printf(filename, "e%03d", episode);
             }
         }
     }
@@ -378,7 +460,7 @@ void determine_handbrake_version(gchar *arg_version)
      * Baseline version if detection fails
      */
     version_options = option_v0_9_9;
-    version_depends = depend_v0_9_9;
+    version_requires = require_v0_9_9;
     version_conflicts = conflict_v0_9_9;
     /*
      * NOTE: This logic is over-simplified because versions where changes
@@ -392,50 +474,50 @@ void determine_handbrake_version(gchar *arg_version)
                 NULL, NULL, NULL, NULL, version);
         version_options = option_v1_2_0;
         version_options_size = sizeof(option_v1_2_0);
-        version_depends = depend_v1_2_0;
-        version_depends_size = sizeof(depend_v1_2_0);
+        version_requires = require_v1_2_0;
+        version_requires_size = sizeof(require_v1_2_0);
         version_conflicts = conflict_v1_2_0;
         version_conflicts_size = sizeof(conflict_v1_2_0);
     } else if (major == 1 && minor >= 2) {
         version_options = option_v1_2_0;
         version_options_size = sizeof(option_v1_2_0);
-        version_depends = depend_v1_2_0;
-        version_depends_size = sizeof(depend_v1_2_0);
+        version_requires = require_v1_2_0;
+        version_requires_size = sizeof(require_v1_2_0);
         version_conflicts = conflict_v1_2_0;
         version_conflicts_size = sizeof(conflict_v1_2_0);
     } else if (major == 1 && minor > 0) {
         version_options = option_v1_1_0;
         version_options_size = sizeof(option_v1_1_0);
-        version_depends = depend_v1_1_0;
-        version_depends_size = sizeof(depend_v1_1_0);
+        version_requires = require_v1_1_0;
+        version_requires_size = sizeof(require_v1_1_0);
         version_conflicts = conflict_v1_1_0;
         version_conflicts_size = sizeof(conflict_v1_1_0);
     } else if (major == 1 && minor >= 0) {
         version_options = option_v1_0_0;
         version_options_size = sizeof(option_v1_0_0);
-        version_depends = depend_v1_0_0;
-        version_depends_size = sizeof(depend_v1_0_0);
+        version_requires = require_v1_0_0;
+        version_requires_size = sizeof(require_v1_0_0);
         version_conflicts = conflict_v1_0_0;
         version_conflicts_size = sizeof(conflict_v1_0_0);
     } else if (major == 0 && minor == 10 && patch >= 3) {
         version_options = option_v0_10_3;
         version_options_size = sizeof(option_v0_10_3);
-        version_depends = depend_v0_10_3;
-        version_depends_size = sizeof(depend_v0_10_3);
+        version_requires = require_v0_10_3;
+        version_requires_size = sizeof(require_v0_10_3);
         version_conflicts = conflict_v0_10_3;
         version_conflicts_size = sizeof(conflict_v0_10_3);
     } else if (major == 0 && minor == 10) {
         version_options = option_v0_10_0;
         version_options_size = sizeof(option_v0_10_0);
-        version_depends = depend_v0_10_0;
-        version_depends_size = sizeof(depend_v0_10_0);
+        version_requires = require_v0_10_0;
+        version_requires_size = sizeof(require_v0_10_0);
         version_conflicts = conflict_v0_10_0;
         version_conflicts_size = sizeof(conflict_v0_10_0);
     } else if (major == 0 && minor == 9 && patch >= 9) {
         version_options = option_v0_9_9;
         version_options_size = sizeof(option_v0_9_9);
-        version_depends = depend_v0_9_9;
-        version_depends_size = sizeof(depend_v0_9_9);
+        version_requires = require_v0_9_9;
+        version_requires_size = sizeof(require_v0_9_9);
         version_conflicts = conflict_v0_9_9;
         version_conflicts_size = sizeof(conflict_v0_9_9);
     } else {
@@ -453,11 +535,11 @@ void determine_handbrake_version(gchar *arg_version)
     option_t *last_option = &(options[version_options_count-1]);
     memcpy(last_option, hbr_options, sizeof(hbr_options));
 
-    depends = g_malloc(version_depends_size + sizeof(hbr_depends));
-    memcpy(depends, version_depends, version_depends_size);
-    gsize version_depends_count =  version_depends_size/sizeof(depend_t);
-    depend_t *last_depend = &(depends[version_depends_count-1]);
-    memcpy(last_depend, hbr_depends, sizeof(hbr_depends));
+    requires = g_malloc(version_requires_size + sizeof(hbr_requires));
+    memcpy(requires, version_requires, version_requires_size);
+    gsize version_requires_count =  version_requires_size/sizeof(require_t);
+    require_t *last_require = &(requires[version_requires_count-1]);
+    memcpy(last_require, hbr_requires, sizeof(hbr_requires));
 
     conflicts = g_malloc(version_conflicts_size + sizeof(hbr_conflicts));
     memcpy(conflicts, version_conflicts, version_conflicts_size);
@@ -467,7 +549,7 @@ void determine_handbrake_version(gchar *arg_version)
 }
 
 /**
- * @brief Generate hash tables to for look up of options, depends,
+ * @brief Generate hash tables to for look up of options, requires,
  *        and conflicts.
  */
 void arg_hash_generate()
@@ -483,12 +565,12 @@ void arg_hash_generate()
      * replaced. Instead we have to manually free each GSList before destroying
      * the table.
      */
-    // depends
-    depends_index = g_hash_table_new(g_str_hash, g_str_equal);
-    for (int i = 0; depends[i].name != NULL; i++) {
-        g_hash_table_insert(depends_index, depends[i].name,
-                g_slist_prepend(g_hash_table_lookup(depends_index,
-                        depends[i].name), GINT_TO_POINTER(i)));
+    // requires
+    requires_index = g_hash_table_new(g_str_hash, g_str_equal);
+    for (int i = 0; requires[i].name != NULL; i++) {
+        g_hash_table_insert(requires_index, requires[i].name,
+                g_slist_prepend(g_hash_table_lookup(requires_index,
+                        requires[i].name), GINT_TO_POINTER(i)));
     }
 
     // conflicts
@@ -507,18 +589,18 @@ void arg_hash_generate()
 void arg_hash_cleanup()
 {
     g_hash_table_destroy(options_index);
-    g_hash_table_foreach(depends_index, free_slist_in_hash, NULL);
-    g_hash_table_destroy(depends_index);
+    g_hash_table_foreach(requires_index, free_slist_in_hash, NULL);
+    g_hash_table_destroy(requires_index);
     g_hash_table_foreach(conflicts_index, free_slist_in_hash, NULL);
     g_hash_table_destroy(conflicts_index);
     g_free(options);
-    g_free(depends);
+    g_free(requires);
     g_free(conflicts);
 }
 
 /**
  * @brief GSList freeing function to be passed to g_hash_table_foreach()
- *        This frees the lists allocated for depends_index and conflicts_index.
+ *        This frees the lists allocated for requires_index and conflicts_index.
  *        Do not call directly.
  */
 void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data)

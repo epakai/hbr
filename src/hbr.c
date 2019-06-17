@@ -131,7 +131,7 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    // check the output path
+    // check the output path from command line option
     if (!good_output_option_path()) {
         g_option_context_free(context);
         g_strfreev(opt_input_files);
@@ -145,10 +145,10 @@ int main(int argc, char * argv[])
         // parse input file
         GKeyFile *current_infile = parse_validate_key_file(opt_input_files[i], config);
         if (current_infile == NULL) {
-            g_option_context_free(context);
-            g_key_file_free(config);
-            //TODO ERROR HERE
-            exit(1); // TODO maybe just error here and skip the current infile
+            hbr_error("Could not complete input file", opt_input_files[i], NULL,
+                    NULL, NULL);
+            i++;
+            continue;
         }
 
         // merge config sections from global config and current infile
@@ -167,8 +167,20 @@ int main(int argc, char * argv[])
 
             // override output path if option given
             if (opt_output != NULL) {
-                g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir", opt_output);
+                g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir",
+                        opt_output);
             }
+            // create output directory
+            GError *error = NULL;
+            gchar *output_path = g_key_file_get_string(merged, "MERGED_CONFIG",
+                    "output_basedir", &error);
+            if (g_mkdir_with_parents(output_path, 0777) != 0) {
+                hbr_error("Failed to create output directory", opt_input_files[i], NULL,
+                        NULL, NULL);
+                i++;
+                continue;
+            }
+            g_free(output_path);
 
             // encode each outfile
             encode_loop(current_infile, merged, opt_input_files[i]);
@@ -186,9 +198,8 @@ int main(int argc, char * argv[])
     exit(0);
 }
 
-
 /**
- * @brief Verifies output paths exists and is (symlink to) a directory
+ * @brief Verify --output path exists and is (symlink to) a directory
  *
  * @return TRUE when path is good
  */
@@ -449,22 +460,12 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *fi
  */
 int hb_fork(gchar *args[], gchar *log_filename, int out_count)
 {
-    // check if current working directory is writeable
-    char *cwd = getcwd(NULL, 0);
-    if ( g_access((char *) cwd, W_OK|X_OK) != 0 ) {
-        hbr_error("%d: Directory is not writable", cwd, NULL, NULL, NULL,
-                out_count);
-        free(cwd);
-        return 1;
-    }
-
     // test logfile was opened
     errno = 0;
     FILE *logfile = fopen((const char *)log_filename, "w");
     if (logfile == NULL) {
         hbr_error("hb_fork(): Failed to open logfile: %s", log_filename,
                 NULL, NULL, NULL, strerror(errno));
-        free(cwd);
         return 1;
     }
 
@@ -473,7 +474,6 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
     pid_t hb_pid;
     if (pipe(hb_err)<0){
         fclose(logfile);
-        free(cwd);
         return 1;
     }
 
@@ -493,7 +493,6 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
         _exit(1);
     } else {
         perror("hb_fork(): Failed to fork");
-        free(cwd);
         close(hb_err[1]);
         fclose(logfile);
         return 1;
@@ -505,7 +504,6 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
                 NULL, NULL);
         close(hb_err[1]);
         fclose(logfile);
-        free(cwd);
         exit(1);
     }
     int bytes;
@@ -515,6 +513,5 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
     free(buf);
     close(hb_err[1]);
     fclose(logfile);
-    free(cwd);
     return 0;
 }
