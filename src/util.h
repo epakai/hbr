@@ -21,21 +21,24 @@
 #define _util_h
 
 #include <glib.h>
+#include <gio/gio.h>
 #include <stdarg.h>
 
-void hbr_error(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, ...);
-void hbr_verror(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, va_list argp);
+void hbr_error(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, ...);
+void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
 
-void hbr_warn(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, ...);
-void hbr_vwarn(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, va_list argp);
+void hbr_warn(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, ...);
+void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
 
-void hbr_info(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, ...);
-void hbr_vinfo(gchar *format, gchar *path, gchar *section, gchar *key,
-        gchar *value, va_list argp);
+void hbr_info(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, ...);
+void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
+
+GDataInputStream *open_datastream(const gchar *infile);
 
 #endif

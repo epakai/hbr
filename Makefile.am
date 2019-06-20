@@ -1,11 +1,17 @@
 HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h
-SUPPORT_SOURCES = src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h src/util.c src/util.h
+SUPPORT_SOURCES = src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h
+GEN_SOURCES = src/gen_hbr.c src/gen_hbr.h
+COMMON_SOURCES = src/util.c src/util.h
 
-bin_PROGRAMS = hbr
+bin_PROGRAMS = hbr hbr-gen
 
-hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES)
+hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
 hbr_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
 hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS)
+
+hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
+hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
+hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS)
 
 EXTRA_DIST = autogen.sh doc/Doxyfile.in doc/Makefile.am doc/Makefile.in
 
@@ -21,7 +27,8 @@ doc:
 	@echo Cannot generate source documentation. Doxygen not found.
 endif
 
-SOURCES := $(addprefix $(top_srcdir)/, $(hbr_SOURCES))
+SRC = $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
+SOURCES := $(addprefix $(top_srcdir)/, $(SRC))
 PCH = $(addsuffix .gch, $(SOURCES))
 
 if HAVE_CLANG

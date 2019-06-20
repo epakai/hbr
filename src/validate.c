@@ -37,7 +37,7 @@
  *
  * @return TRUE when a keyfile is readable, and has no duplicate groups/keys
  */
-gboolean pre_validate_key_file(gchar *infile)
+gboolean pre_validate_key_file(const gchar *infile)
 {
     gboolean valid = TRUE;
     // check file is readable
@@ -72,7 +72,7 @@ gboolean pre_validate_key_file(gchar *infile)
  *
  * @return TRUE when a keyfile is valid
  */
-gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
+gboolean post_validate_input_file(GKeyFile *input_keyfile, const gchar *infile,
         GKeyFile *config_keyfile)
 {
     gboolean valid = TRUE;
@@ -114,7 +114,7 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, gchar *infile,
  *
  * @return TRUE when a global config keyfile is valid
  */
-gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
+gboolean post_validate_config_file(GKeyFile *keyfile, const gchar *infile)
 {
     gboolean valid = TRUE;
     // check CONFIG exists
@@ -143,6 +143,11 @@ gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
         valid = FALSE; // errors printed during has_required_keys()
     }
     
+    // check required keys exist (requires)
+    if (!has_requires(keyfile, infile, NULL)) {
+        valid = FALSE; // errors printed during has_requires()
+    }
+
     return valid;
 }
 
@@ -159,7 +164,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile, gchar *infile)
  *
  * @return TRUE when a config section is valid
  */
-gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
+gboolean post_validate_common(GKeyFile *keyfile, const gchar *infile,
     GKeyFile *config_keyfile)
 {
     gboolean valid = TRUE;
@@ -191,16 +196,22 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
     //      between hbr.conf and infile is not workable)
     
     
-    // TODO check requires (requires merging for local configs)
-    // TODO check conflicts (requires merging for local configs)
+    /* TODO check depends (done without merging, depends are cases where one
+     * option's value affects which values are valid for another option
+     */
+    // TODO check quantity matches (can be handled with merging)
     // TODO check negation type conflicts (requires merging for local configs)
-    // call valid_input function (requires merging for complex validation)
+    
+    /* TODO check conflicts (only requires checking each group because the function
+     * merge_key_group removes conflicts during the merge)
+     */
+    // call valid_option function (requires merging for complex validation)
     i = 0;
     while (group_names[i] != NULL) {
         int j = 0;
         while (options[j].name != NULL) {
             if (g_key_file_has_key(keyfile, group_names[i], options[j].name, NULL)) {
-                if (!options[j].valid_input(&options[j],  group_names[i],
+                if (!options[j].valid_option(&options[j],  group_names[i],
                             keyfile, infile)) {
                     valid = FALSE;
                 }
@@ -223,7 +234,7 @@ gboolean post_validate_common(GKeyFile *keyfile, gchar *infile,
  *
  * @return TRUE when all requires are fulfilled
  */
-gboolean has_requires(GKeyFile *input_keyfile, gchar *infile,
+gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
         GKeyFile *config_keyfile) {
     gboolean valid = TRUE;
     gchar **group_names = g_key_file_get_groups(input_keyfile, NULL);
@@ -330,7 +341,7 @@ gboolean has_requires(GKeyFile *input_keyfile, gchar *infile,
  *
  * @return TRUE when all required keys are present
  */
-gboolean has_required_keys(GKeyFile *input_keyfile, gchar *infile,
+gboolean has_required_keys(GKeyFile *input_keyfile, const gchar *infile,
         GKeyFile *config_keyfile)
 {
     gboolean valid = TRUE;
@@ -405,7 +416,7 @@ gboolean has_required_keys(GKeyFile *input_keyfile, gchar *infile,
  *
  * @return TRUE if unknown keys exist
  */
-gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile)
+gboolean unknown_keys_exist(GKeyFile *keyfile, const gchar *infile)
 {
     gchar **groups = g_key_file_get_groups(keyfile, NULL);
     int i = 0;
@@ -431,36 +442,6 @@ gboolean unknown_keys_exist(GKeyFile *keyfile, gchar *infile)
 }
 
 /**
- * @brief Opens a file as a data stream for reading
- *
- * @param infile path of file to be read
- *
- * @return data stream, free'd with g_object_unref()
- */
-GDataInputStream * open_datastream(gchar *infile)
-{
-    GFile *file = g_file_new_for_path(infile);
-    GError *error = NULL;
-    GFileInputStream *filestream = g_file_read(file, NULL, &error);
-    g_object_unref(file);
-    if (error != NULL) {
-        if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
-            hbr_error("File not found", infile, NULL, NULL, NULL);
-        } else if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY)) {
-            hbr_error("File specified is a directory", infile, NULL, NULL, NULL);
-        } else {
-            hbr_error("File not readable", infile, NULL, NULL, NULL);
-        }
-        g_error_free(error);
-        return NULL;
-    }
-    GDataInputStream *datastream = g_data_input_stream_new((GInputStream *) filestream);
-    g_object_unref(filestream);
-    return datastream;
-}
-
-
-/**
  * @brief Checks a keyfile for duplicate groups via manual parsing.
  *        This is necessary because GKeyFile silently merges duplicate groups.
  *
@@ -468,7 +449,7 @@ GDataInputStream * open_datastream(gchar *infile)
  *
  * @return TRUE if file contains duplicate groups
  */
-gboolean has_duplicate_groups(gchar *infile)
+gboolean has_duplicate_groups(const gchar *infile)
 {
     GDataInputStream * datastream = open_datastream(infile);
     // check for duplicate group sections
@@ -526,7 +507,7 @@ gboolean has_duplicate_groups(gchar *infile)
  *
  * @return TRUE if file contains duplicate keys in the same group
  */
-gboolean has_duplicate_keys(gchar *infile)
+gboolean has_duplicate_keys(const gchar *infile)
 {
     GDataInputStream * datastream = open_datastream(infile);
     // check for duplicate group sections
@@ -596,9 +577,26 @@ gboolean has_duplicate_keys(gchar *infile)
 // of ways to muck those files up
 // TODO remove pointless print after testing (in all valid_ functions)
 
+/*
+ * TODO FIXME valid_ functions shouldn't have gotten tasked with checking inputs
+ * based on other options, or matching quantities with other options.
+ * The code that does this should be generalized and handled directly from the 
+ * post_validate_common function.
+ */
+
+
 gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
+    /*
+     * TODO this style of check cannot work because season/episode may be split
+     * in different groups. Checking this really shouldn't be handled in the 
+     * valid_ functions because it get's too complicated.
+     * Instead there should be a new depends table and related functions that 
+     * have knowledge of the outfile/config/global_config trifecta and can
+     * check appropriate values for the dependent/dependee combos
+     */
+    
     gboolean valid = valid_string_list_set(option, group, config, config_path);
     gchar *type = g_key_file_get_value(config, group, option->name, NULL);
     if (strcmp(type, "series") == 0) {
@@ -620,7 +618,7 @@ gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -648,7 +646,7 @@ gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_writable_path(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gchar *orig_path = g_key_file_get_value(config, group, option->name, NULL);
 
@@ -688,7 +686,7 @@ gboolean valid_writable_path(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_filename_component(option_t *option, gchar *group,
-        GKeyFile *config, gchar *config_path)
+        GKeyFile *config, const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -730,7 +728,7 @@ gboolean valid_filename_component(option_t *option, gchar *group,
 }
 
 gboolean valid_boolean(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
@@ -749,7 +747,7 @@ gboolean valid_boolean(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_integer(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -767,14 +765,14 @@ gboolean valid_integer(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_integer_set(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_integer_set: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_integer_list(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -795,14 +793,14 @@ gboolean valid_integer_list(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_integer_list_set(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_integer_list_set: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_positive_integer(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -827,7 +825,7 @@ gboolean valid_positive_integer(option_t *option, gchar *group, GKeyFile *config
 }
 
 gboolean valid_double_list(option_t *option, gchar *group,
-        GKeyFile *config, gchar *config_path) {
+        GKeyFile *config, const gchar *config_path) {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -847,7 +845,7 @@ gboolean valid_double_list(option_t *option, gchar *group,
 }
 
 gboolean valid_positive_double_list(option_t *option, gchar *group,
-        GKeyFile *config, gchar *config_path)
+        GKeyFile *config, const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -878,7 +876,7 @@ gboolean valid_positive_double_list(option_t *option, gchar *group,
 }
 
 gboolean valid_string(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     g_print("valid_string: %s\n", option->name);  //TODO REMOVE
@@ -886,7 +884,7 @@ gboolean valid_string(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_string_set(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count != 0 && option->valid_values != NULL);
     gboolean valid = TRUE;
@@ -908,7 +906,7 @@ gboolean valid_string_set(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_string_list_set(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count != 0 && option->valid_values != NULL);
     GError *error = NULL;
@@ -950,7 +948,7 @@ gboolean valid_string_list_set(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_string_list(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     g_print("valid_string_list: %s\n", option->name);  //TODO REMOVE
@@ -958,7 +956,7 @@ gboolean valid_string_list(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_filename_exists(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     g_print("valid_filename_exists: %s\n", option->name);  //TODO REMOVE
@@ -975,7 +973,7 @@ gboolean valid_filename_exists(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_filename_exists_list(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -1005,28 +1003,28 @@ gboolean valid_filename_exists_list(option_t *option, gchar *group, GKeyFile *co
 }
 
 gboolean valid_filename_dne(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_filename_dne: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_startstop_at(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_startstop_at: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_previews(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_previews: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_audio(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     // check for 'none'
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
@@ -1081,7 +1079,7 @@ gboolean valid_audio(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_audio_encoder(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     // verify audio encoder count is the same as audio track count
     gboolean valid = TRUE;
@@ -1123,14 +1121,14 @@ gboolean valid_audio_encoder(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_audio_quality(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_audio_quality: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_audio_bitrate(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     int valid_bitrates[] = {6, 12, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128,
@@ -1289,7 +1287,7 @@ gboolean valid_audio_bitrate(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -1398,7 +1396,7 @@ gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *confi
 }
 
 gboolean valid_video_quality(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -1463,7 +1461,7 @@ gboolean valid_video_quality(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_video_bitrate(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -1488,7 +1486,7 @@ gboolean valid_video_bitrate(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_video_framerate(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_video_framerate: %s\n", option->name);  //TODO REMOVE
     // try to interpret it with valid_string_set style lookup
@@ -1497,7 +1495,7 @@ gboolean valid_video_framerate(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_boolean = TRUE, valid_crop = TRUE;
     // check for boolean value
@@ -1541,14 +1539,14 @@ gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_pixel_aspect(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_pixel_aspect: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_boolean = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
@@ -1643,7 +1641,7 @@ gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_preset = TRUE, valid_custom = TRUE;
     // check for presets (ultralight, light, medium, strong)
@@ -1729,7 +1727,7 @@ gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_boolean = TRUE, valid_custom = TRUE;
     // check for boolean value
@@ -1810,7 +1808,7 @@ gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_deinterlace(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_deinterlace: %s\n", option->name);  //TODO REMOVE
     // custom isn't really a preset, just designates a custom format was
@@ -1822,14 +1820,14 @@ gboolean valid_deinterlace(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_detelecine(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_detelecine: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_iso_639(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     GError *error = NULL;
@@ -1855,7 +1853,7 @@ gboolean valid_iso_639(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_iso_639_list(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_iso639_list: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
@@ -1863,14 +1861,14 @@ gboolean valid_iso_639_list(option_t *option, gchar *group, GKeyFile *config,
 
 
 gboolean valid_native_dub(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_native_dub: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_subtitle(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = FALSE;
     GError *error = NULL;
@@ -1906,7 +1904,7 @@ gboolean valid_subtitle(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_gain(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     valid = valid_double_list(option, group, config, config_path);
@@ -1953,7 +1951,7 @@ gboolean valid_gain(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_drc(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean all_valid = TRUE;
     // try to parse as double list
@@ -2008,7 +2006,7 @@ gboolean valid_drc(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_chapters(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
     gboolean valid = TRUE;
@@ -2053,14 +2051,14 @@ gboolean valid_chapters(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_encopts(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_encopts: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
 
@@ -2121,14 +2119,14 @@ gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_encoder_tune(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_encoder_tune: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_encoder_profile(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
 
@@ -2194,28 +2192,28 @@ gboolean valid_encoder_profile(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_encoder_level(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_encoder_level: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_nlmeans(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_nlmeans: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_nlmeans_tune(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_nlmeans_tune: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid = TRUE;
     valid = valid_string_list_set(option, group, config, config_path);
@@ -2251,14 +2249,14 @@ gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_subtitle_forced(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_subtitle_forced: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_subtitle_burned(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_subtitle_burned: %s\n", option->name);  //TODO REMOVE
     // only applies to 1.2.0 and newer, otherwise it's just an integer
@@ -2266,21 +2264,21 @@ gboolean valid_subtitle_burned(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_subtitle_default(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_subtitle_default: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_codeset(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_codeset: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_boolean = TRUE, valid_custom = TRUE;
     // check for boolean value
@@ -2366,14 +2364,14 @@ gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_qsv_decoding(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_qsv_decoding: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     gboolean valid_boolean = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
@@ -2469,28 +2467,28 @@ gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
 }
 
 gboolean valid_pad(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_pad: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_unsharp(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_unsharp: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_filespec(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_filespec: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 
 gboolean valid_preset_name(option_t *option, gchar *group, GKeyFile *config,
-        gchar *config_path)
+        const gchar *config_path)
 {
     g_print("valid_preset_name: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete

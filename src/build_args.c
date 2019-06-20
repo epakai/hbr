@@ -109,7 +109,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
          * TODO probably unnecessary assert. used for verification during
          * implementation
          */
-        //assert(options[i].valid_input(&options[i], config, group));
+        //assert(options[i].valid_option(&options[i], config, group));
 
         gchar *string_value;
         gint integer_value;
@@ -363,12 +363,14 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
             g_string_append_printf(filename, " (%s)", year);
         }
     } else if ( strcmp(type, "series") == 0) {
-        if (season || episode) {
+        gboolean has_season = g_key_file_has_key(config, group, "season", NULL);
+        gboolean has_episode = g_key_file_has_key(config, group, "episode", NULL); 
+        if (has_season || has_episode) {
             g_string_append(filename, " - ");
-            if (season) {
+            if (has_season) {
                 g_string_append_printf(filename, "s%02d", season);
             }
-            if (episode) {
+            if (has_episode) {
                 g_string_append_printf(filename, "e%03d", episode);
             }
         }
