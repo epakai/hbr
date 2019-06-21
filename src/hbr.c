@@ -21,6 +21,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for NULL, stderr, stdout, etc
 #include <stdlib.h>                     // for exit
+#include <sys/wait.h>
 #include <string.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -513,5 +514,6 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
     free(buf);
     close(hb_err[1]);
     fclose(logfile);
+    wait(NULL);
     return 0;
 }
