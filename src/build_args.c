@@ -409,7 +409,7 @@ gchar * build_filename(GKeyFile *config, gchar *group)
         } else {
             g_string_append(filename, name);
         }
-        if (year && !add_year && !extra_type) {
+        if (year && !extra_type) {
             g_string_append_printf(filename, " (%s)", year);
         }
     } else if (strcmp(type, "series") == 0) {
