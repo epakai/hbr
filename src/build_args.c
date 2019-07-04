@@ -41,6 +41,8 @@
 static option_t hbr_options[] =
 {
     { "type", hbr_only, k_string, FALSE, valid_type, 2, (gchar*[]){"series", "movie"}},
+    // TODO document add_year (it should add a (year) to the directory name if type is movie)
+    { "add_year", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "input_basedir", hbr_only, k_string, FALSE, valid_readable_path, 0, NULL},
     { "output_basedir", hbr_only, k_string, FALSE, valid_writable_path, 0, NULL},
     { "iso_filename", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
@@ -50,20 +52,26 @@ static option_t hbr_options[] =
     { "episode", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
     { "specific_name", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
     { "preview", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL },
-    { NULL, 0, 0, 0, 0, 0}
+    // TODO document extra (it causes subdirectories to be created for extras)
+    { "extra", hbr_only, k_string, FALSE, valid_string_set, 8,
+        (gchar*[]){"behindthescenes", "deleted", "featurette", "interview",
+            "scene", "short", "trailer", "other"}},
+    { NULL, 0, 0, 0, NULL, 0}
 };
 
 static require_t hbr_requires[] =
 {
+    { "add_year", "type", "movie"},
+    { "extra", "type", "movie"},
     { "year", "type", "movie"},
     { "season", "type", "series"},
     { "episode", "type", "series"},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
 
 static conflict_t hbr_conflicts[] =
 {
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
 
 /**
@@ -145,6 +153,8 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                             g_free(negation_name);
                         }
                         break;
+                    } else {
+                        g_error_free(error);
                     }
                 }
                 // regular string option
@@ -309,15 +319,17 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
         g_string_free(infile, FALSE); // keep string data, toss GString
     }
 
-    // output file arg (depends on type, name, year, season, episode, specific_name)
+    /* output file arg (depends on type, name, year, season, episode,
+     * specific_name, add_year, extra)
+     */
     g_ptr_array_add(args, g_strdup("-o"));
-    GString *filename = build_filename(config, group, TRUE);
+    gchar *filename = build_filename(config, group);
     if (quoted) {
-        g_ptr_array_add(args, g_shell_quote(filename->str));
-        g_string_free(filename, TRUE); // g_shell_quote made a new copy
+        g_ptr_array_add(args, g_shell_quote(filename));
+        g_free(filename); // g_shell_quote made a new copy
     } else {
-        g_ptr_array_add(args, filename->str);
-        g_string_free(filename, FALSE); // keep string data, toss GString
+        g_ptr_array_add(args, filename);
+        // keep string data, to be freed with ptr_array
     }
     // Null terminate the pointer array so we can use it without a count
     g_ptr_array_add(args, g_strdup(NULL));
@@ -327,28 +339,16 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
 
 
 /**
- * @brief Generate a filename with optional path for an OUTFILE group
+ * @brief Generate a filename for an OUTFILE group
  *
  * @param config    keyfile that contains group
  * @param group     group name to generate a filename for
- * @param full_path determines whether the filename includes the path in
- *                  output_basedir
  *
- * @return filename or full path with filename
+ * @return filename
  */
-GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
+gchar * build_filename(GKeyFile *config, gchar *group)
 {
-    GString* filename = g_string_new(NULL);
-
     gchar* output_basedir = g_key_file_get_string(config, group, "output_basedir", NULL);
-    if (full_path && output_basedir) {
-        g_string_append(filename, output_basedir);
-        if (filename->str[filename->len-1] != G_DIR_SEPARATOR){
-            g_string_append(filename, G_DIR_SEPARATOR_S);
-        }
-    }
-    g_free(output_basedir);
-
     gchar* name = g_key_file_get_string(config, group, "name", NULL);
     gchar* type = g_key_file_get_string(config, group, "type", NULL);
     gchar* year = g_key_file_get_string(config, group, "year", NULL);
@@ -356,15 +356,66 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
     gint episode = g_key_file_get_integer(config, group, "episode", NULL);
     gchar* specific_name = g_key_file_get_string(config, group, "specific_name", NULL);
     gchar* format = g_key_file_get_string(config, group, "format", NULL);
+    gchar *extra_type = g_key_file_get_string(config, group, "extra", NULL);
+    gboolean add_year = g_key_file_get_boolean(config, group, "add_year", NULL);
 
-    g_string_append_printf(filename, "%s", name);
+    GString* filename = g_string_new(NULL);
+
+    if (output_basedir) {
+        g_string_append(filename, output_basedir);
+        if (filename->str[filename->len-1] != G_DIR_SEPARATOR){
+            g_string_append(filename, G_DIR_SEPARATOR_S);
+        }
+    }
+    g_free(output_basedir);
+
     if (strcmp(type, "movie") == 0) {
-        if (year) {
+        if (year && add_year) {
+            // year in the output directory
+            append_year(config, group, filename);
+            g_string_append(filename, G_DIR_SEPARATOR_S);
+        }
+        if (extra_type) {
+            gchar *extra_name = NULL;
+            if (strcmp(extra_type, "behindthescenes") == 0) {
+                extra_name = g_strdup("Behind The Scenes");
+            }
+            if (strcmp(extra_type, "deleted") == 0) {
+                extra_name = g_strdup("Deleted Scenes");
+            }
+            if (strcmp(extra_type, "featurette") == 0) {
+                extra_name = g_strdup("Featurettes");
+            }
+            if (strcmp(extra_type, "interview") == 0) {
+                extra_name = g_strdup("Interviews");
+            }
+            if (strcmp(extra_type, "scene") == 0) {
+                extra_name = g_strdup("Scenes");
+            }
+            if (strcmp(extra_type, "short") == 0) {
+                extra_name = g_strdup("Shorts");
+            }
+            if (strcmp(extra_type, "trailer") == 0) {
+                extra_name = g_strdup("Trailers");
+            }
+            if (strcmp(extra_type, "other") == 0) {
+                extra_name = g_strdup("Others");
+            }
+            g_free(extra_type);
+            if (extra_name) {
+                g_string_append(filename, extra_name);
+                g_string_append(filename, G_DIR_SEPARATOR_S);
+            }
+        } else {
+            g_string_append(filename, name);
+        }
+        if (year && !add_year && !extra_type) {
             g_string_append_printf(filename, " (%s)", year);
         }
-    } else if ( strcmp(type, "series") == 0) {
+    } else if (strcmp(type, "series") == 0) {
+        g_string_append(filename, name);
         gboolean has_season = g_key_file_has_key(config, group, "season", NULL);
-        gboolean has_episode = g_key_file_has_key(config, group, "episode", NULL); 
+        gboolean has_episode = g_key_file_has_key(config, group, "episode", NULL);
         if (has_season || has_episode) {
             g_string_append(filename, " - ");
             if (has_season) {
@@ -375,8 +426,10 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
             }
         }
     }
-    if (specific_name) {
+    if (specific_name && !extra_type) {
         g_string_append_printf(filename, " - %s", specific_name);
+    } else if (specific_name && extra_type) {
+        g_string_append_printf(filename, "%s", specific_name);
     }
 
     if (format != NULL && strcmp(format, "av_mkv") == 0 ) {
@@ -399,7 +452,35 @@ GString * build_filename(GKeyFile *config, gchar *group, gboolean full_path)
     g_free(year);
     g_free(specific_name);
     g_free(format);
-    return filename;
+    gchar *strp = filename->str;
+    g_string_free(filename, FALSE);
+    return strp;
+}
+
+
+/**
+ * @brief Adds a parenthesized year onto the final directory in a path
+ *
+ * @param config keyfile to pull year from
+ * @param group group name
+ * @param path path to be modified
+ *
+ * @return pointer to a new path string
+ */
+void append_year(GKeyFile *config, gchar *group, GString *path)
+{
+    gchar *dirname = g_path_get_dirname(path->str);
+    gchar *year = g_key_file_get_string(config, group, "year", NULL);
+    gchar *with_year;
+
+    with_year = g_strjoin(NULL, dirname, " (", year, ")", NULL);
+    
+    // append a " (year)" onto the final directory
+    g_string_assign(path, g_build_path(dirname, with_year, NULL));
+    
+    g_free(year);
+    g_free(with_year);
+    g_free(dirname);
 }
 
 /**
@@ -554,7 +635,7 @@ void determine_handbrake_version(gchar *arg_version)
  * @brief Generate hash tables to for look up of options, requires,
  *        and conflicts.
  */
-void arg_hash_generate()
+void arg_hash_generate(void)
 {
     // options
     options_index = g_hash_table_new(g_str_hash, g_str_equal);
@@ -588,7 +669,7 @@ void arg_hash_generate()
 /**
  * @brief Free hash tables and lists created by arg_hash_generate()
  */
-void arg_hash_cleanup()
+void arg_hash_cleanup(void)
 {
     g_hash_table_destroy(options_index);
     g_hash_table_foreach(requires_index, free_slist_in_hash, NULL);

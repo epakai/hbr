@@ -142,7 +142,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile, const gchar *infile)
     if (!has_required_keys(keyfile, infile, NULL)) {
         valid = FALSE; // errors printed during has_required_keys()
     }
-    
+
     // check required keys exist (requires)
     if (!has_requires(keyfile, infile, NULL)) {
         valid = FALSE; // errors printed during has_requires()
@@ -194,14 +194,13 @@ gboolean post_validate_common(GKeyFile *keyfile, const gchar *infile,
     }
     // TODO check required keys exist (there aren't really any, but having none
     //      between hbr.conf and infile is not workable)
-    
-    
+
     /* TODO check depends (done without merging, depends are cases where one
      * option's value affects which values are valid for another option
      */
     // TODO check quantity matches (can be handled with merging)
     // TODO check negation type conflicts (requires merging for local configs)
-    
+
     /* TODO check conflicts (only requires checking each group because the function
      * merge_key_group removes conflicts during the merge)
      */
@@ -580,7 +579,7 @@ gboolean has_duplicate_keys(const gchar *infile)
 /*
  * TODO FIXME valid_ functions shouldn't have gotten tasked with checking inputs
  * based on other options, or matching quantities with other options.
- * The code that does this should be generalized and handled directly from the 
+ * The code that does this should be generalized and handled directly from the
  * post_validate_common function.
  */
 
@@ -590,13 +589,13 @@ gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
 {
     /*
      * TODO this style of check cannot work because season/episode may be split
-     * in different groups. Checking this really shouldn't be handled in the 
-     * valid_ functions because it get's too complicated.
-     * Instead there should be a new depends table and related functions that 
+     * in different groups. Checking this really shouldn't be handled in the
+     * valid_ functions because it gets too complicated.
+     * Instead there should be a new depends table and related functions that
      * have knowledge of the outfile/config/global_config trifecta and can
      * check appropriate values for the dependent/dependee combos
      */
-    
+
     gboolean valid = valid_string_list_set(option, group, config, config_path);
     gchar *type = g_key_file_get_value(config, group, option->name, NULL);
     if (strcmp(type, "series") == 0) {
@@ -711,7 +710,7 @@ gboolean valid_filename_component(option_t *option, gchar *group,
             }
             // shell metacharacters
             // Found this too annoying, so it's disabled
-            /* 
+            /*
             gchar *metachar = "*?:[]\"<>|(){}&'!\\;$";
             size_t metachar_len = strnlen(metachar, sizeof("*?:[]\"<>|(){}&'!\\;$"));
             for (int j = 0; j < metachar_len; j++) {
@@ -723,6 +722,7 @@ gboolean valid_filename_component(option_t *option, gchar *group,
             }
             */
         }
+        g_free(component);
     }
     return valid;
 }
@@ -965,7 +965,7 @@ gboolean valid_filename_exists(option_t *option, gchar *group, GKeyFile *config,
     // check file exists and can be opened
     if (g_access(filename, R_OK) != 0) {
         valid = FALSE;
-        hbr_error("Could not read srt file specified", config_path, group,
+        hbr_error("Could not read file specified", config_path, group,
                 option->name, filename);
         g_free(filename);
     }

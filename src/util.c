@@ -144,5 +144,3 @@ GDataInputStream * open_datastream(const gchar *infile)
     g_object_unref(filestream);
     return datastream;
 }
-
-

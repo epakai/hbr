@@ -246,7 +246,7 @@ void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
 /**
  * @brief Generate a config file based on HandBrake's "High Profile"
  */
-GKeyFile * generate_default_key_file()
+GKeyFile * generate_default_key_file(void)
 {
     GKeyFile *k = g_key_file_new();
     g_key_file_set_list_separator(k, ',');

@@ -158,7 +158,7 @@ static option_t option_v1_2_0[] =
     { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 7,
         (gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24", "opus"}},
     { "json", no_argument, k_boolean, FALSE, valid_boolean, 0, NULL},
-    { NULL, 0, 0, 0, 0, 0}
+    { NULL, 0, 0, 0, NULL, 0}
 };
 
 static require_t require_v1_2_0[] =
@@ -183,7 +183,7 @@ static require_t require_v1_2_0[] =
     { "lapsharp-tune", "lapsharp", NULL},
     { "keep-display-aspect", "custom-anamorphic", NULL},
     { "pixel-aspect", "custom-anamorphic", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
 
 static conflict_t conflict_v1_2_0[] =
@@ -233,5 +233,5 @@ static conflict_t conflict_v1_2_0[] =
     { "cfr", "pfr", NULL},
     { "pfr", "vfr", NULL},
     { "pfr", "cfr", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };

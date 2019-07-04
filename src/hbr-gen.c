@@ -23,9 +23,6 @@
 #include "util.h"
 #include "gen_hbr.h"
 
-// Set to enable debug output of commands to be run
-gboolean debug = FALSE;
-
 /*
  * Argument handling setup for argp
  */
@@ -50,9 +47,9 @@ static const struct argp_option gen_options[] = {
 	{"audio",          'a', "AUDIO",        0, "Comma-separated audio track list", 3},
 	{"subtitle",       's', "SUBTITLE",     0, "Comma-separated subtitle track list", 3},
 	{"chapters",       'C', "CHAPTERS",     0, "Chapter range", 3},
-	{"help",           '?', 0,              0, "Give this help list", -1 },
-	{"usage",          '@', 0,              OPTION_HIDDEN, "Give this help list", -1 },
-	{ 0, 0, 0, 0, 0, 0 }
+	{"help",           '?', NULL,              0, "Give this help list", -1 },
+	{"usage",          '@', NULL,              OPTION_HIDDEN, "Give this help list", -1 },
+	{ NULL, 0, NULL, 0, NULL, 0 }
 };
 
 /**
@@ -79,7 +76,7 @@ struct gen_arguments {
 static error_t parse_gen_opt(int token, char *arg, struct argp_state *state);
 
 static const struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc,
-	gen_doc, NULL, 0, 0};
+	gen_doc, NULL, NULL, NULL};
 /**
  * @brief
  *
@@ -93,7 +90,7 @@ int main(int argc, char * argv[])
 	struct gen_arguments gen_arguments = {1, 0, 0,
         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
-	argp_parse(&gen_argp, argc, argv, ARGP_NO_HELP, 0, &gen_arguments);
+	argp_parse(&gen_argp, argc, argv, ARGP_NO_HELP, NULL, &gen_arguments);
 
 	GKeyFile *config = gen_hbr(gen_arguments.generate, gen_arguments.title,
 			gen_arguments.season, gen_arguments.type,
@@ -120,7 +117,7 @@ int main(int argc, char * argv[])
  *
  * @return Error status.
  */
-error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
+static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
 {
 	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
 	switch (token) {

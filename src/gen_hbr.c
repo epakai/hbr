@@ -160,7 +160,7 @@ void free_episode_list(struct episode_list list)
  * @param output_basedir Location for output file(s)
  * @param audio Audio track list (comma-separated)
  * @param subtitle Subtitle track list (comma-separated)
- * @param episodes Path for episode list file. Overides outfiles_count.
+ * @param episodes Path for episode list file. Overrides outfiles_count.
  * @param chapters Chapter range (i.e. 2-18)
  *
  * @return GKeyFile pointer for the generated config
@@ -186,6 +186,7 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
 	if (outfiles_count <= 0 || outfiles_count > 999) {
         hbr_error("Invalid number of outfile sections (%d)", NULL, NULL, NULL,
                 NULL, outfiles_count);
+        free_episode_list(list);
 		return NULL;
 	}
 
@@ -212,6 +213,9 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
 	} else {
         hbr_error("Unknown type=%s. Should be \'movies\' or \'series\'", NULL,
                 NULL, NULL, NULL, inferred_type);
+        g_free(inferred_type);
+        g_key_file_unref(config);
+        free_episode_list(list);
         return NULL;
 	}
     if (is_movie) {
@@ -292,7 +296,6 @@ void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *specific_name)
 {
-    gboolean is_movie = (strcmp(type, "movie") == 0);
     gboolean is_series = (strcmp(type, "series") == 0);
     gchar *group = g_strdup_printf("OUTFILE%d", outfile_count);
     if (!iso_filename) {
@@ -302,10 +305,12 @@ void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
         g_key_file_set_integer(config, group, "title", 0);
     }
     if (is_series) {
-        if (season >= 0)
+        if (season >= 0) {
             g_key_file_set_integer(config, group, "season", season);
-        if (episode)
+        }
+        if (episode) {
             g_key_file_set_integer(config, group, "episode", episode);
+        }
     }
     g_key_file_set_value(config, group, "specific_name", specific_name ?: "");
     if (!chapters) {

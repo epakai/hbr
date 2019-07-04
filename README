@@ -1,8 +1,10 @@
 handbrake runner (hbr)                      https://github.com/epakai/hbr
 ================================================================================ 
 
-This is a tool for automating HandBrakeCLI runs. It takes a keyfile as input
+hbr is a tool for automating HandBrakeCLI runs. It takes a keyfile as input
 and runs HandBrakeCLI to encode videos.
+
+hbr-gen is a tool for generating partly filled keyfile templates for hbr.
 
 This method makes it easy to check previous encode settings. It also simplifies
 making changes and re-encoding a single file or your whole library.
@@ -25,7 +27,7 @@ From git (requires autoconf/automake/libtool/autoconf-archive):
     make install
 
 ================================================================================
-Usage
+Usage of hbr
 ================================================================================
 
 Runtime dependencies:   HandBrakeCLI, ffmpegthumbnailer (optional)
@@ -75,14 +77,38 @@ hbr runs these commands:
         -i '/path/to/input_files/Akira BD'
         -o '/path/to/output_files/Akira (1988) - 1080p.mkv'
 
-Keys in the global hbr.conf also change the generated commands.  Respecifying a
+Keys in the global hbr.conf also change the generated commands.  Redefining a
 key in a more specific section overrides the more global setting. hbr tries to
 warn about conflicting or dependent keys, but this is incomplete.
 
-OUTFILE sections names are unique, and must start with OUTFILE. I append
+OUTFILE sections names must be unique, and must start with OUTFILE. I append
 numbers to the section name in the above example, but you can use anything
 (even whitespace) after OUTFILE.
 
+================================================================================
+Usage of hbr-gen
+================================================================================
+
+hbr-gen can generate a fixed number of OUTFILE sections (-n) or a set based on
+an episode list (-l). Some keys can be prefilled by passing extra options. See
+hbr-gen --help for a full list.  hbr-gen sends output to standard output.
+Redirect it to a file.
+
+An episode list consists of lines with season/episode number and a title. Any
+of these example formats can be mixed in one file.
+
+    s1e2 Hard Normal Daddy
+    e3 Feed Me Weird Things
+    4 Ultravisitor
+ 
+Here are some example runs of hbr-gen: 
+ 
+    hbr-gen -n 12 --input-basedir=/video/iso > show.hbr
+ 
+    hbr-gen -l list_of_episode --input-basedir=/video/iso > show.hbr
+ 
+Once you generate the keyfile edit it to complete all fields.
+ 
 ================================================================================
 Key Names
 ================================================================================
@@ -120,6 +146,9 @@ Here is an overview of the hbr specific keys:
     specific_name  - extra name appended before the file extension. Useful for
                      episode names or file specific metadata.
     preview        - generate a preview image from the output file.
+    add_year       - adds the year to the output_basedir when set true. 
+    extra          - Causes the output file to be placed in a subdirectory
+                     for Plex to handle as an extra.
 
 Filenames depend on the type specified.
 For type=movie the output filename will be:

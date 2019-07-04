@@ -35,12 +35,13 @@
 /*
  * PROTOTYPES
  */
-GKeyFile * fetch_or_generate_keyfile();
+GKeyFile * fetch_or_generate_keyfile(void);
 void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename);
 int hb_fork(gchar *args[], gchar *log_filename, int out_count);
-gboolean good_output_option_path();
+gboolean good_output_option_path(void);
+gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path);
 
 static gboolean opt_debug     = FALSE; // Print commands instead of executing
 static gboolean opt_preview   = FALSE; // Generate preview image using ffmpegthumbnailer
@@ -165,24 +166,12 @@ int main(int argc, char * argv[])
             hbr_error("Failed to merge global config (%s) and local config",
                     opt_input_files[i], NULL, NULL, NULL, config_file_path);
         } else {
-
             // override output path if option given
             if (opt_output != NULL) {
                 g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir",
                         opt_output);
             }
-            // create output directory
-            GError *error = NULL;
-            gchar *output_path = g_key_file_get_string(merged, "MERGED_CONFIG",
-                    "output_basedir", &error);
-            if (g_mkdir_with_parents(output_path, 0777) != 0) {
-                hbr_error("Failed to create output directory", opt_input_files[i], NULL,
-                        NULL, NULL);
-                i++;
-                continue;
-            }
-            g_free(output_path);
-
+            
             // encode each outfile
             encode_loop(current_infile, merged, opt_input_files[i]);
         }
@@ -204,7 +193,7 @@ int main(int argc, char * argv[])
  *
  * @return TRUE when path is good
  */
-gboolean good_output_option_path()
+gboolean good_output_option_path(void)
 {
     if (opt_output != NULL) {
         // check if path exists
@@ -233,7 +222,7 @@ gboolean good_output_option_path()
  *
  * @return Parsed config keyfile
  */
-GKeyFile *fetch_or_generate_keyfile()
+GKeyFile *fetch_or_generate_keyfile(void)
 {
     // Try $XDG_CONFIG_HOME, then home dir
     GString *config_dir = g_string_new(NULL);
@@ -331,29 +320,47 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         
         // build full HandBrakeCLI command
         GPtrArray *args = build_args(current_outfile, "CURRENT_OUTFILE", opt_debug);
-        GString *filename = build_filename(current_outfile, "CURRENT_OUTFILE", FALSE);
+        gchar *filename = build_filename(current_outfile, "CURRENT_OUTFILE");
+        gchar *basename = g_path_get_basename(filename);
 
         // output current encode information (codes are for bold text)
         g_print("%c[1m", 27);
         if (opt_debug) {
             g_print("# ");
         }
-        g_print("Encoding: %d/%lu: %s\n", i+1, out_count, filename->str);
+        g_print("Encoding: %d/%lu: %s\n", i+1, out_count, basename);
         g_print("%c[0m", 27);
 
-        // grab filename with *full path* for log and thumbnail creation
-        g_string_free(filename, TRUE);
-        filename = build_filename(current_outfile, "CURRENT_OUTFILE", TRUE);
+        // Create directory
+        if (!opt_debug) {
+            gchar *dirname = g_path_get_dirname(filename);
+            GError *error;
+            if ((g_mkdir_with_parents(dirname, 0777) != 0) &&
+                    !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+                hbr_error(error->message, infile, NULL, NULL, NULL);
+                g_error_free(error);
+                return;
+            }
+            if (!make_output_directory(current_outfile, "CURRENT_OUTFILE", infile)) {
+                // skip this outfile, error output comes from make_extra_directory()
+                g_key_file_free(current_outfile);
+                g_object_unref(filename);
+                g_free(basename);
+                continue;
+            }
+        }
+
         if (opt_debug) {
             // print full handbrake command
             gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
             g_print("HandBrakeCLI %s\n", temp);
             g_free(temp);
         } else {
-            if (call_handbrake(args, i, opt_overwrite, filename->str) == -1) {
+            if (call_handbrake(args, i, opt_overwrite, filename) == -1) {
                 hbr_error("%d: Handbrake call failed. %s was not encoded",
-                    outfiles[i], NULL, NULL, NULL, i, filename->str);
-                g_string_free(filename, TRUE);
+                    outfiles[i], NULL, NULL, NULL, i, filename);
+                g_object_unref(filename);
+                g_free(basename);
                 g_ptr_array_free(args, TRUE);
                 g_key_file_free(current_outfile);
                 continue;
@@ -365,13 +372,31 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
             preview = g_key_file_get_boolean(current_outfile, "CURRENT_OUTFILE", "preview", NULL);
         }
         if (opt_preview || preview) {
-            generate_thumbnail(filename->str, i, out_count);
+            generate_thumbnail(filename, i, out_count);
         }
-        g_string_free(filename, TRUE);
+        g_free(filename);
         g_ptr_array_free(args, TRUE);
         g_key_file_free(current_outfile);
     }
     g_strfreev(outfiles);
+}
+
+gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path)
+{
+    // create output directory
+    GError *error = NULL;
+    gchar *output_path = g_key_file_get_string(outfile, group,
+            "output_basedir", &error);
+    gchar *filename = build_filename(outfile, group);
+    gchar *dirname = g_path_get_dirname(filename);
+
+    if (!opt_debug && g_mkdir_with_parents(dirname, 0777) != 0) {
+        hbr_error("Failed to create output directory", infile_path, NULL,
+                NULL, NULL);
+        g_free(output_path);
+        return FALSE;
+    }
+    return TRUE;
 }
 
 /**
@@ -381,12 +406,15 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
  * @param outfile_count Number of the current outfile being processed
  * @param total_outfiles Total number of outfiles being processed
  */
-void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles){
+void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles)
+{
     GString *ft_command = g_string_new("ffmpegthumbnailer");
     g_string_append_printf(ft_command,
-            " -i\"%s\" -o\"%s.png\" -s0 -q10 2>&1 >/dev/null", filename, filename);
+            " -i\"%s\" -o\"%s.png\" -s0 -q10 2>&1 >/dev/null", filename,
+            filename);
     g_print("%c[1m", 27);
-    g_print("# Generating preview: %d/%d: %s.png\n", outfile_count+1, total_outfiles, filename);
+    g_print("# Generating preview: %d/%d: %s.png\n", outfile_count+1,
+            total_outfiles, filename);
     g_print("%c[0m", 27);
     if (opt_debug) {
         g_print("%s\n", ft_command->str);
@@ -515,5 +543,6 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
     close(hb_err[1]);
     fclose(logfile);
     wait(NULL);
+    //TODO we can do a little better return value here if we check wait's parameter
     return 0;
 }

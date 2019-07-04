@@ -115,7 +115,7 @@ static option_t option_v0_9_9[] =
         (gchar*[]){"copy:aac", "copy:ac3", "copy:dts", "copy:dtshd", "copy:mp3"}},
     { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 6,
         (gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24"}},
-    { NULL, 0, 0, 0, 0, 0}
+    { NULL, 0, 0, 0, NULL, 0}
 };
 
 static require_t require_v0_9_9[] =
@@ -132,7 +132,7 @@ static require_t require_v0_9_9[] =
     { "turbo", "two-pass", NULL},
     { "keep-display-aspect", "custom-anamorphic", NULL},
     { "pixel-aspect", "custom-anamorphic", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
 
 static conflict_t conflict_v0_9_9[] =
@@ -168,5 +168,5 @@ static conflict_t conflict_v0_9_9[] =
     { "cfr", "pfr", NULL},
     { "pfr", "vfr", NULL},
     { "pfr", "cfr", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };

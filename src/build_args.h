@@ -21,6 +21,7 @@
 #define _build_args_h
 
 #include <glib.h>
+#include <gio/gio.h>
 
 #include "keyfile.h"
 
@@ -111,7 +112,7 @@ struct require_s {
 };
 
 /**
- * @brief 
+ * @brief
  */
 struct depend_s {
     /**
@@ -173,10 +174,12 @@ GHashTable *conflicts_index;
 GHashTable *depends_index;
 
 GPtrArray *build_args(GKeyFile *config, gchar *group, gboolean quoted);
-GString *build_filename(GKeyFile *config, gchar *group, gboolean full_path);
+gchar *build_filename(GKeyFile *config, gchar *group);
+void append_year(GKeyFile *config, gchar *group, GString *path);
+
 void determine_handbrake_version(gchar *arg_version);
-void arg_hash_generate();
-void arg_hash_cleanup();
+void arg_hash_generate(void);
+void arg_hash_cleanup(void);
 void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data);
 
 #endif

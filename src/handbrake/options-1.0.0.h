@@ -150,7 +150,7 @@ static option_t option_v1_0_0[] =
             "copy:dts", "copy:dtshd", "copy:mp3", "copy:flac"}},
     { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 7,
         (gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24", "opus"}},
-    { NULL, 0, 0, 0, 0, 0}
+    { NULL, 0, 0, 0, NULL, 0}
 };
 
 static require_t require_v1_0_0[] =
@@ -173,7 +173,7 @@ static require_t require_v1_0_0[] =
     { "nlmeans-tune", "nlmeans", NULL},
     { "keep-display-aspect", "custom-anamorphic", NULL},
     { "pixel-aspect", "custom-anamorphic", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
 
 static conflict_t conflict_v1_0_0[] =
@@ -224,5 +224,5 @@ static conflict_t conflict_v1_0_0[] =
     { "cfr", "pfr", NULL},
     { "pfr", "vfr", NULL},
     { "pfr", "cfr", NULL},
-    { NULL, 0, 0}
+    { NULL, NULL, NULL}
 };
