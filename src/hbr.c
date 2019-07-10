@@ -226,38 +226,53 @@ GKeyFile *fetch_or_generate_keyfile(void)
 {
     // Try $XDG_CONFIG_HOME, then home dir
     GString *config_dir = g_string_new(NULL);
-    const gchar *xdg_home = g_getenv("XDG_CONFIG_HOME");
-    if (xdg_home) {
-        g_string_printf(config_dir, "%s%s", xdg_home, "/hbr/");
+    GString *alt_config_dir = g_string_new(NULL);
+    const gchar *xdg_config_home = g_getenv("XDG_CONFIG_HOME");
+    const gchar *home = g_get_home_dir();
+    
+    if (xdg_config_home) {
+        g_string_printf(config_dir, "%s%s", xdg_config_home, "/hbr/");
+        g_string_printf(alt_config_dir, "%s%s", home, "/.config/hbr/");
     } else {
-        const gchar *home = g_get_home_dir();
         g_string_printf(config_dir, "%s%s", home, "/.config/hbr/");
+        g_string_printf(alt_config_dir, "%s%s", xdg_config_home, "/hbr/");
     }
     if (g_mkdir_with_parents(config_dir->str, 0700) == -1) {
         hbr_error("Failed to create config file", config_dir->str, NULL, NULL,
                 NULL);
         exit(1);
     }
-    // TODO we don't actually try $HOME/.config/hbr if $XDG_CONFIG_HOME is valid
+
     GString *config_file = g_string_new(NULL);
+    GString *alt_config_file = g_string_new(NULL);
     g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
+    g_string_printf(alt_config_file, "%s%s", config_dir->str, "hbr.conf");
     g_string_free(config_dir, TRUE);
+    g_string_free(alt_config_dir, TRUE);
+
+    GKeyFile *keyfile = NULL;
     // check config file exists
     if (g_file_test (config_file->str,
                 (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
         // parse config file
-        GKeyFile *keyfile = parse_validate_key_file(config_file->str, NULL);
+        keyfile = parse_validate_key_file(config_file->str, NULL);
         if (keyfile == NULL) {
             // Quit, parse_validate_key_file() will report errors
             g_string_free(config_file, TRUE);
             return NULL;
         }
-        config_file_path = g_strdup(config_file->str);
-        g_string_free(config_file, TRUE);
-        return keyfile;
+    } else if (g_file_test (alt_config_file->str,
+                (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+        // parse config file
+        keyfile = parse_validate_key_file(config_file->str, NULL);
+        if (keyfile == NULL) {
+            // Quit, parse_validate_key_file() will report errors
+            g_string_free(config_file, TRUE);
+            return NULL;
+        }
     } else {
         // Create and write a default config
-        GKeyFile *keyfile = generate_default_key_file();
+        keyfile = generate_default_key_file();
         GError *error = NULL;
         if (!g_key_file_save_to_file(keyfile, config_file->str, &error)) {
             hbr_error("Error writing config file: %s", config_file->str, NULL,
@@ -269,10 +284,10 @@ GKeyFile *fetch_or_generate_keyfile(void)
             hbr_info("Default config file generated", config_file->str, NULL,
                     NULL, NULL);
         }
-        config_file_path = g_strdup(config_file->str);
-        g_string_free(config_file, TRUE);
-        return keyfile;
     }
+    config_file_path = g_strdup(config_file->str);
+    g_string_free(config_file, TRUE);
+    return keyfile;
 }
 
 /**
