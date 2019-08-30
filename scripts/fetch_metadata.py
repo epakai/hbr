@@ -15,55 +15,53 @@
 #
 # Copyright (C) Joshua Honeycutt, 2018
 
-import argparse
-import os
-import sys
-import magic
-import subprocess
-import time
-from stat import S_ISDIR
 from shutil import which
+from stat import S_ISDIR
+import os
+import subprocess
+import argparse
+import sys
+import time
+import magic
 
 # This script calls dvdid from http://dvdid.cjkey.org.uk/
 # Other deps: udisksctl, wget, xmlformat
 
 # Check for dependencies
-baddep = False
+BAD_DEP = False
 if which("udisksctl") is None:
     print("Could not find udisksctl command (install udisks2)")
-    baddep = True
+    BAD_DEP = True
 if which("wget") is None:
     print("Could not find wget command (install wget)")
-    baddep = True
+    BAD_DEP = True
 if which("xmlformat") is None:
     print("Could not find xmlformat command (install xmlformat-perl)")
-    baddep = True
+    BAD_DEP = True
 if which("dvdid") is None:
     print("Could not find dvdid command (install dvdid from "
           "http://dvdid.cjkey.org.uk/)")
-    baddep = True
-if baddep:
+    BAD_DEP = True
+if BAD_DEP:
     sys.exit(1)
 
-parser = argparse.ArgumentParser(description='Fetch DVD image metadata.')
-parser.add_argument('path', metavar='PATH', nargs='?', default='.',
+PARSER = argparse.ArgumentParser(description='Fetch DVD image metadata.')
+PARSER.add_argument('path', metavar='PATH', nargs='?', default='.',
                     help='directory to search for DVD images')
-parser.add_argument('-w', '--wait', dest='SECONDS', type=int, action='store',
+PARSER.add_argument('-w', '--wait', dest='SECONDS', type=int, action='store',
                     default=20, help='sum the integers (default: find max)')
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
 # search arg directory (pwd default) for ISOs (i.e. <filename>.iso) by filetype
-files = []
-ms = magic.open(magic.NONE)
-ms.load()
-for root, subFolders, filenames in os.walk(args.path):
+FILES = []
+for root, subFolders, filenames in os.walk(ARGS.path):
     for filename in filenames:
-        tp = ms.file(os.path.join(root, filename))
+        tp = magic.from_file(os.path.join(root, filename))
         if tp.find('UDF filesystem data') == 0:
-            files.append(os.path.join(root, filename))
+            FILES.append(os.path.join(root, filename))
 
 # loop over found ISO files
-for dvdimage in files:
+for dvdimage in FILES:
     #   loop mount iso
     proc = subprocess.Popen(['udisksctl', 'loop-setup', '-r', '-f', dvdimage],
                             shell=False, stdout=subprocess.PIPE)
@@ -78,7 +76,7 @@ for dvdimage in files:
         continue
     #   call dvdid to generate dvdid, store in <filename>.dvdid
     # TODO dvd title may have spaces, split on last space isn't appropriate
-    volname = ms.file(dvdimage).split()[-1][1:-1]
+    volname = magic.from_file(dvdimage).split()[-1][1:-1]
     mount_path = os.path.join(os.path.expanduser('~/media/'),
                               volname)
     mode = os.stat(mount_path).st_mode
@@ -113,4 +111,4 @@ for dvdimage in files:
     subprocess.Popen(['udisksctl', 'unmount', '-b', loopdev], shell=False)
     subprocess.Popen(['udisksctl', 'loop-delete', '-b', loopdev], shell=False)
     #   wait a long time (determined by optional arg)
-    time.sleep(args.SECONDS)
+    time.sleep(ARGS.SECONDS)

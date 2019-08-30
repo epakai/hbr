@@ -41,13 +41,13 @@ def parse_args(args=sys.argv[1:]):
     return parser.parse_args(args)
 
 
-class Chapter(object):
+class Chapter():
     def __init__(self, chapter_number, duration):
         self.chapter_number = chapter_number
         self.duration = duration
 
 
-class Audio(object):
+class Audio():
     def __init__(self, audio_number, codec, channels, iso639, frequency,
                  bitrate):
         self.audio_number = audio_number
@@ -58,14 +58,14 @@ class Audio(object):
         self.bitrate = bitrate
 
 
-class Subtitle(object):
+class Subtitle():
     def __init__(self, subtitle_number, language, sub_format):
         self.subtitle_number = subtitle_number
         self.language = language
         self.sub_format = sub_format
 
 
-class Title(object):
+class Title():
     def __init__(self, title_number):
         self.filename = None
         self.title_number = title_number
@@ -83,118 +83,123 @@ class Title(object):
         self.subtitle = []
 
 
-nothing_count = 0
+NOTHING_COUNT = 0
 
 
-def donothing(s, l, t):
-    global nothing_count
-    nothing_count += 1
+def donothing(string):
+    global NOTHING_COUNT
+    NOTHING_COUNT += 1
     print('Encountered unknown line in HandBrake\'s scan output:',
           file=sys.stderr)
-    print(s, file=sys.stderr)
+    print(string, file=sys.stderr)
 
 
-def update_path(string, loc, t):
-    global current_path
-    current_path = t.path
+CURRENT_PATH = None
+
+
+def update_path(token):
+    global CURRENT_PATH
+    CURRENT_PATH = token.path
 
 
 def new_title(title_list):
-    def parseAction(string, loc, t):
-        title_list.append(Title(t.title_num))
-    return parseAction
+    def parse_action(token):
+        title_list.append(Title(token.title_num))
+    return parse_action
 
 
 def set_playlist(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].playlist = t.playlist_name
-    return parseAction
+    def parse_action(token):
+        title_list[-1].playlist = token.playlist_name
+    return parse_action
 
 
 def set_duration(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].duration = t.title_duration
-    return parseAction
+    def parse_action(token):
+        title_list[-1].duration = token.title_duration
+    return parse_action
 
 
 def set_size(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].resolution = t.resolution
-        title_list[-1].pixel_aspect = t.pixel_aspect
-        title_list[-1].display_aspect = t.display_aspect
-        title_list[-1].fps = t.fps
-    return parseAction
+    def parse_action(token):
+        title_list[-1].resolution = token.resolution
+        title_list[-1].pixel_aspect = token.pixel_aspect
+        title_list[-1].display_aspect = token.display_aspect
+        title_list[-1].fps = token.fps
+    return parse_action
 
 
 def set_autocrop(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].autocrop = t.autocrop.replace('/', ':')
-    return parseAction
+    def parse_action(token):
+        title_list[-1].autocrop = token.autocrop.replace('/', ':')
+    return parse_action
 
 
 def add_chapter(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].chapters.append(
-                Chapter(t.chapter_number, t.chapter_duration))
-    return parseAction
+    def parse_action(token):
+        title_list[-1].chapters.append(Chapter(token.chapter_number,
+                                               token.chapter_duration))
+    return parse_action
 
 
 def add_audio(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].audio.append(
-                Audio(t.audio_number, t.audio_codec, t.audio_channels,
-                      t.audio_iso639, t.audio_freq, t.audio_bitrate))
-    return parseAction
+    def parse_action(token):
+        title_list[-1].audio.append(Audio(token.audio_number,
+                                          token.audio_codec,
+                                          token.audio_channels,
+                                          token.audio_iso639,
+                                          token.audio_freq,
+                                          token.audio_bitrate))
+    return parse_action
 
 
 def add_subtitle(title_list):
-    def parseAction(string, loc, t):
-        title_list[-1].subtitle.append(Subtitle(t.sub_number, t.sub_lang,
-                                                t.sub_format))
-    return parseAction
+    def parse_action(token):
+        title_list[-1].subtitle.append(Subtitle(token.sub_number,
+                                                token.sub_lang,
+                                                token.sub_format))
+    return parse_action
 
 
 def combing_found(title_list):
-    def parseAction(string, loc, t):
+    def parse_action():
         title_list[-1].combing = True
-    return parseAction
+    return parse_action
 
 
 def detected_main(title_list):
-    def parseAction(string, loc, t):
+    def parse_action():
         title_list[-1].detected_main = True
-    return parseAction
+    return parse_action
 
 
-def buildParser(title_list):
+def build_parser(title_list):
     pp.ParserElement.setDefaultWhitespaceChars(' \t\r,')
-    '''
-   This is a really slow way to grab a list of all unicode characters.
-   PyParsing 2.3.0 adds pyparsing_unicode.printables so use that instead
-   '''
+    # This is a really slow way to grab a list of all unicode characters.
+    # PyParsing 2.3.0 adds pyparsing_unicode.printables so use that instead
     pp_unicode_support = False
     if int(pp.__version__.split('.')[0]) >= 2:
         if int(pp.__version__.split('.')[1]) >= 3:
             pp_unicode_support = True
     if pp_unicode_support is False:
-        unicodePrintables = ''.join(chr(c) for c in range(sys.maxunicode)
-                                    if not chr(c).isspace())
+        unicode_printables = ''.join(chr(c) for c in range(sys.maxunicode)
+                                     if not chr(c).isspace())
     else:
-        unicodePrintables = pp.pyparsing_unicode.printables
+        unicode_printables = pp.pyparsing_unicode.printables
 
     # ignored stuff
     time = (pp.Combine(pp.Word(pp.nums, exact=2)
-            + ':' + pp.Word(pp.nums, exact=2)
-            + ':' + pp.Word(pp.nums, exact=2)))
+                       + ':' + pp.Word(pp.nums, exact=2)
+                       + ':' + pp.Word(pp.nums, exact=2)))
     log_output = ('[' + time("time") + ']' +
                   pp.OneOrMore(pp.Word(pp.printables)))
-    progress_update = "Scanning title" + pp.Word(pp.nums) + pp.OneOrMore(
-            pp.Word(pp.printables))
+    progress_update = ("Scanning title" + pp.Word(pp.nums)
+                       + pp.OneOrMore(pp.Word(pp.printables)))
     general_output = pp.Word(pp.printables)
     title_headers = '+' + pp.OneOrMore(pp.Word(pp.alphas)) + ':'
 
-    EOL = pp.LineEnd().suppress()
-    empty = EOL
+    eol = pp.LineEnd().suppress()
+    empty = eol
 
     # title relevant matches
     title_info = pp.ZeroOrMore(' ') + '+' + pp.Word(pp.printables)
@@ -215,10 +220,13 @@ def buildParser(title_list):
     duration = '+ duration:' + time("title_duration")
     duration.setParseAction(set_duration(title_list))
 
-    sizes = ('+ size:' + pp.Combine(pp.Word(pp.nums) + 'x'
-             + pp.Word(pp.nums))("resolution")
-             + 'pixel aspect:' + pp.Word(pp.nums + '/')("pixel_aspect")
-             + 'display aspect:' + pp.Word(pp.nums + '.')("display_aspect")
+    sizes = ('+ size:'
+             + pp.Combine(pp.Word(pp.nums) + 'x'
+                          + pp.Word(pp.nums))("resolution")
+             + 'pixel aspect:'
+             + pp.Word(pp.nums + '/')("pixel_aspect")
+             + 'display aspect:'
+             + pp.Word(pp.nums + '.')("display_aspect")
              + pp.Word(pp.nums + '.')("fps") + 'fps')
     sizes.setParseAction(set_size(title_list))
 
@@ -234,8 +242,8 @@ def buildParser(title_list):
 
     audio = ('+'
              + pp.Word(pp.nums)("audio_number")
-             + pp.OneOrMore(pp.Word(unicodePrintables,
-                            excludeChars='()'))("audio_lang")
+             + pp.OneOrMore(pp.Word(unicode_printables,
+                                    excludeChars='()'))("audio_lang")
              + pp.Combine('(' + pp.Word(pp.alphanums + '- ')
                           ("audio_codec") + ')')
              + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphanums + "'"))
@@ -250,9 +258,9 @@ def buildParser(title_list):
 
     subtitle = ('+'
                 + pp.Word(pp.nums)("sub_number")
-                + pp.Combine(pp.OneOrMore(
-                             pp.Word(unicodePrintables,
-                                     excludeChars=',([')))("sub_lang")
+                + pp.Combine(pp.OneOrMore(pp.Word(unicode_printables,
+                                                  excludeChars=',([')))
+                ("sub_lang")
                 + pp.ZeroOrMore(pp.Word(pp.alphanums + '(:)')) + '['
                 + pp.Word(pp.alphanums)("sub_format")
                 + ']')
@@ -273,7 +281,7 @@ def buildParser(title_list):
 
 
 def emit_outfile_sections(title_list):
-    global args
+    global ARGS
     outfile_counter = 1
     ftr = [3600, 60, 1]
     last_title = None
@@ -281,8 +289,8 @@ def emit_outfile_sections(title_list):
     for title in title_list:
         # Don't output for titles shorter than minlength
         seconds = sum([a*b for a, b in
-                      zip(ftr, map(int, title.duration.split(':')))])
-        if (args.minlength > 0 and seconds < args.minlength):
+                       zip(ftr, map(int, title.duration.split(':')))])
+        if (ARGS.minlength > 0 and seconds < ARGS.minlength):
             continue
 
         if title.filename != last_title:
@@ -293,9 +301,9 @@ def emit_outfile_sections(title_list):
 
         print('')
         print('[OUTFILE', outfile_counter, ']', sep='')
-        if args.setiso:
+        if ARGS.setiso:
             print("iso_filename=", os.path.basename(os.path.normpath(
-                  title.filename)), sep='')
+                title.filename)), sep='')
         print('specific_name=')
         if title.playlist is None:
             print('#', title.duration)
@@ -320,15 +328,17 @@ def emit_outfile_sections(title_list):
               title.chapters[-1].chapter_number, sep='')
         if title.audio:
             print('# ', ','.join([str(audio.iso639 + ' (' + audio.codec + ','
-                  + audio.channels + ')') for audio in title.audio]), sep='')
+                                      + audio.channels + ')')
+                                  for audio in title.audio]), sep='')
             print('audio=', ','.join([audio.audio_number
-                  for audio in title.audio]), sep='')
+                                      for audio in title.audio]), sep='')
         if title.subtitle:
             print('# ', ','.join([str(subtitle.language + ' [' +
-                  subtitle.sub_format + ']') for subtitle in title.subtitle]),
-                  sep='')
+                                      subtitle.sub_format + ']')
+                                  for subtitle in title.subtitle]), sep='')
             print('subtitle=', ','.join([subtitle.subtitle_number
-                  for subtitle in title.subtitle]), sep='')
+                                         for subtitle in title.subtitle]),
+                  sep='')
         if title.detected_main:
             print('crop=0:0:0:0')
         else:
@@ -337,28 +347,30 @@ def emit_outfile_sections(title_list):
         outfile_counter += 1
 
 
+ARGS = None
+
+
 def main():
-    global args
-    args = parse_args()
+    global ARGS
+    ARGS = parse_args()
 
     title_list = []
-    parser = buildParser(title_list)
+    parser = build_parser(title_list)
 
-    if (args.read_stdin):
-        global current_path
-        current_path = None
+    if ARGS.read_stdin:
+        global CURRENT_PATH
+        CURRENT_PATH = None
         for line in sys.stdin.readlines():
             parser.parseString(line)
-            if (len(title_list) > 0
-                    and title_list[-1].filename is None and
-                    current_path is not None):
-                title_list[-1].filename = current_path
-    elif (len(args.path) >= 1):
-        for path in args.path:
+            if (title_list and title_list[-1].filename is None and
+                    CURRENT_PATH is not None):
+                title_list[-1].filename = CURRENT_PATH
+    elif len(ARGS.path) >= 1:
+        for path in ARGS.path:
             # TODO the HandBrakeCLI run could be done in parallel since it's
             # time consuming as long as the parsing is still done in order
             hb_out = subprocess.run(['HandBrakeCLI', '--scan', '-t', '0', '-i',
-                                    path], stdout=subprocess.PIPE,
+                                     path], stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, cwd=os.getcwd())
             # Strip libdvdnav lines because they have iso-8859-1 encodings
             # that are not valid utf-8, we don't need them for our purpose.
@@ -366,7 +378,7 @@ def main():
                                 if not
                                 line.startswith(b'libdvdnav:')).decode('utf-8')
             for line in output.splitlines():
-                if (len(title_list) > 0 and title_list[-1].filename is None):
+                if (title_list and title_list[-1].filename is None):
                     title_list[-1].filename = path
                 parser.parseString(line)
     else:
