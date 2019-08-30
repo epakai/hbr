@@ -246,7 +246,6 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
     }
 
 	int i;
-    gboolean status = TRUE;
 	for (i = 0; i< outfiles_count; i++) {
 		if (episodes != NULL){
             create_outfile_section(config, i+1, list.array[i].number, title,

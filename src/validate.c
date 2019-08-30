@@ -280,7 +280,6 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
                 if (requires_list != NULL) {
                     /* iterate over gslist (pointers are actually int which
                        are the index to the requires table) */
-                    int k = 0;
                     do {
                         gint index = GPOINTER_TO_INT(requires_list->data);
                         // check if require is defined
@@ -621,7 +620,7 @@ gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
 {
     gboolean valid = TRUE;
     GError *error = NULL;
-    gchar *value = g_key_file_get_value(config, group, option->name, NULL);
+    gchar *value = g_key_file_get_value(config, group, option->name, &error);
     if (error) {
         hbr_error(error->message, config_path, group, option->name, NULL);
         g_error_free(error);
@@ -1906,8 +1905,7 @@ gboolean valid_subtitle(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_gain(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid = TRUE;
-    valid = valid_double_list(option, group, config, config_path);
+    gboolean valid = valid_double_list(option, group, config, config_path);
 
     GError *error = NULL;
     gsize gain_count = 0;
@@ -2215,8 +2213,7 @@ gboolean valid_nlmeans_tune(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid = TRUE;
-    valid = valid_string_list_set(option, group, config, config_path);
+    gboolean valid = valid_string_list_set(option, group, config, config_path);
 
     GError *error = NULL;
     gsize dither_count = 0;

@@ -15,7 +15,12 @@
 #
 # Copyright (C) Joshua Honeycutt, 2018
 
-import argparse,os,sys,magic,subprocess,time
+import argparse
+import os
+import sys
+import magic
+import subprocess
+import time
 from stat import S_ISDIR
 from shutil import which
 
@@ -23,27 +28,28 @@ from shutil import which
 # Other deps: udisksctl, wget, xmlformat
 
 # Check for dependencies
-baddep=False
+baddep = False
 if which("udisksctl") is None:
     print("Could not find udisksctl command (install udisks2)")
-    baddep=True
+    baddep = True
 if which("wget") is None:
     print("Could not find wget command (install wget)")
-    baddep=True
+    baddep = True
 if which("xmlformat") is None:
     print("Could not find xmlformat command (install xmlformat-perl)")
-    baddep=True
+    baddep = True
 if which("dvdid") is None:
-    print("Could not find dvdid command (install dvdid from http://dvdid.cjkey.org.uk/)")
-    baddep=True
+    print("Could not find dvdid command (install dvdid from "
+          "http://dvdid.cjkey.org.uk/)")
+    baddep = True
 if baddep:
     sys.exit(1)
 
 parser = argparse.ArgumentParser(description='Fetch DVD image metadata.')
 parser.add_argument('path', metavar='PATH', nargs='?', default='.',
                     help='directory to search for DVD images')
-parser.add_argument('-w', '--wait', dest='SECONDS', type=int, action='store', default=20,
-                    help='sum the integers (default: find the max)')
+parser.add_argument('-w', '--wait', dest='SECONDS', type=int, action='store',
+                    default=20, help='sum the integers (default: find max)')
 args = parser.parse_args()
 
 # search arg directory (pwd default) for ISOs (i.e. <filename>.iso) by filetype
@@ -95,8 +101,8 @@ for dvdimage in files:
     print(dvdid)
     #   fetch metadata into file <filename>-metadata.xml
     metadata_filename = dvdimage.rsplit(".", 1)[0]+'-metadata.xml'
-    url = "http://metaservices.windowsmedia.com/pas_dvd_B/"\
-            "template/GetMDRDVDByCRC.xml?CRC="+dvdid
+    url = ("http://metaservices.windowsmedia.com/pas_dvd_B/"
+           "template/GetMDRDVDByCRC.xml?CRC=" + dvdid)
     print(url)
     subprocess.Popen(['wget', '-O', metadata_filename, url],
                      shell=False).wait()
