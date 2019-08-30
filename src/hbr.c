@@ -19,14 +19,9 @@
 
 #include <ctype.h>                      // for toupper
 #include <errno.h>                      // for errno
-#include <stdio.h>                      // for NULL, stderr, stdout, etc
-#include <stdlib.h>                     // for exit
 #include <sys/wait.h>
-#include <string.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <gio/gio.h>
-#include <unistd.h>                     // for R_OK, W_OK, X_OK, F_OK
 
 #include "util.h"
 #include "keyfile.h"
@@ -43,12 +38,13 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count);
 gboolean good_output_option_path(void);
 gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path);
 
-static gboolean opt_debug     = FALSE; // Print commands instead of executing
-static gboolean opt_preview   = FALSE; // Generate preview image using ffmpegthumbnailer
-static gboolean opt_overwrite = FALSE; // Default to overwriting previous encodes
-static int      opt_episode   = -1;    // Specifies a particular episode number to be encoded
-static gchar    *opt_hbversion = NULL;  // Override handbrake version detection
-static gchar    *opt_output   = NULL;  // Override location to write output files
+static gboolean opt_debug         = FALSE; // Print commands instead of executing
+static gboolean opt_preview       = FALSE; // Generate preview image using ffmpegthumbnailer
+static gboolean opt_overwrite     = FALSE; // Default to overwriting previous encodes
+static int      opt_episode       = -1;    // Specifies a particular episode number to be encoded
+static gchar    *opt_hbversion    = NULL;  // Override handbrake version detection
+static gchar    *opt_config       = NULL;  // Override config file location
+static gchar    *opt_output       = NULL;  // Override location to write output files
 static gchar    **opt_input_files = NULL;  // List of files for hbr to use as input
 
 static gchar    *config_file_path = NULL;
@@ -65,17 +61,19 @@ static gboolean print_version(const gchar *option_name,
 
 static GOptionEntry entries[] =
 {
-    {"debug",     'd', 0, G_OPTION_ARG_NONE,     &opt_debug,
+    {"debug",     'd', 0, G_OPTION_ARG_NONE,      &opt_debug,
         "print the commands to be run instead of executing", NULL},
-    {"preview",   'p', 0, G_OPTION_ARG_NONE,     &opt_preview,
+    {"config",    'c', 0, G_OPTION_ARG_FILENAME,  &opt_config,
+        "use named configuration file instead of default", NULL},
+    {"preview",   'p', 0, G_OPTION_ARG_NONE,      &opt_preview,
         "generate a preview image for each output file", NULL},
-    {"overwrite", 'y', 0, G_OPTION_ARG_NONE,     &opt_overwrite,
+    {"overwrite", 'y', 0, G_OPTION_ARG_NONE,      &opt_overwrite,
         "overwrite encoded files without confirmation", NULL},
-    {"episode",   'e', 0, G_OPTION_ARG_INT,      &opt_episode,
+    {"episode",   'e', 0, G_OPTION_ARG_INT,       &opt_episode,
         "encodes first entry with matching episode number", "NUMBER"},
-    {"output",    'o', 0, G_OPTION_ARG_FILENAME, &opt_output,
+    {"output",    'o', 0, G_OPTION_ARG_FILENAME,  &opt_output,
         "override location to write output files", "PATH"},
-    {"hbversion", 'H', 0, G_OPTION_ARG_STRING,   &opt_hbversion,
+    {"hbversion", 'H', 0, G_OPTION_ARG_STRING,    &opt_hbversion,
         "override handbrake version detection", "X.Y.Z"},
     {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, print_version,
         "prints version info and exit", NULL},
@@ -230,7 +228,15 @@ GKeyFile *fetch_or_generate_keyfile(void)
     const gchar *xdg_config_home = g_getenv("XDG_CONFIG_HOME");
     const gchar *home = g_get_home_dir();
     
-    if (xdg_config_home) {
+    gchar *basename = NULL;
+    if (opt_config) {
+        // only consider opt_config if specified
+        gchar *dirname = g_path_get_dirname(opt_config);
+        basename = g_path_get_basename(opt_config);
+        g_string_printf(config_dir, "%s", dirname);
+        g_string_printf(alt_config_dir, "%s", dirname);
+        g_free(dirname);
+    } else if (xdg_config_home) {
         g_string_printf(config_dir, "%s%s", xdg_config_home, "/hbr/");
         g_string_printf(alt_config_dir, "%s%s", home, "/.config/hbr/");
     } else {
@@ -245,8 +251,13 @@ GKeyFile *fetch_or_generate_keyfile(void)
 
     GString *config_file = g_string_new(NULL);
     GString *alt_config_file = g_string_new(NULL);
-    g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
-    g_string_printf(alt_config_file, "%s%s", config_dir->str, "hbr.conf");
+    if (opt_config) {
+        g_string_printf(config_file, "%s%c%s", config_dir->str, G_DIR_SEPARATOR, basename);
+        g_string_printf(alt_config_file, "%s%c%s", config_dir->str, G_DIR_SEPARATOR, basename);
+    } else {
+        g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
+        g_string_printf(alt_config_file, "%s%s", config_dir->str, "hbr.conf");
+    }
     g_string_free(config_dir, TRUE);
     g_string_free(alt_config_dir, TRUE);
 

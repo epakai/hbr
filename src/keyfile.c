@@ -174,7 +174,7 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
          * build returns NULL and caller acts appropriately?
          */
         hbr_error("Failed to merge two empty sections \"%s\" and \"%s\".",
-                NULL, NULL, NULL, NULL);
+                NULL, NULL, NULL, NULL, p_group, a_group);
         return NULL;
     } else if (k == NULL){
         // make a new keyfile if the copy failed, but pref still has good keys
@@ -186,6 +186,10 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
     // values from alt
     for (gint i = 0; i < key_count; i++) {
         // check new_group for conflicting options and remove them
+        /* TODO FIXME merging or removing conflicts may not be working correctly
+         * I forgot the exact issue I was having, but I'm pretty sure there was an issue
+         * with remove_conflicts not actually removing conflicts
+         */
         remove_conflicts(key_list[i], k, new_group, alt, a_group);
         gchar *temp = g_key_file_get_value(pref, p_group, key_list[i], NULL);
         g_key_file_set_value(k, new_group, key_list[i], temp);
@@ -225,17 +229,31 @@ void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
         // check if the conflict value exists
         if (g_key_file_has_key(checked_keyfile, check_group,
                     conflict.conflict_name, NULL)) {
+            // skip keys that don't have the necessary specific to be a conflict
+            if (conflict.value != NULL) {
+                gchar *value = g_key_file_get_value(modified_keyfile, mod_group,
+                        conflict.name, NULL);
+                if (!g_strcmp0(value, conflict.value) == 0) {
+                    g_free(value);
+                    continue;
+                }
+                g_free(value);
+            }
             // check if the conflict value matches
             if (conflict.conflict_value != NULL){
                 gchar *value = g_key_file_get_value(checked_keyfile, check_group,
                         conflict.conflict_name, NULL);
                 if (strcmp(value, conflict.conflict_value) == 0) {
+                    hbr_info("Removed conflicting option", NULL, mod_group,
+                            conflict.conflict_name, conflict.conflict_value);
                     g_key_file_remove_key(modified_keyfile, mod_group,
                             conflict.conflict_name, NULL);
                 }
                 g_free(value);
             } else {
                 // no value to match, just remove the key
+                hbr_info("Dropping conflicting option in", NULL, mod_group,
+                        conflict.conflict_name, conflict.conflict_value);
                 g_key_file_remove_key(modified_keyfile, mod_group,
                         conflict.conflict_name, NULL);
             }

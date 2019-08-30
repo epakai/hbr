@@ -70,7 +70,8 @@ static require_t hbr_requires[] =
 
 static conflict_t hbr_conflicts[] =
 {
-    { "add_year", "type", "series" },
+    { "add_year", "true", "type", "series" },
+    { "type", "series", "add_year", "true" },
     { NULL, NULL, NULL}
 };
 

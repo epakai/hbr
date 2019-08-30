@@ -83,6 +83,10 @@ struct conflict_s {
      */
     gchar *name;
     /**
+     * @brief optional, specific value of name that we are concerned with
+     */
+    gchar *value;
+    /**
      * @brief option that name conflicts with
      */
     gchar *conflict_name;
