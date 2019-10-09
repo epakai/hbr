@@ -27,7 +27,7 @@ doc:
 	@echo Cannot generate source documentation. Doxygen not found.
 endif
 
-SRC = $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
+SRC = src/hbr.c src/hbr-gen.c $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
 SOURCES := $(addprefix $(top_srcdir)/, $(SRC))
 PCH = $(addsuffix .gch, $(SOURCES))
 
@@ -41,9 +41,12 @@ clang-analyzer:
 	@echo *** clang not found.
 endif
 
+CPPCHECK_INCLUDES := $(filter-out -pthread, $(hbr_CFLAGS))
+CPPCHECK_INCLUDES += $(filter-out -pthread, $(hbr_gen_CFLAGS))
+
 if HAVE_CPPCHECK
 cppcheck:
-	@- cppcheck --quiet $(SOURCES) 
+	@- cppcheck --quiet --language=c -DDEBUG --enable=all $(CPPCHECK_INCLUDES) $(SOURCES) 
 else
 cppcheck:
 	@echo *** cppcheck not found.

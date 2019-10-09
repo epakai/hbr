@@ -1335,7 +1335,6 @@ gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *confi
                 }
             } else if (strcmp(encoders[i], "mp3") == 0) {
                 if (compressions[0] < 0.0 || compressions[0] > 9.0) {
-                    gchar *value = g_strdup_printf("%f", compressions[0]);
                     valid = FALSE;
                     hbr_error("Compression value outside range for mp3 [0,9]",
                             config_path, group, option->name, value);
@@ -1496,12 +1495,12 @@ gboolean valid_video_framerate(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid_boolean = TRUE, valid_crop = TRUE;
+    gboolean valid_bool = TRUE, valid_crop = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_boolean = FALSE;
+        valid_bool = FALSE;
         g_error_free(error);
     }
 
@@ -1526,7 +1525,7 @@ gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
     }
     g_free(crop);
 
-    if (!valid_boolean && !valid_crop) {
+    if (!valid_bool && !valid_crop) {
         gchar *value = g_key_file_get_value(config, group, option->name, NULL);
         hbr_error("Crop should be true/false or 4 colon separated positive"
                 " integers (top:bottom:left:right)", config_path, group,
@@ -1534,7 +1533,7 @@ gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
         g_free(value);
     }
 
-    return (valid_boolean || valid_crop);
+    return (valid_bool || valid_crop);
 }
 
 gboolean valid_pixel_aspect(option_t *option, gchar *group, GKeyFile *config,
@@ -1547,12 +1546,12 @@ gboolean valid_pixel_aspect(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid_boolean = TRUE, valid_preset = TRUE, valid_custom = TRUE;
+    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_boolean = FALSE;
+        valid_bool = FALSE;
         g_error_free(error);
     }
 
@@ -1576,13 +1575,13 @@ gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
     gsize filter_count = 0;
     gchar **filters = g_key_file_get_string_list(config, group,
             option->name, &filter_count, &error);
-    gchar *filter_names[] = { "mode", "magnitude-thresh", "variance-thresh",
-        "laplacian-thresh", "dilation-thresh", "erosion-thresh", "noise-thresh",
-        "search-distance", "postproc", "parity", NULL};
     if (error != NULL) {
         valid_custom = FALSE;
         g_error_free(error);
     } else {
+        gchar *filter_names[] = { "mode", "magnitude-thresh", "variance-thresh",
+            "laplacian-thresh", "dilation-thresh", "erosion-thresh",
+            "noise-thresh", "search-distance", "postproc", "parity", NULL};
         for (int i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
             // split string on '=' into 2 tokens
@@ -1631,12 +1630,12 @@ gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
     // reset separator
     g_key_file_set_list_separator(config, ',');
 
-    if (!valid_boolean && !valid_preset && !valid_custom) {
+    if (!valid_bool && !valid_preset && !valid_custom) {
         hbr_error("Invalid decomb option", config_path, group, option->name,
                 value);
     }
     g_free(value);
-    return (valid_boolean || valid_preset || valid_custom);
+    return (valid_bool || valid_preset || valid_custom);
 }
 
 gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
@@ -1663,12 +1662,12 @@ gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
     gsize filter_count = 0;
     gchar **filters = g_key_file_get_string_list(config, group,
             option->name, &filter_count, &error);
-    gchar *filter_names[] = { "y-spatial", "cb-spatial", "cr-spatial",
-        "y-temporal", "cb-temporal", "cr-temporal", NULL};
     if (error != NULL) {
         valid_custom = FALSE;
         g_error_free(error);
     } else {
+        gchar *filter_names[] = { "y-spatial", "cb-spatial", "cr-spatial",
+            "y-temporal", "cb-temporal", "cr-temporal", NULL};
         for (int i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
             // split string on '=' into 2 tokens
@@ -1728,12 +1727,12 @@ gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid_boolean = TRUE, valid_custom = TRUE;
+    gboolean valid_bool = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_boolean = FALSE;
+        valid_bool = FALSE;
         g_error_free(error);
     }
 
@@ -1746,11 +1745,11 @@ gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
             option->name, &filter_count, &error);
     g_key_file_set_list_separator(config, ',');
 
-    gchar *filter_names[] = { "qp", "mode", "disable", NULL};
     if (error != NULL) {
         valid_custom = FALSE;
         g_error_free(error);
     } else {
+        gchar *filter_names[] = { "qp", "mode", "disable", NULL};
         for (int i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
             // split string on '=' into 2 tokens
@@ -1798,12 +1797,12 @@ gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
     g_strfreev(filters);
 
     gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    if (!valid_boolean && !valid_custom) {
+    if (!valid_bool && !valid_custom) {
         hbr_error("Invalid deblock option", config_path, group, option->name,
                 value);
     }
     g_free(value);
-    return (valid_boolean || valid_custom);
+    return (valid_bool || valid_custom);
 }
 
 gboolean valid_deinterlace(option_t *option, gchar *group, GKeyFile *config,
@@ -1960,7 +1959,6 @@ gboolean valid_drc(option_t *option, gchar *group, GKeyFile *config,
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
     if (error != NULL) {
         all_valid = FALSE;
-        gchar *value = g_key_file_get_value(config, group, option->name, NULL);
         if (g_error_matches(error, G_KEY_FILE_ERROR,
                     G_KEY_FILE_ERROR_INVALID_VALUE)) {
             hbr_error("Value should be decimal number", config_path, group,
@@ -2060,16 +2058,6 @@ gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
 {
     gboolean valid = TRUE;
 
-    const gchar *group_1_encoder[] = { "x264", "x264_10bit", "x265",
-        "x265_10bit", "x265_12bit", NULL };
-    const gchar *group_1_presets[] = {"ultrafast", "superfast", "veryfast",
-        "faster", "fast", "medium", "slow", "slower", "veryslow", "placebo",
-        NULL };
-
-    const gchar *group_2_encoder[] = { "VP8", "VP9", NULL };
-    const gchar *group_2_presets[] = { "veryfast", "faster", "fast", "medium",
-        "slow", "slower", "veryslow", NULL };
-
     gboolean group_1_valid = FALSE, group_2_valid = FALSE;
     gchar *preset = NULL;
     GError *error = NULL;
@@ -2090,12 +2078,21 @@ gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
             g_error_free(error);
         } else {
             g_strstrip(preset);
-
+            
+            const gchar *group_1_encoder[] = { "x264", "x264_10bit", "x265",
+                "x265_10bit", "x265_12bit", NULL };
+            const gchar *group_1_presets[] = {"ultrafast", "superfast",
+                "veryfast", "faster", "fast", "medium", "slow", "slower",
+                "veryslow", "placebo", NULL };
             if (g_strv_contains(group_1_encoder, encoder)) {
                 if (g_strv_contains(group_1_presets, preset)) {
                     group_1_valid = TRUE;
                 }
             }
+            
+            const gchar *group_2_encoder[] = { "VP8", "VP9", NULL };
+            const gchar *group_2_presets[] = { "veryfast", "faster", "fast",
+                "medium", "slow", "slower", "veryslow", NULL };
             if (g_strv_contains(group_2_encoder, encoder)) {
                 if (g_strv_contains(group_2_presets, preset)) {
                     group_2_valid = TRUE;
@@ -2277,12 +2274,12 @@ gboolean valid_codeset(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid_boolean = TRUE, valid_custom = TRUE;
+    gboolean valid_bool = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_boolean = FALSE;
+        valid_bool = FALSE;
         g_error_free(error);
     }
     // check for custom format
@@ -2294,12 +2291,12 @@ gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
             option->name, &filter_count, &error);
     g_key_file_set_list_separator(config, ',');
 
-    gchar *filter_names[] = { "angle", "hflip", "disable", NULL};
     if (error != NULL) {
         valid_custom = FALSE;
         hbr_error(error->message, config_path, group, option->name, NULL);
         g_error_free(error);
     } else {
+        gchar *filter_names[] = { "angle", "hflip", "disable", NULL};
         for (int i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
             // split string on '=' into 2 tokens
@@ -2352,12 +2349,12 @@ gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
     g_strfreev(filters);
 
     gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    if (!valid_boolean && !valid_custom) {
+    if (!valid_bool && !valid_custom) {
         hbr_error("Invalid rotate option", config_path, group, option->name,
                 value);
     }
     g_free(value);
-    return (valid_boolean || valid_custom);
+    return (valid_bool || valid_custom);
 }
 
 gboolean valid_qsv_decoding(option_t *option, gchar *group, GKeyFile *config,
@@ -2370,12 +2367,12 @@ gboolean valid_qsv_decoding(option_t *option, gchar *group, GKeyFile *config,
 gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
-    gboolean valid_boolean = TRUE, valid_preset = TRUE, valid_custom = TRUE;
+    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_boolean = FALSE;
+        valid_bool = FALSE;
         g_error_free(error);
     }
 
@@ -2400,13 +2397,13 @@ gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
     gsize filter_count = 0;
     gchar **filters = g_key_file_get_string_list(config, group,
             option->name, &filter_count, &error);
-    gchar *filter_names[] = {"mode", "spatial-metric", "motion-thresh",
-        "spatial-thresh", "filter-mode", "block-thresh", "block-width",
-        "block-height", "disable", NULL};
     if (error != NULL) {
         valid_custom = FALSE;
         g_error_free(error);
     } else {
+        gchar *filter_names[] = {"mode", "spatial-metric", "motion-thresh",
+            "spatial-thresh", "filter-mode", "block-thresh", "block-width",
+            "block-height", "disable", NULL};
         for (int i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
             // split string on '=' into 2 tokens
@@ -2455,12 +2452,12 @@ gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
     // reset separator
     g_key_file_set_list_separator(config, ',');
 
-    if (!valid_boolean && !valid_preset && !valid_custom) {
+    if (!valid_bool && !valid_preset && !valid_custom) {
         hbr_error("Invalid decomb option", config_path, group, option->name,
                 value);
     }
     g_free(value);
-    return (valid_boolean || valid_preset || valid_custom);
+    return (valid_bool || valid_preset || valid_custom);
 }
 
 gboolean valid_pad(option_t *option, gchar *group, GKeyFile *config,

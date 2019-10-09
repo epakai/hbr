@@ -360,11 +360,9 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         // Create directory
         if (!opt_debug) {
             gchar *dirname = g_path_get_dirname(filename);
-            GError *error;
-            if ((g_mkdir_with_parents(dirname, 0777) != 0) &&
-                    !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
-                hbr_error(error->message, infile, NULL, NULL, NULL);
-                g_error_free(error);
+            if (g_mkdir_with_parents(dirname, 0777) != 0) {
+                hbr_error("Failed to make directory for encode", infile,
+                        NULL, NULL, NULL);
                 return;
             }
             if (!make_output_directory(current_outfile, "CURRENT_OUTFILE", infile)) {
