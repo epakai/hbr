@@ -363,12 +363,16 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
             if (g_mkdir_with_parents(dirname, 0777) != 0) {
                 hbr_error("Failed to make directory for encode", infile,
                         NULL, NULL, NULL);
+                g_key_file_free(current_outfile);
+                g_free(filename);
+                g_free(basename);
+                g_strfreev(outfiles);
                 return;
             }
             if (!make_output_directory(current_outfile, "CURRENT_OUTFILE", infile)) {
                 // skip this outfile, error output comes from make_extra_directory()
                 g_key_file_free(current_outfile);
-                g_object_unref(filename);
+                g_free(filename);
                 g_free(basename);
                 continue;
             }
