@@ -175,16 +175,16 @@ def detected_main(title_list):
 
 def build_parser(title_list):
     pp.ParserElement.setDefaultWhitespaceChars(' \t\r,')
-    # This is a really slow way to grab a list of all unicode characters.
-    # PyParsing 2.3.0 adds pyparsing_unicode.printables so use that instead
     pp_unicode_support = False
     if int(pp.__version__.split('.')[0]) >= 2:
         if int(pp.__version__.split('.')[1]) >= 3:
             pp_unicode_support = True
     if pp_unicode_support is False:
+        # This is a really slow way to grab a list of all unicode characters.
         unicode_printables = ''.join(chr(c) for c in range(sys.maxunicode)
                                      if not chr(c).isspace())
     else:
+        # PyParsing 2.3.0 adds pyparsing_unicode.printables so use that instead
         unicode_printables = pp.pyparsing_unicode.printables
 
     # ignored stuff
