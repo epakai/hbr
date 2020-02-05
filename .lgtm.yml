@@ -1,21 +1,21 @@
 path_classifiers:
    test: "$GNU_MAKE test"
    docs: "$GNU_MAKE doc"
- extraction:
-   cpp:
-     prepare:
-       packages:
-       - "g++-6"
-       - "libtool"
-       - "autoconf-archive"
-       - "libglib2.0-dev"
-       - "doxygen"
-       - "graphviz"
-       - "markdown"
-     after_prepare: "export GNU_MAKE=make"
-     configure:
-       command:
-       - "./autogen.sh"
-       - "./configure"
-     index:
-       build_command: "$GNU_MAKE -j2"
+extraction:
+  cpp:
+    prepare:
+      packages:
+      - "g++-6"
+      - "libtool"
+      - "autoconf-archive"
+      - "libglib2.0-dev"
+      - "doxygen"
+      - "graphviz"
+      - "markdown"
+    after_prepare: "export GNU_MAKE=make"
+    configure:
+      command:
+      - "./autogen.sh"
+      - "./configure"
+    index:
+      build_command: "$GNU_MAKE -j2"
