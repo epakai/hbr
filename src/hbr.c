@@ -361,6 +361,9 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         if (!opt_debug) {
             gchar *dirname = g_path_get_dirname(filename);
             if (g_mkdir_with_parents(dirname, 0777) != 0) {
+                // TODO BUG: g_mkdir_with_parents fails due to permissions
+                // if the directory already exists, but hbr would not have
+                // permissions to create it.
                 hbr_error("Failed to make directory for encode", infile,
                         NULL, NULL, NULL);
                 g_key_file_free(current_outfile);
