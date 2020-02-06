@@ -5,7 +5,7 @@ extraction:
   cpp:
     prepare:
       packages:
-      - "g++-6"
+      - "gcc"
       - "libtool"
       - "autoconf-archive"
       - "libglib2.0-dev"
