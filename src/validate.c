@@ -188,9 +188,11 @@ gboolean post_validate_common(GKeyFile *keyfile, const gchar *infile,
     }
     // TODO check keys that don't belong in global config
     if (!checking_local_config) {
+        // TODO
     }
     // TODO check keys that don't belong in local config
     if (checking_local_config) {
+        // TODO
     }
     // TODO check required keys exist (there aren't really any, but having none
     //      between hbr.conf and infile is not workable)
@@ -1105,8 +1107,8 @@ gboolean valid_audio_encoder(option_t *option, gchar *group, GKeyFile *config,
     gchar *aencoder_string = g_key_file_get_value(config, group, option->name,
             NULL);
     if (audio_encoder_count != 1 && audio_encoder_count != audio_count) {
-        hbr_error("Number of audio encoders (%d) specified does not match the"
-                " number of audio tracks (%d)", config_path, group,
+        hbr_error("Number of audio encoders (%lu) specified does not match the"
+                " number of audio tracks (%lu)", config_path, group,
                 option->name, aencoder_string, audio_encoder_count, audio_count);
         valid = FALSE;
     }
@@ -1173,8 +1175,8 @@ gboolean valid_audio_bitrate(option_t *option, gchar *group, GKeyFile *config,
     gint *audio_tracks = g_key_file_get_integer_list(config, group,
             "audio", &audio_count, NULL);
     if ( bitrate_count != 1 && bitrate_count != audio_count) {
-        hbr_error("Number of track bitrates (%d) specified does not match the"
-                " number of audio tracks (%d)", config_path, group,
+        hbr_error("Number of track bitrates (%lu) specified does not match the"
+                " number of audio tracks (%lu)", config_path, group,
                 option->name, bitrates_string, bitrate_count, audio_count);
         valid = FALSE;
     }
@@ -1938,8 +1940,8 @@ gboolean valid_gain(option_t *option, gchar *group, GKeyFile *config,
     gchar *gains_string = g_key_file_get_value(config, group, option->name,
             NULL);
     if ( gain_count != 1 && gain_count != audio_count) {
-        hbr_error("Number of audio tracks (%d) specified does not match the"
-                " number of gain tracks (%d)", config_path, group,
+        hbr_error("Number of audio tracks (%lu) specified does not match the"
+                " number of gain tracks (%lu)", config_path, group,
                 option->name, gains_string, audio_count, gain_count);
         valid = FALSE;
     }
@@ -2232,8 +2234,8 @@ gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
     gchar *gains_string = g_key_file_get_value(config, group, option->name,
             NULL);
     if (dither_count != 1 && dither_count != audio_count) {
-        hbr_error("Number of audio tracks (%d) specified does not match the"
-                " number of dither tracks (%d)", config_path, group,
+        hbr_error("Number of audio tracks (%lu) specified does not match the"
+                " number of dither tracks (%lu)", config_path, group,
                 option->name, gains_string, audio_count, dither_count);
         valid = FALSE;
     }

@@ -170,9 +170,6 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
 
     // check if both groups are empty (copy_group_new() returns NULL on empty)
     if (k == NULL && key_count == 0) {
-        /* FIXME This is a programmer error. Should I just assert() so the user
-         * build returns NULL and caller acts appropriately?
-         */
         hbr_error("Failed to merge two empty sections \"%s\" and \"%s\".",
                 NULL, NULL, NULL, NULL, p_group, a_group);
         return NULL;
