@@ -1316,8 +1316,8 @@ gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *confi
     }
     if ( compression_count != 1 && compression_count != encoder_count) {
         // error on mismatched counts
-        hbr_error("Number of compression values (%d) specified does not match"
-                " the number of audio encoders (%d)", config_path, group,
+        hbr_error("Number of compression values (%lu) specified does not match"
+                " the number of audio encoders (%lu)", config_path, group,
                 option->name, compressions_value, compression_count,
                 encoder_count);
         valid = FALSE;
