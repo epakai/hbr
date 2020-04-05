@@ -407,6 +407,8 @@ gchar * build_filename(GKeyFile *config, gchar *group)
                 g_string_append(filename, extra_name);
                 g_string_append(filename, G_DIR_SEPARATOR_S);
             }
+
+            g_free(extra_name);
         } else {
             g_string_append(filename, name);
         }
@@ -472,15 +474,15 @@ void append_year(GKeyFile *config, gchar *group, GString *path)
 {
     gchar *dirname = g_path_get_dirname(path->str);
     gchar *year = g_key_file_get_string(config, group, "year", NULL);
-    gchar *with_year;
-
-    with_year = g_strjoin(NULL, dirname, " (", year, ")", NULL);
+    gchar *with_year = g_strjoin(NULL, dirname, " (", year, ")", NULL);
     
     // append a " (year)" onto the final directory
-    g_string_assign(path, g_build_path(dirname, with_year, NULL));
-    
-    g_free(year);
+    gchar *path_with_year = g_build_path(dirname, with_year, NULL);
+    g_string_assign(path, path_with_year);
+
+    g_free(path_with_year);
     g_free(with_year);
+    g_free(year);
     g_free(dirname);
 }
 

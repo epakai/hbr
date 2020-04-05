@@ -298,6 +298,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
     }
     config_file_path = g_strdup(config_file->str);
     g_string_free(config_file, TRUE);
+    g_string_free(alt_config_file, TRUE);
     return keyfile;
 }
 
@@ -405,7 +406,9 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         if (opt_preview || preview) {
             generate_thumbnail(filename, i, out_count);
         }
+
         g_free(filename);
+        g_free(basename);
         g_ptr_array_free(args, TRUE);
         g_key_file_free(current_outfile);
     }
