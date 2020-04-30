@@ -534,6 +534,12 @@ void determine_handbrake_version(gchar *arg_version)
         }
     }
 
+    if (version == NULL) {
+        hbr_error("HandBrake output for version detection was not as expected. "
+                "Exiting.", NULL, NULL, NULL, NULL);
+        exit(1);
+    }
+
     gint major, minor, patch;
     //split version number
     gchar **split_version = g_strsplit(version, ".", 3);

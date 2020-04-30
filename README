@@ -13,7 +13,7 @@ making changes and re-encoding a single file or your whole library.
 Building hbr
 ================================================================================
 
-Build dependencies:     libglib2.0-dev
+Build dependencies:     libglib2.0-dev (argp-standalone for non-glibc systems)
 
 From release tarball:
     ./configure

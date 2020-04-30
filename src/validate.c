@@ -2083,19 +2083,19 @@ gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
             
             const gchar *group_1_encoder[] = { "x264", "x264_10bit", "x265",
                 "x265_10bit", "x265_12bit", NULL };
-            const gchar *group_1_presets[] = {"ultrafast", "superfast",
-                "veryfast", "faster", "fast", "medium", "slow", "slower",
-                "veryslow", "placebo", NULL };
             if (g_strv_contains(group_1_encoder, encoder)) {
+                const gchar *group_1_presets[] = {"ultrafast", "superfast",
+                    "veryfast", "faster", "fast", "medium", "slow", "slower",
+                    "veryslow", "placebo", NULL };
                 if (g_strv_contains(group_1_presets, preset)) {
                     group_1_valid = TRUE;
                 }
             }
             
             const gchar *group_2_encoder[] = { "VP8", "VP9", NULL };
-            const gchar *group_2_presets[] = { "veryfast", "faster", "fast",
-                "medium", "slow", "slower", "veryslow", NULL };
             if (g_strv_contains(group_2_encoder, encoder)) {
+                const gchar *group_2_presets[] = { "veryfast", "faster", "fast",
+                    "medium", "slow", "slower", "veryslow", NULL };
                 if (g_strv_contains(group_2_presets, preset)) {
                     group_2_valid = TRUE;
                 }

@@ -1,4 +1,4 @@
-HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h
+HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h src/handbrake/options-1.2.0.h
 SUPPORT_SOURCES = src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h
 GEN_SOURCES = src/gen_hbr.c src/gen_hbr.h
 COMMON_SOURCES = src/util.c src/util.h
@@ -7,11 +7,11 @@ bin_PROGRAMS = hbr hbr-gen
 
 hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
 hbr_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
-hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS)
+hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS)
 
 hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
 hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
-hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS)
+hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS)
 
 EXTRA_DIST = autogen.sh doc/Doxyfile.in doc/Makefile.am doc/Makefile.in
 

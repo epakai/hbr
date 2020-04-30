@@ -6,6 +6,7 @@ AC_INIT([hbr], [0.1], [https://github.com/epakai/hbr/issues])
 AC_CONFIG_SRCDIR([src/hbr.c])
 AC_CONFIG_HEADERS([src/config.h])
 AX_CHECK_ENABLE_DEBUG()
+AC_CANONICAL_HOST
 
 # Checks for programs.
 AC_PROG_CC
@@ -79,6 +80,20 @@ PKG_CHECK_MODULES(GOBJECT2, gobject-2.0)
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
+
+dnl check for argp, FreeBSD has the header in /usr/local/include
+case $host_os in
+    *freebsd*)
+    CFLAGS="${CFLAGS} -isystem /usr/local/include"
+    ARGP_LIBS=-largp
+    ;;
+esac
+dnl argp-standalone does not provide a pkg-config file
+AC_CHECK_HEADER([argp.h], AC_DEFINE(HAVE_ARGP, 1, [have argp]))
+if test "x$ac_cv_header_argp_h" != "xyes"; then
+    AC_MSG_ERROR([argp.h not found, install libargp or argp-standalone])
+fi
+AC_SUBST(ARGP_LIBS)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
