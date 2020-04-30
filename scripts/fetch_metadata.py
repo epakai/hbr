@@ -49,7 +49,7 @@ PARSER = argparse.ArgumentParser(description='Fetch DVD image metadata.')
 PARSER.add_argument('path', metavar='PATH', nargs='?', default='.',
                     help='directory to search for DVD images')
 PARSER.add_argument('-w', '--wait', dest='SECONDS', type=int, action='store',
-                    default=20, help='sum the integers (default: find max)')
+                    default=20, help='time to wait between querying windows dvdid database')
 ARGS = PARSER.parse_args()
 
 # search arg directory (pwd default) for ISOs (i.e. <filename>.iso) by filetype

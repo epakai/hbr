@@ -51,11 +51,11 @@ gboolean pre_validate_key_file(const gchar *infile)
         if (has_duplicate_keys(infile)) {
             valid = FALSE;
         }
-        g_input_stream_close((GInputStream *)datastream, NULL, NULL);
-        g_object_unref(datastream);
     } else {
         valid = FALSE;
     }
+    g_input_stream_close((GInputStream *)datastream, NULL, NULL);
+    g_object_unref(datastream);
 
     return valid;
 }
