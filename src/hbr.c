@@ -27,20 +27,23 @@
 #include "keyfile.h"
 #include "build_args.h"
 
-/*
- * PROTOTYPES
- */
+// PROTOTYPES
 GKeyFile * fetch_or_generate_keyfile(void);
 void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile);
-void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles, gboolean debug);
-int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename);
+void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
+        gboolean debug);
+int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
+        gboolean skip, gchar *filename);
 int hb_fork(gchar *args[], gchar *log_filename, int out_count);
 gboolean good_output_option_path(void);
-gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path);
+gboolean make_output_directory(GKeyFile *outfile, gchar *group,
+        gchar* infile_path);
 
+// Command line options
 static gboolean opt_debug         = FALSE; // Print commands instead of executing
 static gboolean opt_preview       = FALSE; // Generate preview image using ffmpegthumbnailer
 static gboolean opt_overwrite     = FALSE; // Default to overwriting previous encodes
+static gboolean opt_skip_existing = FALSE; // Skip encode if existing file would be overwritten
 static int      opt_episode       = -1;    // Specifies a particular episode number to be encoded
 static gchar    *opt_hbversion    = NULL;  // Override handbrake version detection
 static gchar    *opt_config       = NULL;  // Override config file location
@@ -69,6 +72,8 @@ static GOptionEntry entries[] =
         "generate a preview image for each output file", NULL},
     {"overwrite", 'y', 0, G_OPTION_ARG_NONE,      &opt_overwrite,
         "overwrite encoded files without confirmation", NULL},
+    {"skip",      'n', 0, G_OPTION_ARG_NONE,      &opt_skip_existing,
+        "skip encoding if output file already exists", NULL},
     {"episode",   'e', 0, G_OPTION_ARG_INT,       &opt_episode,
         "encodes first entry with matching episode number", "NUMBER"},
     {"output",    'o', 0, G_OPTION_ARG_FILENAME,  &opt_output,
@@ -101,8 +106,16 @@ int main(int argc, char * argv[])
     g_option_context_add_main_entries (context, entries, NULL);
     GError *error = NULL;
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_print ("Option parsing failed: %s\n", error->message);
+        hbr_error("Option parsing failed: %s\n", NULL, NULL, NULL, NULL, error->message);
         g_error_free(error);
+        g_option_context_free(context);
+        exit(1);
+    }
+
+    // error and exit if these conflicting options are both present
+    if (opt_overwrite && opt_skip_existing) {
+        hbr_error("Option 'overwrite' (-y) is not compatible with 'skip' (-n).",
+                NULL, NULL, NULL, NULL);
         g_option_context_free(context);
         exit(1);
     }
@@ -397,7 +410,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
             g_print("HandBrakeCLI %s\n", temp);
             g_free(temp);
         } else {
-            if (call_handbrake(args, i, opt_overwrite, filename) == -1) {
+            if (call_handbrake(args, i, opt_overwrite, opt_skip_existing, filename) == -1) {
                 hbr_error("%d: Handbrake call failed. %s was not encoded",
                     outfiles[i], NULL, NULL, NULL, i, filename);
                 g_object_unref(filename);
@@ -431,7 +444,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
  * @param group       Group to fetch values from
  * @param infile_path Path to keyfile (for error output)
  *
- * @return True on sucess
+ * @return True on success
  */
 gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path)
 {
@@ -483,11 +496,13 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
  * @param args      String containing argumenst HandBrakeCLI
  * @param out_count Which outfile section is being encoded
  * @param overwrite Overwrite existing files
+ * @param skip      Skip encoding existing files
  * @param filename  output filename (also used to generate log filename)
  *
  * @return error status from hb_fork(), 0 is success
  */
-int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename)
+int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
+        gboolean skip, gchar *filename)
 {
     GString *log_filename = g_string_new(filename);
     log_filename = g_string_append(log_filename, ".log");
@@ -511,10 +526,15 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *fi
         int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
         g_string_free(log_filename, TRUE);
         return r;
+    } else if (skip) {
+        g_print("File: \"%s\" already exists. Skipping encode.\n", filename);
+        g_string_free(log_filename, TRUE);
+        return 1;
     } else {
         char c;
         g_print("File: \"%s\" already exists.\n", filename);
-        g_print("Run hbr with '-y' option to automatically overwrite.\n");
+        g_print("Run hbr with '-y' option to automatically overwrite, or '-n'"
+                " to skip existing files.\n");
         do {
             g_print("Do you want to overwrite? (y/n) ");
             scanf(" %c", &c);
