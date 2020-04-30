@@ -1,5 +1,5 @@
 handbrake runner (hbr)                      https://github.com/epakai/hbr
-================================================================================ 
+================================================================================
 
 hbr is a tool for automating HandBrakeCLI runs. It takes a keyfile as input
 and runs HandBrakeCLI to encode videos.
@@ -100,15 +100,15 @@ of these example formats can be mixed in one file.
     s1e2 Hard Normal Daddy
     e3 Feed Me Weird Things
     4 Ultravisitor
- 
-Here are some example runs of hbr-gen: 
- 
+
+Here are some example runs of hbr-gen:
+
     hbr-gen -n 12 --input-basedir=/video/iso > show.hbr
- 
+
     hbr-gen -l list_of_episode --input-basedir=/video/iso > show.hbr
- 
+
 Once you generate the keyfile edit it to complete all fields.
- 
+
 ================================================================================
 Key Names
 ================================================================================
@@ -122,7 +122,7 @@ arguments. For example, specify --markers/--no-markers as
 markers=true/markers=false in the keyfile. Boolean keys do not always have a
 corresponding negation value. For example, in older HandBrake versions
 --no-markers did not exist. In cases where there is no negation argument
-setting a key to false will not produce an argument to HandBrakeCLI, but it 
+setting a key to false will not produce an argument to HandBrakeCLI, but it
 overrides values set in the keyfile or global CONFIG section.
 
 hbr has some special keys related to input and output file names. hbr tries to
@@ -146,9 +146,11 @@ Here is an overview of the hbr specific keys:
     specific_name  - extra name appended before the file extension. Useful for
                      episode names or file specific metadata.
     preview        - generate a preview image from the output file.
-    add_year       - adds the year to the output_basedir when set true. 
+    add_year       - adds the year to the output_basedir when set true.
     extra          - Causes the output file to be placed in a subdirectory
                      for Plex to handle as an extra.
+    debug          - Prints command that would be run instead of producing an
+                     encode. Useful for testing or disabling certain encodes.
 
 Filenames depend on the type specified.
 For type=movie the output filename will be:
@@ -167,7 +169,7 @@ where season and episode provide the values after s and e.
 Troubleshooting
 ================================================================================
 
-If things are not working out you can try checking the command hbr outputs with 
+If things are not working out you can try checking the command hbr outputs with
 debug mode:
 
     hbr -d Akira.hbr

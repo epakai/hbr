@@ -56,6 +56,7 @@ static option_t hbr_options[] =
     { "extra", hbr_only, k_string, FALSE, valid_string_set, 8,
         (gchar*[]){"behindthescenes", "deleted", "featurette", "interview",
             "scene", "short", "trailer", "other"}},
+    { "debug", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL},
     { NULL, 0, 0, 0, NULL, 0}
 };
 

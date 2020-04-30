@@ -32,7 +32,7 @@
  */
 GKeyFile * fetch_or_generate_keyfile(void);
 void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile);
-void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles);
+void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles, gboolean debug);
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite, gchar *filename);
 int hb_fork(gchar *args[], gchar *log_filename, int out_count);
 gboolean good_output_option_path(void);
@@ -155,6 +155,7 @@ int main(int argc, char * argv[])
         GKeyFile *merged = merge_key_group(current_infile, "CONFIG",
                 config, "CONFIG", "MERGED_CONFIG");
 
+
         /*
          * merged may be null if both CONFIG sections are empty or
          * one group doesn't exist (CONFIG groups are already validated
@@ -169,7 +170,7 @@ int main(int argc, char * argv[])
                 g_key_file_set_string(merged, "MERGED_CONFIG", "output_basedir",
                         opt_output);
             }
-            
+
             // encode each outfile
             encode_loop(current_infile, merged, opt_input_files[i]);
         }
@@ -344,22 +345,30 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
                 merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
 
         //TODO add checks for current_outfile == NULL
-        
+
+        // Determine if we should produce debug output or actually run HandBrake.
+        // This is a special case where outfile config's debug=true only matters
+        // if opt_debug is not true
+        gboolean debug = opt_debug;
+        if (g_key_file_get_boolean(current_outfile, "CURRENT_OUTFILE", "debug", NULL)) {
+            debug = TRUE;
+        }
+
         // build full HandBrakeCLI command
-        GPtrArray *args = build_args(current_outfile, "CURRENT_OUTFILE", opt_debug);
+        GPtrArray *args = build_args(current_outfile, "CURRENT_OUTFILE", debug);
         gchar *filename = build_filename(current_outfile, "CURRENT_OUTFILE");
         gchar *basename = g_path_get_basename(filename);
 
         // output current encode information (codes are for bold text)
         g_print("%c[1m", 27);
-        if (opt_debug) {
+        if (debug) {
             g_print("# ");
         }
         g_print("Encoding: %d/%lu: %s\n", i+1, out_count, basename);
         g_print("%c[0m", 27);
 
         // Create directory
-        if (!opt_debug) {
+        if (!debug) {
             gchar *dirname = g_path_get_dirname(filename);
             if (g_mkdir_with_parents(dirname, 0777) != 0) {
                 // TODO BUG: g_mkdir_with_parents fails due to permissions
@@ -382,7 +391,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
             }
         }
 
-        if (opt_debug) {
+        if (debug) {
             // print full handbrake command
             gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
             g_print("HandBrakeCLI %s\n", temp);
@@ -404,7 +413,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
             preview = g_key_file_get_boolean(current_outfile, "CURRENT_OUTFILE", "preview", NULL);
         }
         if (opt_preview || preview) {
-            generate_thumbnail(filename, i, out_count);
+            generate_thumbnail(filename, i, out_count, debug);
         }
 
         g_free(filename);
@@ -415,6 +424,15 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
     g_strfreev(outfiles);
 }
 
+/**
+ * @brief Create the output directory where files are to be written
+ *
+ * @param outfile     Keyfile to fetch values from
+ * @param group       Group to fetch values from
+ * @param infile_path Path to keyfile (for error output)
+ *
+ * @return True on sucess
+ */
 gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path)
 {
     // create output directory
@@ -424,7 +442,7 @@ gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_pa
     gchar *filename = build_filename(outfile, group);
     gchar *dirname = g_path_get_dirname(filename);
 
-    if (!opt_debug && g_mkdir_with_parents(dirname, 0777) != 0) {
+    if (g_mkdir_with_parents(dirname, 0777) != 0) {
         hbr_error("Failed to create output directory", infile_path, NULL,
                 NULL, NULL);
         g_free(output_path);
@@ -440,7 +458,8 @@ gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_pa
  * @param outfile_count Number of the current outfile being processed
  * @param total_outfiles Total number of outfiles being processed
  */
-void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles)
+void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
+        gboolean debug)
 {
     GString *ft_command = g_string_new("ffmpegthumbnailer");
     g_string_append_printf(ft_command,
@@ -450,7 +469,7 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles)
     g_print("# Generating preview: %d/%d: %s.png\n", outfile_count+1,
             total_outfiles, filename);
     g_print("%c[0m", 27);
-    if (opt_debug) {
+    if (debug) {
         g_print("%s\n", ft_command->str);
     } else {
         system((char *) ft_command->str);
