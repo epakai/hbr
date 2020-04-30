@@ -39,24 +39,24 @@
  */
 gboolean pre_validate_key_file(const gchar *infile)
 {
-    gboolean valid = TRUE;
     // check file is readable
     GDataInputStream * datastream = open_datastream(infile);
-    if (datastream) {
-        // check for duplicate groups
-        if (has_duplicate_groups(infile)) {
-            valid = FALSE;
-        }
-        // check for duplicate keys within a group
-        if (has_duplicate_keys(infile)) {
-            valid = FALSE;
-        }
-    } else {
+
+    if (!datastream) {
+        return FALSE;
+    }
+
+    gboolean valid = TRUE;
+    // check for duplicate groups
+    if (has_duplicate_groups(infile)) {
+        valid = FALSE;
+    }
+    // check for duplicate keys within a group
+    if (has_duplicate_keys(infile)) {
         valid = FALSE;
     }
     g_input_stream_close((GInputStream *)datastream, NULL, NULL);
     g_object_unref(datastream);
-
     return valid;
 }
 

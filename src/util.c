@@ -21,8 +21,17 @@
 
 #include "util.h"
 
-// TODO i think path and section should follow key/value
-
+/**
+ * @brief Error message printed on stderr. Resulting output:
+ *        hbr   ERROR: Format string: (path) [section] key=value
+ *
+ * @param format  Format string to be printed
+ * @param path    intended for a relevant file path
+ * @param section intended for the group/section of a keyfile
+ * @param key     intended for the relevant key name
+ * @param value   intended for the key name's value (if it is defined)
+ * @param ...     args to fill placeholders in format
+ */
 void hbr_error(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, ...)
 {
@@ -32,6 +41,9 @@ void hbr_error(const gchar *format, const gchar *path, const gchar *section,
     va_end(argp);
 }
 
+/**
+ * @brief Variadic implementation for hbr_error
+ */
 void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
@@ -54,6 +66,17 @@ void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
     }
 }
 
+/**
+ * @brief Warning message printed on stderr. Resulting output:
+ *        hbr WARNING: Format string: (path) [section] key=value
+ *
+ * @param format  Format string to be printed
+ * @param path    intended for a relevant file path
+ * @param section intended for the group/section of a keyfile
+ * @param key     intended for the relevant key name
+ * @param value   intended for the key name's value (if it is defined)
+ * @param ...     args to fill placeholders in format
+ */
 void hbr_warn(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, ...)
 {
@@ -63,6 +86,9 @@ void hbr_warn(const gchar *format, const gchar *path, const gchar *section,
     va_end(argp);
 }
 
+/**
+ * @brief Variadic implementation for hbr_warn
+ */
 void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
@@ -85,6 +111,17 @@ void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
     }
 }
 
+/**
+ * @brief Informational message printed on stderr. Resulting output:
+ *        hbr    INFO: Format string: (path) [section] key=value
+ *
+ * @param format  Format string to be printed
+ * @param path    intended for a relevant file path
+ * @param section intended for the group/section of a keyfile
+ * @param key     intended for the relevant key name
+ * @param value   intended for the key name's value (if it is defined)
+ * @param ...     args to fill placeholders in format
+ */
 void hbr_info(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, ...)
 {
@@ -94,6 +131,9 @@ void hbr_info(const gchar *format, const gchar *path, const gchar *section,
     va_end(argp);
 }
 
+/**
+ * @brief Variadic implementation for hbr_info
+ */
 void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {

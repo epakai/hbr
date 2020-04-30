@@ -6,8 +6,8 @@ and runs HandBrakeCLI to encode videos.
 
 hbr-gen is a tool for generating partly filled keyfile templates for hbr.
 
-This method makes it easy to check previous encode settings. It also simplifies
-making changes and re-encoding a single file or your whole library.
+This method makes it easy to check earlier encode settings. It also simplifies
+modifying a single encode or your whole library to meet your requirements.
 
 ================================================================================
 Building hbr
@@ -163,7 +163,7 @@ For type=series the output filename will be:
 
     name - s01e001 - specific_name.mkv
 
-where season and episode provide the values after s and e.
+where season and episode give the values after s and e.
 
 ================================================================================
 Troubleshooting
