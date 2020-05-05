@@ -393,8 +393,10 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
                 g_free(filename);
                 g_free(basename);
                 g_strfreev(outfiles);
+                g_free(dirname);
                 return;
             }
+            g_free(dirname);
             if (!make_output_directory(current_outfile, "CURRENT_OUTFILE", infile)) {
                 // skip this outfile, error output comes from make_extra_directory()
                 g_key_file_free(current_outfile);
@@ -459,8 +461,13 @@ gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_pa
         hbr_error("Failed to create output directory", infile_path, NULL,
                 NULL, NULL);
         g_free(output_path);
+        g_free(filename);
+        g_free(dirname);
         return FALSE;
     }
+    g_free(output_path);
+    g_free(filename);
+    g_free(dirname);
     return TRUE;
 }
 

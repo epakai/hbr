@@ -39,28 +39,28 @@ GKeyFile * parse_validate_key_file(char *infile, GKeyFile *config)
     GKeyFile *keyfile = NULL;
     // check file is readable and does not have duplicate group names
     if (!pre_validate_key_file(infile)) {
-        valid = FALSE;
+        return NULL;
+    }
+    if ((keyfile = parse_key_file(infile)) == NULL) {
+        return NULL;
+    }
+    
+    if (config == NULL) {
+        // validate a global config
+        if (!post_validate_config_file(keyfile, infile)) {
+            valid = FALSE;
+        }
     } else {
-        keyfile = parse_key_file(infile);
-
-        if (config == NULL) {
-            // validate a global config
-            if (!post_validate_config_file(keyfile, infile)) {
-                valid = FALSE;
-            }
-        } else {
-            // validate an input file
-            if (!post_validate_input_file(keyfile, infile, config)) {
-                valid = FALSE;
-            }
+        // validate an input file
+        if (!post_validate_input_file(keyfile, infile, config)) {
+            valid = FALSE;
         }
     }
-    if (valid && keyfile) {
+
+    if (valid) {
         return keyfile;
-    } else if (keyfile){
-        g_key_file_free(keyfile);
-        return NULL;
     } else {
+        g_key_file_free(keyfile);
         return NULL;
     }
 }

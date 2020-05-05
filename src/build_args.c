@@ -358,7 +358,7 @@ gchar * build_filename(GKeyFile *config, gchar *group)
     gint episode = g_key_file_get_integer(config, group, "episode", NULL);
     gchar* specific_name = g_key_file_get_string(config, group, "specific_name", NULL);
     gchar* format = g_key_file_get_string(config, group, "format", NULL);
-    gchar *extra_type = g_key_file_get_string(config, group, "extra", NULL);
+    gchar* extra_type = g_key_file_get_string(config, group, "extra", NULL);
     gboolean add_year = g_key_file_get_boolean(config, group, "add_year", NULL);
 
     GString* filename = g_string_new(NULL);
@@ -456,9 +456,7 @@ gchar * build_filename(GKeyFile *config, gchar *group)
     g_free(year);
     g_free(specific_name);
     g_free(format);
-    gchar *strp = filename->str;
-    g_string_free(filename, FALSE);
-    return strp;
+    return g_string_free(filename, FALSE);
 }
 
 
