@@ -77,7 +77,7 @@ static option_t option_v1_0_0[] =
             "VP9", "theora"}},
     { "aencoder", required_argument, k_string_list, FALSE, valid_audio_encoder, 13,
         (gchar*[]){"av_aac", "copy:aac", "ac3", "copy:ac3", "copy:dts",
-            "copy:dtshd", "mp3", "copy:mp3", "vorbis", "flac16", "flac24", "opus"
+            "copy:dtshd", "mp3", "copy:mp3", "vorbis", "flac16", "flac24", "opus",
             "copy"}},
     { "two-pass", no_argument, k_boolean, TRUE, valid_boolean, 0, NULL},
     { "deinterlace", optional_argument, k_string, TRUE, valid_deinterlace, 0, NULL},
