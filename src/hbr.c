@@ -538,14 +538,18 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
         g_string_free(log_filename, TRUE);
         return 1;
     } else {
-        char c;
         g_print("File: \"%s\" already exists.\n", filename);
         g_print("Run hbr with '-y' option to automatically overwrite, or '-n'"
                 " to skip existing files.\n");
+        char c;
         do {
             g_print("Do you want to overwrite? (y/n) ");
-            scanf(" %c", &c);
+            if (scanf(" %c", &c) != 1) {
+                continue;
+            }
             c = toupper(c);
+            // clear any extra input
+            while ( getchar() != '\n' );
         } while (c != 'N' && c != 'Y');
         if ( c == 'N' ) {
             g_string_free(log_filename, TRUE);
