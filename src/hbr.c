@@ -356,8 +356,12 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         // merge current outfile section with config section
         GKeyFile *current_outfile = merge_key_group(inkeyfile, outfiles[i],
                 merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
-
-        //TODO add checks for current_outfile == NULL
+        
+        if (current_outfile == NULL) {
+            hbr_error("Failed to merge config and outfile sections. Skipping.",
+                    infile, outfiles[i], NULL, NULL);
+            continue;
+        }
 
         // Determine if we should produce debug output or actually run HandBrake.
         // This is a special case where outfile config's debug=true only matters
@@ -533,10 +537,12 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
         int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
         g_string_free(log_filename, TRUE);
         return r;
+    // skip existing files
     } else if (skip) {
         g_print("File: \"%s\" already exists. Skipping encode.\n", filename);
         g_string_free(log_filename, TRUE);
         return 1;
+    // prompt user
     } else {
         g_print("File: \"%s\" already exists.\n", filename);
         g_print("Run hbr with '-y' option to automatically overwrite, or '-n'"
