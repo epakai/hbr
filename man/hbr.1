@@ -1,0 +1,158 @@
+.TH "HBR" "1" "" "" "handbrake runner"
+.SH "NAME"
+hbr \- handbrake runner \- runs handbrake with setting from key\-value file(s)
+.SH "SYNOPSIS"
+.B hbr
+[\fIOPTION\fR]...
+.IR \fIFILE\fR...
+.SH "DESCRIPTION"
+.PP
+hbr is a tool for automating HandBrakeCLI runs. It takes a keyfile as input
+and runs HandBrakeCLI to encode videos.
+.PP
+It combines keys in a main config, the input file's CONFIG section, and one OUTFILE section to produce a set of arguments and call HandBrakeCLI.
+.SH OPTIONS
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+print the commands to be run instead of executing
+.TP
+\fB\-c\fR, \fB\-\-config\fR
+use named configuration file instead of default
+.TP
+\fB\-p\fR, \fB\-\-preview\fR
+generate a preview image for each output file
+.TP
+\fB\-y\fR, \fB\-\-overwrite\fR
+overwrite encoded files without confirmation
+.TP
+\fB\-n\fR, \fB\-\-skip\fR
+skip encoding if output file already exists
+.TP
+\fB\-e\fR, \fB\-\-episode\fR=\fI\,NUMBER\/\fR
+encodes first entry with matching episode number
+.TP
+\fB\-o\fR, \fB\-\-output\fR=\fI\,PATH\/\fR
+override location to write output files
+.TP
+\fB\-H\fR, \fB\-\-hbversion\fR=\fI\,X\/\fR.\fIY\fR.\fIZ\fR
+override handbrake version detection
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show help options
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+prints version info and exit
+.SH FILES
+.IP "\fB$XDG_CONFIG_HOME/hbr/hbr.conf\fR"
+.IP "\fB$HOME/.config/hbr/hbr.conf\fR"
+.SH "NOTES"
+.PP
+Input files consist of a CONFIG section and one or more OUTFILE sections. Each OUTFILE section must have a unique identifier appended to OUTFILE. Sections include keys and values than influence each encode.
+.PP
+Most of the key names come from the related HandBrakeCLI arguments. Some are
+excluded because they do not make sense in the context of hbr. For a full list,
+run HandBrakeCLI --help.
+.PP
+These keys take values exactly as specified by HandBrakeCLI except for boolean
+arguments. For example, specify \%--markers, \%--no-markers as
+\%markers=true, \%markers=false in the keyfile. Boolean keys do not always have a
+corresponding negation value. For example, in older HandBrake versions
+\%--no-markers did not exist. In cases where there is no negation argument
+setting a key to false will not produce an argument to HandBrakeCLI, but it
+overrides values set in the keyfile or global CONFIG section.
+.PP
+hbr has its own keys related to input and output file names. hbr tries to follow the Plex media preparation guidelines documented at:
+    https://support.plex.tv/articles/categories/media-preparation/
+.SS hbr specific keys
+.TP 15
+.B input_basedir
+Path that specifies where to find iso_filename. Optional. iso_filename can specify a full path instead.
+.TP
+.B iso_filename
+The input file or device. Combined with input_basedir to make a full path.
+.TP
+.B type
+Set to \fIseries\fR or \fImovie\fR. Controls filename format.
+.TP
+.B output_basedir
+Specifies the path for the output file. Path must already exist.
+.TP
+.B name
+Base name for the output file. Usually the title of the series or the movie name.
+.TP
+.B year
+4-digit year used for movie filenames.
+.TP
+.B season
+Season number used in series filenames.
+.TP
+.B episode
+Episode number used in series filenames.
+.TP
+.B specific_name
+Extra name appended before the file extension. Useful for episode names or file specific metadata.
+.TP
+.B preview
+Generate a preview image from the output file.
+.TP
+.B add_year
+Adds the year to the output_basedir when set true.
+.TP
+.B extra
+Causes the output file to be placed in a subdirectory for Plex to handle as an extra. Types of extras are: \fIbehindthescenes\fR, \fIdeleted\fR, \fIfeaturette\fR, \fIinterview\fR, \fIscene\fR, \fIshort\fR, \fItrailer\fR, \fIother\fR.
+.TP
+.B debug
+Prints command that would be run instead of producing an encode. Useful for testing or disabling certain encodes.
+.SS Example output file names
+.TP
+.B movie
+name (year) - specific_name.mkv
+.TP
+.B series
+name - s01e001 - specific_name.mkv
+.SH "EXAMPLES"
+.SS "Input File \fR(Akira.hbr)"
+.nf
+[CONFIG]
+input_basedir=/path/to/input_files
+output_basedir=/path/to/output_files
+type=movie
+name=Akira
+year=1988
+
+[OUTFILE1]
+iso_filename=Akira.iso
+title=11
+crop=10:10:0:0
+chapters=1-18
+audio=1,2,3
+
+[OUTFILE2]
+iso_filename=Akira BD
+title=1
+markers=true
+specific_name=1080p
+chapters=1-23
+audio=2,4,6
+.fi
+.SS "Running hbr"
+.nf
+# check output before executing
+hbr -d Akira.hbr
+
+# specify alternate output location
+hbr -o /a/different/path Akira.hbr
+
+# run encodes
+hbr Akira.hbr
+.fi
+.SH "REPORTING BUGS"
+Report bugs at <https://github.com/epakai/hbr/issues>
+.SH "COPYRIGHT"
+Copyright \(co 2018 Joshua Honeycutt
+License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl2.html>
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+.B hbr-gen(1), HandBrakeCLI(1)

@@ -1,0 +1,76 @@
+.TH HBR-GEN: "1" "" "" "handbrake runner generator"
+.SH NAME
+hbr-gen: \- generates handbrake runner templates with partially filled keys
+.SH SYNOPSIS
+.B hbr-gen
+[\fI\,OPTION\/\fR...] \fI\,{-n NUM|-l FILE}\/\fR
+.SH DESCRIPTION
+handbrake runner generator \fB\-\-\fR generates a hbr template with NUM outfile
+sections, or one outfile per line in an episode list.
+.SH OPTIONS
+.TP
+\fB\-l\fR, \fB\-\-episodes\fR=\fI\,FILE\/\fR
+Episode list
+.TP
+\fB\-n\fR, \fB\-\-count\fR=\fI\,NUM\/\fR
+Number of outfile sections to generate
+.TP
+\fB\-c\fR, \fB\-\-crop\fR=\fI\,T\/\fR:B:L:R
+Pixels to crop, top:bottom:left:right
+.TP
+\fB\-f\fR, \fB\-\-source\fR=\fI\,FILE\/\fR
+Source filename
+.TP
+\fB\-t\fR, \fB\-\-title\fR=\fI\,NUM\/\fR
+DVD Title number
+.TP
+\fB\-a\fR, \fB\-\-audio\fR=\fI\,AUDIO\/\fR
+Comma\-separated audio track list
+.TP
+\fB\-C\fR, \fB\-\-chapters\fR=\fI\,CHAPTERS\/\fR
+Chapter range
+.TP
+\fB\-i\fR, \fB\-\-input\-basedir\fR=\fI\,PATH\/\fR
+Base directory for input files
+.TP
+\fB\-N\fR, \fB\-\-name\fR=\fI\,NAME\/\fR
+Movie or series name
+.TP
+\fB\-o\fR, \fB\-\-output\-basedir\fR=\fI\,PATH\/\fR
+Base directory for input files
+.TP
+\fB\-p\fR, \fB\-\-type\fR=\fI\,series\/\fR|movie
+Type of video
+.TP
+\fB\-s\fR, \fB\-\-subtitle\fR=\fI\,SUBTITLE\/\fR
+Comma\-separated subtitle track list
+.TP
+\fB\-S\fR, \fB\-\-season\fR=\fI\,NUM\/\fR
+Series season
+.TP
+\fB\-y\fR, \fB\-\-year\fR=\fI\,YEAR\/\fR
+Movie Release year
+.TP
+\-?, \fB\-\-help\fR
+Give this help list
+.SH "NOTES"
+
+.SH "EXAMPLES"
+.SS Episode list contents (season/episode, episode, number as episode)
+.nf
+s1e2 Hard Normal Daddy
+e3 Feed Me Weird Things
+4 Ultravisitor
+.fi
+.SS Running hbr-gen
+.nf
+# generate 12 OUTFILE sections and set the input directory
+hbr-gen -n 12 --input-basedir=/video/iso > show.hbr
+
+# generate sections based on the contents of \fIlist_of_episodes\fR
+hbr-gen -l list_of_episodes --input-basedir=/video/iso > show.hbr
+.fi
+.SH "REPORTING BUGS"
+Report bugs to <https://github.com/epakai/hbr/issues>
+.SH "SEE ALSO"
+.B hbr(1), HandBrakeCLI(1)

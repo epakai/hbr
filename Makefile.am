@@ -13,6 +13,8 @@ hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
 hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
 hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS)
 
+dist_man_MANS = man/hbr.1 man/hbr-gen.1
+
 EXTRA_DIST = autogen.sh doc/Doxyfile.in doc/Makefile.am doc/Makefile.in
 
 if HAVE_DOXYGEN
