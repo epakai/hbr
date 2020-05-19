@@ -19,6 +19,7 @@
 
 #include <stdio.h>    // for NULL
 #include <stdlib.h>   // for exit
+#include <string.h>   // for strcmp, memcpy
 #include <assert.h>   // for assert
 
 #include "util.h"

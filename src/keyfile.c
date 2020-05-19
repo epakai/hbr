@@ -18,6 +18,7 @@
  */
 
 #include <stdio.h>   // for NULL
+#include <string.h>  // for strcmp
 
 #include "util.h"
 #include "keyfile.h"
