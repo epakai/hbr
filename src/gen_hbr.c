@@ -294,7 +294,7 @@ void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *specific_name)
 {
-    gboolean is_series = (strcmp(type, "series") == 0);
+    gboolean is_series = (g_strcmp0(type, "series") == 0);
     gchar *group = g_strdup_printf("OUTFILE%d", outfile_count);
     if (!iso_filename) {
         g_key_file_set_value(config, group, "iso_filename", "");

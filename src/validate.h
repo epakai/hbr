@@ -104,6 +104,8 @@ gboolean valid_video_bitrate(option_t *option, const gchar *group, GKeyFile *con
          const gchar *config_path);
 gboolean valid_video_framerate(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path);
+gboolean valid_chroma(option_t *option, const gchar *group, GKeyFile *config,
+         const gchar *config_path);
 gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path);
 gboolean valid_pixel_aspect(option_t *option, const gchar *group, GKeyFile *config,

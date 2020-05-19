@@ -22,6 +22,7 @@
 #include <glib/gstdio.h>// for g_access
 #include <math.h>       // for fabs
 #include <stdio.h>      // for NULL
+#include <string.h>     // for strnlen, strrchr, strncmp, strcmp
 #include <sys/param.h>  // for MAXPATHLEN
 
 
@@ -1579,6 +1580,13 @@ gboolean valid_video_framerate(option_t *option, const gchar *group, GKeyFile *c
     g_print("valid_video_framerate: %s\n", option->name);  //TODO REMOVE
     // try to interpret it with valid_string_set style lookup
     // if that fails grab a double and verify in range 1-1000
+    return FALSE; //TODO incomplete
+}
+
+gboolean valid_chroma(option_t *option, const gchar *group, GKeyFile *config,
+         const gchar *config_path)
+{
+    g_print("valid_chroma: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
 

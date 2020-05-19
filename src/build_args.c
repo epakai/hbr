@@ -30,6 +30,7 @@
 #include "handbrake/options-1.0.0.h"
 #include "handbrake/options-1.1.0.h"
 #include "handbrake/options-1.2.0.h"
+#include "handbrake/options-1.3.0.h"
 
 /*
  * hbr specific options tables
@@ -558,17 +559,24 @@ void determine_handbrake_version(gchar *arg_version)
      * occurred are tightly packed. Think hard about this when adding new
      * versions.
      */
-    if (major > 1 || (major == 1 && minor > 2) ||
-            (major == 1 && minor == 2 && patch > 2)) {
+    if (major > 1 || (major == 1 && minor > 3) ||
+            (major == 1 && minor == 3 && patch > 2)) {
         hbr_warn("Found newer HandBrake release (%s) than supported. "
                 "Running with newest options available",
                 NULL, NULL, NULL, NULL, version);
-        version_options = option_v1_2_0;
-        version_options_size = sizeof(option_v1_2_0);
-        version_requires = require_v1_2_0;
-        version_requires_size = sizeof(require_v1_2_0);
-        version_conflicts = conflict_v1_2_0;
-        version_conflicts_size = sizeof(conflict_v1_2_0);
+        version_options = option_v1_3_0;
+        version_options_size = sizeof(option_v1_3_0);
+        version_requires = require_v1_3_0;
+        version_requires_size = sizeof(require_v1_3_0);
+        version_conflicts = conflict_v1_3_0;
+        version_conflicts_size = sizeof(conflict_v1_3_0);
+    } else if (major == 1 && minor >= 3) {
+        version_options = option_v1_3_0;
+        version_options_size = sizeof(option_v1_3_0);
+        version_requires = require_v1_3_0;
+        version_requires_size = sizeof(require_v1_3_0);
+        version_conflicts = conflict_v1_3_0;
+        version_conflicts_size = sizeof(conflict_v1_3_0);
     } else if (major == 1 && minor >= 2) {
         version_options = option_v1_2_0;
         version_options_size = sizeof(option_v1_2_0);
