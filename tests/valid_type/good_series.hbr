@@ -1,0 +1,9 @@
+[CONFIG]
+type=series
+season=1
+iso_filename=test.iso
+
+[OUTFILE_A]
+name=A
+title=1
+episode=1

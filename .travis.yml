@@ -9,6 +9,7 @@ addons:
             - doxygen
             - graphviz
             - markdown
+            - python3-cram
 
 compiler:
     - clang

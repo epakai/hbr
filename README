@@ -105,7 +105,7 @@ Here are some example runs of hbr-gen:
 
     hbr-gen -n 12 --input-basedir=/video/iso > show.hbr
 
-    hbr-gen -l list_of_episode --input-basedir=/video/iso > show.hbr
+    hbr-gen -l list_of_episodes --input-basedir=/video/iso > show.hbr
 
 Once you generate the keyfile edit it to complete all fields.
 

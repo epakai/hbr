@@ -57,12 +57,14 @@ struct option_s {
     /**
      * @brief function to validate arguments
      *
-     * @param The option type to be validated against
-     * @param config Keyfile to fetch values from
-     * @param group Group name inside keyfile to fetch values from
+     * @param option        The option type to be validated against
+     * @param config        Keyfile to fetch values from
+     * @param group         Group name inside keyfile to fetch values from
+     * @param config_path   Path name to config
+     * @param global_config Global config for validating some options
      */
     gboolean (* valid_option)(option_t *option,  gchar *group, GKeyFile *config,
-            const gchar *config_path);
+            const gchar *config_path, GKeyFile *global_config);
     /**
      * @brief number of valid values kept in the following array
      */

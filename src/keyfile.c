@@ -65,7 +65,6 @@ GKeyFile * parse_validate_key_file(char *infile, GKeyFile *config)
     }
 }
 
-
 /**
  * @brief Parses the key value file.
  *

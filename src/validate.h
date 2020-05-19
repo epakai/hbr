@@ -43,135 +43,135 @@ gboolean has_duplicate_keys(const gchar *infile);
  * Input validation for hbr specific options
  */
 gboolean valid_type(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_readable_path(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_writable_path(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_filename_component(option_t *option, gchar *group,
-        GKeyFile *config, const gchar *config_path);
+        GKeyFile *config,  const gchar *config_path, GKeyFile *global_config);
 
 // general input validation routines
 gboolean valid_boolean(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_integer(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_integer_set(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_integer_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_integer_list_set(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_positive_integer(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_double_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_positive_double_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_string(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_string_set(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_string_list_set(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_string_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 
 // specific input validation routines
 gboolean valid_filename_exists(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_filename_exists_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_filename_dne(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_startstop_at(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_previews(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_audio(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_audio_encoder(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_audio_quality(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_audio_bitrate(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_audio_compression(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_video_quality(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_video_bitrate(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_video_framerate(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_crop(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_pixel_aspect(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_decomb(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_denoise(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_deblock(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_deinterlace(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_detelecine(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_iso_639(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_iso_639_list(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_native_dub(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_subtitle(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_gain(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_drc(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_mixdown(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_chapters(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_encopts(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_encoder_preset(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_encoder_tune(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_encoder_profile(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_encoder_level(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_nlmeans(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_nlmeans_tune(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_dither(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_subtitle_forced(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_subtitle_burned(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_subtitle_default(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_codeset(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_rotate(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_qsv_decoding(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_comb_detect(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_pad(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_unsharp(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_filespec(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 gboolean valid_preset_name(option_t *option, gchar *group, GKeyFile *config,
-        const gchar *config_path);
+         const gchar *config_path, GKeyFile *global_config);
 
 static gchar *iso_639_2[] = {
     "aar", "abk", "ace", "ach", "ada", "ady", "afa", "afh", "afr", "ain", "aka",

@@ -35,7 +35,8 @@
 /*
  * hbr specific options tables
  * These aren't valid options to pass to HandBrakeCLI.
- * They are used by hbr to generate file names or specify file locations
+ * They are used by hbr to generate file names, specify file locations,
+ * or control hbr features.
  */
 
 static option_t hbr_options[] =

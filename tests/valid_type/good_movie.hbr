@@ -1,0 +1,8 @@
+[CONFIG]
+type=movie
+name=good_movie
+year=2000
+iso_filename=test.iso
+
+[OUTFILE_A]
+title=1

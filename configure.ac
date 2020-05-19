@@ -24,6 +24,8 @@ AC_CHECK_PROGS([PMCCABE], [pmccabe])
 AM_CONDITIONAL([HAVE_PMCCABE], [test -n "$PMCCABE"])
 AC_CHECK_PROGS([CODESPELL], [codespell])
 AM_CONDITIONAL([HAVE_CODESPELL], [test -n "$CODESPELL"])
+AC_CHECK_PROGS([CRAM3], [cram3])
+AM_CONDITIONAL([HAVE_CRAM3], [test -n "$CRAM3"])
 
 # Doxygen for source code documentation
 AC_CHECK_PROGS([DOXYGEN], [doxygen])

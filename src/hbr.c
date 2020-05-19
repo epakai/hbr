@@ -168,7 +168,6 @@ int main(int argc, char * argv[])
         GKeyFile *merged = merge_key_group(current_infile, "CONFIG",
                 config, "CONFIG", "MERGED_CONFIG");
 
-
         /*
          * merged may be null if both CONFIG sections are empty or
          * one group doesn't exist (CONFIG groups are already validated
@@ -356,7 +355,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         // merge current outfile section with config section
         GKeyFile *current_outfile = merge_key_group(inkeyfile, outfiles[i],
                 merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
-        
+
         if (current_outfile == NULL) {
             hbr_error("Failed to merge config and outfile sections. Skipping.",
                     infile, outfiles[i], NULL, NULL);
@@ -555,7 +554,7 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
             }
             c = toupper(c);
             // clear any extra input
-            while ( getchar() != '\n' );
+            while ( getchar() != '\n' ) {}
         } while (c != 'N' && c != 'Y');
         if ( c == 'N' ) {
             g_string_free(log_filename, TRUE);

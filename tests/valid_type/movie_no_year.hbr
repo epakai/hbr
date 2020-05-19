@@ -1,0 +1,7 @@
+[CONFIG]
+type=movie
+name=good_movie
+iso_filename=test.iso
+
+[OUTFILE_A]
+title=1

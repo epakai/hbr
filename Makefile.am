@@ -93,6 +93,16 @@ code-analysis:
 	$(MAKE) codespell
 	$(MAKE) pmccabe
 
-test: ;
+if HAVE_CRAM3
+cram: export CRAM_HBR = $(abs_builddir)/hbr
+cram: hbr
+	cram3 -qv $(top_srcdir)/tests
+else
+cram:
+	@echo *** cram3 not found. No tests run.
+endif
 
-.PHONY: doc code-analysis clang-analyzer cppcheck vera pmccabe codespell
+test: 
+	$(MAKE) cram
+
+.PHONY: doc code-analysis clang-analyzer cppcheck vera pmccabe codespell cram
