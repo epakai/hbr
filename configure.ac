@@ -90,6 +90,11 @@ case $host_os in
     ARGP_LIBS=-largp
     ;;
 esac
+
+AX_IS_RELEASE([git-directory])
+AX_COMPILER_FLAGS()
+AX_APPEND_COMPILE_FLAGS([-Wno-error -Wno-declaration-after-statement])
+
 dnl argp-standalone does not provide a pkg-config file
 AC_CHECK_HEADER([argp.h], AC_DEFINE(HAVE_ARGP, 1, [have argp]))
 if test "x$ac_cv_header_argp_h" != "xyes"; then
@@ -107,7 +112,7 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([dup2 getcwd strchr strerror strtol])
 
 # no-portability added to use addprefix for $SOURCES in Makefile.am
-AM_INIT_AUTOMAKE([-Wall -Werror -Wsyntax -Wno-portability foreign subdir-objects])
+AM_INIT_AUTOMAKE([-Wno-portability foreign subdir-objects])
 
 AC_CONFIG_FILES([Makefile])
 

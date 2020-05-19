@@ -17,10 +17,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <stdio.h>    // for NULL
+#include <stdlib.h>   // for exit
+#include <assert.h>   // for assert
 
 #include "util.h"
 #include "build_args.h"
@@ -41,7 +40,8 @@
 
 static option_t hbr_options[] =
 {
-    { "type", hbr_only, k_string, FALSE, valid_type, 2, (gchar*[]){"series", "movie"}},
+    { "type", hbr_only, k_string, FALSE, valid_type, 2,
+        (const gchar*[]){"series", "movie"}},
     // TODO document add_year (it should add a (year) to the directory name if type is movie)
     { "add_year", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL},
     { "input_basedir", hbr_only, k_string, FALSE, valid_readable_path, 0, NULL},
@@ -55,10 +55,10 @@ static option_t hbr_options[] =
     { "preview", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL },
     // TODO document extra (it causes subdirectories to be created for extras)
     { "extra", hbr_only, k_string, FALSE, valid_string_set, 8,
-        (gchar*[]){"behindthescenes", "deleted", "featurette", "interview",
-            "scene", "short", "trailer", "other"}},
+        (const gchar*[]){"behindthescenes", "deleted", "featurette",
+            "interview", "scene", "short", "trailer", "other"}},
     { "debug", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL},
-    { NULL, 0, 0, 0, NULL, 0}
+    { NULL, 0, 0, 0, NULL, 0, NULL}
 };
 
 static require_t hbr_requires[] =
@@ -74,7 +74,7 @@ static conflict_t hbr_conflicts[] =
 {
     { "add_year", "true", "type", "series" },
     { "type", "series", "add_year", "true" },
-    { NULL, NULL, NULL}
+    { NULL, NULL, NULL, NULL}
 };
 
 /**
@@ -86,7 +86,7 @@ static conflict_t hbr_conflicts[] =
  *
  * @return GPtrArray pointer with one option per element
  */
-GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
+GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
 {
     GPtrArray *args = g_ptr_array_new_full(32, g_free);
 
@@ -257,13 +257,10 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int m = 0;
-                for (; m < count-1; m++) {
+                for (gsize m = 0; m < count; m++) {
                     g_string_append_printf(arg, "%s,",
                             g_strstrip(string_list_values[m]));
                 }
-                g_string_append_printf(arg, "%s",
-                        g_strstrip(string_list_values[m]));
                 g_strfreev(string_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
@@ -273,11 +270,9 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int n = 0;
-                for (; n < count-1; n++) {
+                for (gsize n = 0; n < count; n++) {
                     g_string_append_printf(arg, "%d,", integer_list_values[n]);
                 }
-                g_string_append_printf(arg, "%d", integer_list_values[n]);
                 g_free(integer_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
@@ -287,15 +282,17 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
                         options[i].name, &count, NULL);
                 arg = g_string_new(NULL);
                 g_string_append_printf(arg, "--%s=", options[i].name);
-                int o = 0;
-                for (; o < count-1; o++) {
+                for (gsize o = 0; o < count; o++) {
                     g_string_append_printf(arg, "%.1f,", double_list_values[o]);
                 }
-                g_string_append_printf(arg, "%.1f", double_list_values[o]);
                 g_free(double_list_values);
                 g_ptr_array_add(args, arg->str);
                 g_string_free(arg, FALSE);
                 break;
+            default:
+                hbr_error("Invalid key type. This should not be reached " \
+                        "(key_types is a fixed enum).", NULL, NULL, NULL, NULL);
+                assert(FALSE);
         }
         i++;
     }
@@ -349,7 +346,7 @@ GPtrArray * build_args(GKeyFile *config, gchar *group, gboolean quoted)
  *
  * @return filename
  */
-gchar * build_filename(GKeyFile *config, gchar *group)
+gchar * build_filename(GKeyFile *config, const gchar *group)
 {
     gchar* output_basedir = g_key_file_get_string(config, group, "output_basedir", NULL);
     gchar* name = g_key_file_get_string(config, group, "name", NULL);
@@ -470,12 +467,12 @@ gchar * build_filename(GKeyFile *config, gchar *group)
  *
  * @return pointer to a new path string
  */
-void append_year(GKeyFile *config, gchar *group, GString *path)
+void append_year(GKeyFile *config, const gchar *group, GString *path)
 {
     gchar *dirname = g_path_get_dirname(path->str);
     gchar *year = g_key_file_get_string(config, group, "year", NULL);
     gchar *with_year = g_strjoin(NULL, dirname, " (", year, ")", NULL);
-    
+
     // append a " (year)" onto the final directory
     gchar *path_with_year = g_build_path(dirname, with_year, NULL);
     g_string_assign(path, path_with_year);
@@ -496,8 +493,10 @@ void determine_handbrake_version(gchar *arg_version)
     // check HandBrakeCLI is available
 
     gchar *version = NULL;
-    char *hb_version_argv[] = { "HandBrakeCLI", "--version", NULL };
-    char *hb_update_argv[] = { "HandBrakeCLI", "--update", NULL };
+    char *hb_version_argv[] = { (char *)"HandBrakeCLI", (char *)"--version",
+        NULL };
+    char *hb_update_argv[] = { (char *)"HandBrakeCLI", (char *)"--update",
+        NULL };
     gchar *output = NULL;
     gint exit_status;
     // use version specified from -H or --hbversion
@@ -649,7 +648,8 @@ void arg_hash_generate(void)
     // options
     options_index = g_hash_table_new(g_str_hash, g_str_equal);
     for (int i = 0; options[i].name != NULL; i++) {
-        g_hash_table_insert(options_index, options[i].name, GINT_TO_POINTER(i));
+        g_hash_table_insert(options_index, (void *)options[i].name,
+                GINT_TO_POINTER(i));
     }
     /*
      * We cannot specify the value_destroy_func as g_slist_free() for our hash
@@ -660,7 +660,7 @@ void arg_hash_generate(void)
     // requires
     requires_index = g_hash_table_new(g_str_hash, g_str_equal);
     for (int i = 0; requires[i].name != NULL; i++) {
-        g_hash_table_insert(requires_index, requires[i].name,
+        g_hash_table_insert(requires_index, (void *)requires[i].name,
                 g_slist_prepend(g_hash_table_lookup(requires_index,
                         requires[i].name), GINT_TO_POINTER(i)));
     }
@@ -668,7 +668,7 @@ void arg_hash_generate(void)
     // conflicts
     conflicts_index = g_hash_table_new(g_str_hash, g_str_equal);
     for (int i = 0; conflicts[i].name != NULL; i++) {
-        g_hash_table_insert(conflicts_index, conflicts[i].name,
+        g_hash_table_insert(conflicts_index, (void *)conflicts[i].name,
                 g_slist_prepend(g_hash_table_lookup(conflicts_index,
                         conflicts[i].name), GINT_TO_POINTER(i)));
     }
@@ -695,7 +695,10 @@ void arg_hash_cleanup(void)
  *        This frees the lists allocated for requires_index and conflicts_index.
  *        Do not call directly.
  */
-void free_slist_in_hash(gpointer key, gpointer slist, gpointer user_data)
+void free_slist_in_hash(
+        __attribute__((unused)) gpointer key,
+        gpointer slist,
+        __attribute__((unused)) gpointer user_data)
 {
     g_slist_free(slist);
 }

@@ -19,6 +19,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
+#include <stdlib.h>
 
 #include "gen_hbr.h"
 #include "util.h"
@@ -47,9 +48,8 @@ struct episode_list read_episode_list(const gchar *episode_filename)
     gchar *line;
     gchar *episode;
     gsize line_length = 0;
-    int episode_number_end = 0;
-	while ((line = g_data_input_stream_read_line_utf8(episode_list_file, &line_length,
-                    NULL, NULL)) && list.count < max_count) {
+	while ((line = g_data_input_stream_read_line_utf8(episode_list_file,
+                    &line_length, NULL, NULL)) && list.count < max_count) {
         g_strchug(line);
         gchar **split_line = g_strsplit_set(line, " \t", 2);
         // Check for season/episode string (s1e1)
@@ -190,7 +190,7 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
 	}
 
     GKeyFile *config = g_key_file_new();
-    gchar *group = "CONFIG";
+    const gchar *group = "CONFIG";
 
     gchar *inferred_type;
     if (episodes && type == NULL) {
@@ -200,13 +200,13 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
     } else {
         inferred_type = g_strdup(type);
     }
-    gboolean is_movie = (strcmp(inferred_type, "movie") == 0);
-    gboolean is_series = (strcmp(inferred_type, "series") == 0);
+    gboolean is_movie = (g_strcmp0(inferred_type, "movie") == 0);
+    gboolean is_series = (g_strcmp0(inferred_type, "series") == 0);
 
 	// create CONFIG section with values
     // keys that are always in CONFIG
-    g_key_file_set_value(config, group, "input_basedir", input_basedir ?: "");
-    g_key_file_set_value(config, group, "output_basedir", output_basedir ?: "");
+    g_key_file_set_value(config, group, "input_basedir", input_basedir ? input_basedir : "");
+    g_key_file_set_value(config, group, "output_basedir", output_basedir ? output_basedir : "");
 	if (is_movie || is_series) {
         g_key_file_set_value(config, group, "type", inferred_type);
 	} else {
@@ -218,9 +218,9 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
         return NULL;
 	}
     if (is_movie) {
-        g_key_file_set_value(config, group, "year", year ?: "");
+        g_key_file_set_value(config, group, "year", year ? year : "");
     }
-    g_key_file_set_value(config, group, "name", name ?: "");
+    g_key_file_set_value(config, group, "name", name ? name : "");
 
     // keys that are only in config if a value is given
     if (title) {
@@ -310,7 +310,8 @@ void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
             g_key_file_set_integer(config, group, "episode", episode);
         }
     }
-    g_key_file_set_value(config, group, "specific_name", specific_name ?: "");
+    g_key_file_set_value(config, group, "specific_name",
+            specific_name ? specific_name : "");
     if (!chapters) {
         g_key_file_set_value(config, group, "chapters", "");
     }
@@ -324,10 +325,9 @@ void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
 }
 
 /**
- * @brief Writes an GKeyFile to STDOUT
- * with formatting and no short tags
+ * @brief Writes an GKeyFile to STDOUT with formatting and no short tags
  *
- * @param GKeyFile pointer to a key file to be printed
+ * @param config pointer to a key file to be printed
  */
 void print_hbr(GKeyFile *config)
 {

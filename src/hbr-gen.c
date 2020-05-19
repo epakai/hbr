@@ -17,8 +17,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <argp.h>
-#include <stdio.h>
+#include <argp.h>    // for argp_help, argp_parse, error_t, ARGP_ERR_UNKNOWN
+#include <stdio.h>   // for NULL, printf, stdout
+#include <stdlib.h>  // for atoi, exit
 
 #include "util.h"
 #include "gen_hbr.h"
@@ -124,9 +125,9 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
 		case '@':
 		case '?':
 			//TODO maybe pull executable name from somewhere else
-			argp_help(&gen_argp, stdout, ARGP_HELP_SHORT_USAGE, "hbr-gen");
-			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, "hbr-gen");
-			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, "hbr-gen");
+			argp_help(&gen_argp, stdout, ARGP_HELP_SHORT_USAGE, (char *)"hbr-gen");
+			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, (char *)"hbr-gen");
+			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, (char *)"hbr-gen");
 			printf("Report bugs to %s\n", argp_program_bug_address);
 			exit(0);
 			break;

@@ -19,7 +19,9 @@
 
 #include <ctype.h>                      // for toupper
 #include <errno.h>                      // for errno
-#include <sys/wait.h>
+#include <stdlib.h>                     // for NULL, exit
+#include <sys/wait.h>                   // for wait
+#include <sys/types.h>                  // for pid_t
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -29,15 +31,16 @@
 
 // PROTOTYPES
 GKeyFile * fetch_or_generate_keyfile(void);
-void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile);
+void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
+        const gchar *infile);
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
         gboolean debug);
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
         gboolean skip, gchar *filename);
-int hb_fork(gchar *args[], gchar *log_filename, int out_count);
+int hb_fork(gchar *args[], gchar *log_filename);
 gboolean good_output_option_path(void);
-gboolean make_output_directory(GKeyFile *outfile, gchar *group,
-        gchar* infile_path);
+gboolean make_output_directory(GKeyFile *outfile, const gchar *group,
+        const gchar* infile_path);
 
 // Command line options
 static gboolean opt_debug         = FALSE; // Print commands instead of executing
@@ -52,8 +55,11 @@ static gchar    **opt_input_files = NULL;  // List of files for hbr to use as in
 
 static gchar    *config_file_path = NULL;
 
-static gboolean print_version(const gchar *option_name,
-        const gchar *value, gpointer data, GError **error) {
+static gboolean print_version(
+        __attribute__((unused)) const gchar *option_name,
+        __attribute__((unused)) const gchar *value,
+        __attribute__((unused)) gpointer data,
+        __attribute__((unused)) GError **error) {
     printf("hbr (handbrake runner) 0.0\n" //TODO someday we'll release and have a version number
             "Copyright (C) 2018 Joshua Honeycutt\n"
             "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl2.html>\n"
@@ -240,7 +246,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
     GString *alt_config_dir = g_string_new(NULL);
     const gchar *xdg_config_home = g_getenv("XDG_CONFIG_HOME");
     const gchar *home = g_get_home_dir();
-    
+
     gchar *basename = NULL;
     if (opt_config) {
         // only consider opt_config if specified
@@ -320,8 +326,10 @@ GKeyFile *fetch_or_generate_keyfile(void)
  *
  * @param inkeyfile     Input keyfile
  * @param merged_config Input keyfile merged with global config
+ * @param infile        Input file path for error reporting
  */
-void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
+void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
+        const gchar *infile) {
     // loop for each out_file tag in keyfile
     gsize out_count = 0;
     gchar **outfiles = get_outfile_list(inkeyfile, &out_count);
@@ -330,7 +338,6 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
                 NULL, NULL);
         exit(1);
     }
-    int i = 0;
     // Handle -e option to encode a single episode
     if (opt_episode >= 0) {
         // adjust parameters for following loop so it runs once
@@ -351,7 +358,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         }
     }
     // encode all the episodes if loop parameters weren't modified above
-    for (; i < out_count; i++) {
+    for (gsize i = 0; i < out_count; i++) {
         // merge current outfile section with config section
         GKeyFile *current_outfile = merge_key_group(inkeyfile, outfiles[i],
                 merged_config, "MERGED_CONFIG", "CURRENT_OUTFILE");
@@ -380,7 +387,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
         if (debug) {
             g_print("# ");
         }
-        g_print("Encoding: %d/%lu: %s\n", i+1, out_count, basename);
+        g_print("Encoding: %lu/%lu: %s\n", i+1, out_count, basename);
         g_print("%c[0m", 27);
 
         // Create directory
@@ -451,7 +458,8 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config, gchar *infile) {
  *
  * @return True on success
  */
-gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_path)
+gboolean make_output_directory(GKeyFile *outfile, const gchar *group,
+        const gchar* infile_path)
 {
     // create output directory
     GError *error = NULL;
@@ -477,9 +485,10 @@ gboolean make_output_directory(GKeyFile *outfile, gchar *group, gchar* infile_pa
 /**
  * @brief Generates a thumbnail for the given filename
  *
- * @param filename
- * @param outfile_count Number of the current outfile being processed
+ * @param filename       Video filename to generate a thumbnail for
+ * @param outfile_count  Number of the current outfile being processed
  * @param total_outfiles Total number of outfiles being processed
+ * @param debug          When true, command is printed instead of run
  */
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
         gboolean debug)
@@ -520,7 +529,7 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
     g_ptr_array_insert(args, 0, g_strdup("HandBrakeCLI"));
     // file doesn't exist, go ahead
     if ( g_access((char *) filename, F_OK ) != 0 ) {
-        int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
+        int r = hb_fork((gchar **)args->pdata, log_filename->str);
         g_string_free(log_filename, TRUE);
         return r;
     }
@@ -533,7 +542,7 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
     }
     // overwrite option was set, go ahead
     if (overwrite) {
-        int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
+        int r = hb_fork((gchar **)args->pdata, log_filename->str);
         g_string_free(log_filename, TRUE);
         return r;
     // skip existing files
@@ -560,7 +569,7 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
             g_string_free(log_filename, TRUE);
             return 1;
         } else {
-            int r = hb_fork((gchar **)args->pdata, log_filename->str, out_count);
+            int r = hb_fork((gchar **)args->pdata, log_filename->str);
             g_string_free(log_filename, TRUE);
             return r;
         }
@@ -572,18 +581,17 @@ int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
  *
  * @param args String containing arguments to HandBrakeCLI
  * @param log_filename Filename to log to
- * @param out_count Which outfile section is being encoded
  *
  * @return 1 on error, 0 on success
  */
-int hb_fork(gchar *args[], gchar *log_filename, int out_count)
+int hb_fork(gchar *args[], gchar *log_filename)
 {
     // test logfile was opened
     errno = 0;
     FILE *logfile = fopen((const char *)log_filename, "w");
     if (logfile == NULL) {
         hbr_error("hb_fork(): Failed to open logfile: %s", log_filename,
-                NULL, NULL, NULL, strerror(errno));
+                NULL, NULL, NULL, g_strerror(errno));
         return 1;
     }
 
@@ -628,7 +636,7 @@ int hb_fork(gchar *args[], gchar *log_filename, int out_count)
     while ( (bytes = read(hb_err[0], buf, 1024)) > 0) {
         fwrite(buf, sizeof(char), bytes, logfile);
     }
-    free(buf);
+    g_free(buf);
     close(hb_err[1]);
     fclose(logfile);
     wait(NULL);

@@ -6,12 +6,12 @@ COMMON_SOURCES = src/util.c src/util.h
 bin_PROGRAMS = hbr hbr-gen
 
 hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
-hbr_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
-hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS)
+hbr_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) $(WARN_CFLAGS)
+hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS) $(WARN_LDFLAGS)
 
 hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
-hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
-hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS)
+hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) $(WARN_CFLAGS)
+hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS) $(WARN_LDFLAGS)
 
 dist_man_MANS = doc/hbr.1 doc/hbr-gen.1
 
@@ -43,8 +43,7 @@ clang-analyzer:
 	@echo *** clang not found.
 endif
 
-CPPCHECK_INCLUDES := $(filter-out -pthread, $(hbr_CFLAGS))
-CPPCHECK_INCLUDES += $(filter-out -pthread, $(hbr_gen_CFLAGS))
+CPPCHECK_INCLUDES := $(filter-out -pthread, $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) )
 
 if HAVE_CPPCHECK
 cppcheck:

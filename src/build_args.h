@@ -40,7 +40,7 @@ struct option_s {
     /**
      * @brief long option name, prefixed with -- on command line
      */
-    gchar *name;
+    const gchar *name;
     /**
      * @brief argument type as given to getopt in HandBrake
      */
@@ -63,8 +63,8 @@ struct option_s {
      * @param config_path   Path name to config
      * @param global_config Global config for validating some options
      */
-    gboolean (* valid_option)(option_t *option,  gchar *group, GKeyFile *config,
-            const gchar *config_path, GKeyFile *global_config);
+    gboolean (* valid_option)(option_t *option, const gchar *group, GKeyFile *config,
+            const gchar *config_path);
     /**
      * @brief number of valid values kept in the following array
      */
@@ -83,19 +83,19 @@ struct conflict_s {
     /**
      * @brief name of option being considered
      */
-    gchar *name;
+    const gchar *name;
     /**
      * @brief optional, specific value of name that we are concerned with
      */
-    gchar *value;
+    const gchar *value;
     /**
      * @brief option that name conflicts with
      */
-    gchar *conflict_name;
+    const gchar *conflict_name;
     /**
      * @brief optional, specific value of conflict_name that we conflict with
      */
-    gchar *conflict_value;
+    const gchar *conflict_value;
 };
 
 /**
@@ -106,15 +106,15 @@ struct require_s {
     /**
      * @brief name of option being considered
      */
-    gchar *name;
+    const gchar *name;
     /**
      * @brief option that name requires
      */
-    gchar *require_name;
+    const gchar *require_name;
     /**
      * @brief optional, specific value of require_name that we require
      */
-    gchar *require_value;
+    const gchar *require_value;
 };
 
 /**
@@ -124,15 +124,15 @@ struct depend_s {
     /**
      * @brief name of option being considered
      */
-    gchar *name;
+    const gchar *name;
     /**
      * @brief option that name depends on
      */
-    gchar *depends_name;
+    const gchar *depends_name;
     /**
      * @brief value for depends_name that this depend applies to
      */
-    gchar *depends_value;
+    const gchar *depends_value;
     /**
      * @brief type for valid_values
      */
@@ -179,9 +179,9 @@ GHashTable *requires_index;
 GHashTable *conflicts_index;
 GHashTable *depends_index;
 
-GPtrArray *build_args(GKeyFile *config, gchar *group, gboolean quoted);
-gchar *build_filename(GKeyFile *config, gchar *group);
-void append_year(GKeyFile *config, gchar *group, GString *path);
+GPtrArray *build_args(GKeyFile *config, const gchar *group, gboolean quoted);
+gchar *build_filename(GKeyFile *config, const gchar *group);
+void append_year(GKeyFile *config, const gchar *group, GString *path);
 
 void determine_handbrake_version(gchar *arg_version);
 void arg_hash_generate(void);

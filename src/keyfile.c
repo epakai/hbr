@@ -17,8 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <string.h>
-#include <stdio.h>
+#include <stdio.h>   // for NULL
 
 #include "util.h"
 #include "keyfile.h"
@@ -44,7 +43,7 @@ GKeyFile * parse_validate_key_file(char *infile, GKeyFile *config)
     if ((keyfile = parse_key_file(infile)) == NULL) {
         return NULL;
     }
-    
+
     if (config == NULL) {
         // validate a global config
         if (!post_validate_config_file(keyfile, infile)) {
@@ -106,7 +105,8 @@ GKeyFile * parse_key_file(char *infile)
  *
  * @return new GKeyfile or NULL when group is empty/does not exist
  */
-GKeyFile * copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group)
+GKeyFile * copy_group_new(GKeyFile *keyfile, const gchar *group,
+        const gchar *new_group)
 {
     GKeyFile *k = g_key_file_new();
     g_key_file_set_list_separator(k, ',');
@@ -129,7 +129,7 @@ GKeyFile * copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group)
     }
 
     // copy each key and value to new group in new key file
-    for (gint i = 0; i < key_count; i++) {
+    for (gsize i = 0; i < key_count; i++) {
         gchar *temp = g_key_file_get_value(keyfile, group, key_list[i], NULL);
         g_key_file_set_value(k, new_group, key_list[i], temp);
         g_free(temp);
@@ -151,8 +151,8 @@ GKeyFile * copy_group_new(GKeyFile *keyfile, gchar *group, gchar *new_group)
  * @return new GKeyfile, NULL when p_group or a_group does not exist, or
  *         NULL when p_group and a_group are both empty
  */
-GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
-        gchar *a_group, gchar *new_group)
+GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
+        const gchar *a_group, const gchar *new_group)
 {
     // check groups exist
     if (!g_key_file_has_group(pref, p_group) ||
@@ -180,7 +180,7 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
 
     // copy each key and value to new group in new key file overwriting
     // values from alt
-    for (gint i = 0; i < key_count; i++) {
+    for (gsize i = 0; i < key_count; i++) {
         // check new_group for conflicting options and remove them
         /* TODO FIXME merging or removing conflicts may not be working correctly
          * I forgot the exact issue I was having, but I'm pretty sure there was an issue
@@ -209,8 +209,9 @@ GKeyFile * merge_key_group(GKeyFile *pref, gchar *p_group, GKeyFile *alt,
  *                         validation instead.
  * @param check_group      Group in the checked_keyfile
  */
-void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
-        GKeyFile *checked_keyfile, gchar* check_group)
+void remove_conflicts(gchar *key, GKeyFile *modified_keyfile,
+        const gchar *mod_group, GKeyFile *checked_keyfile,
+        const gchar* check_group)
 {
     // TODO this function doesn't remove negation conflicts (--markers --no-markers)
     // get list of indexes for conflicts
@@ -229,7 +230,7 @@ void remove_conflicts(gchar *key, GKeyFile *modified_keyfile, gchar *mod_group,
             if (conflict.value != NULL) {
                 gchar *value = g_key_file_get_value(modified_keyfile, mod_group,
                         conflict.name, NULL);
-                if (!g_strcmp0(value, conflict.value) == 0) {
+                if (!(g_strcmp0(value, conflict.value) == 0)) {
                     g_free(value);
                     continue;
                 }
@@ -314,7 +315,7 @@ gint get_outfile_count(GKeyFile *keyfile)
     gsize count = 0;
     gsize len = 0;
     gchar **groups = g_key_file_get_groups(keyfile, &len);
-    for (gint i = 0; i < len; i++) {
+    for (gsize i = 0; i < len; i++) {
         if (strncmp("OUTFILE", groups[i], sizeof("OUTFILE")-1) == 0) {
             count++;
         }
@@ -348,7 +349,7 @@ gchar ** get_outfile_list(GKeyFile *keyfile, gsize *outfile_count)
      */
     filter_groups = g_malloc0(sizeof(gchar*)*(*outfile_count+1));
     // Copy only outfile groups to new list
-    for (int i = 0, j = 0; i < count; i++) {
+    for (gsize i = 0, j = 0; i < count; i++) {
         if (strncmp("OUTFILE", groups[i], sizeof("OUTFILE")-1) == 0) {
             filter_groups[j] = g_strdup(groups[i]);
             j++;
@@ -373,7 +374,7 @@ gchar * get_group_from_episode(GKeyFile *keyfile, int episode)
     gchar *group;
     gsize count = 0;
     gchar **groups = get_outfile_list(keyfile, &count);
-    for (int i = 0; i < count; i++) {
+    for (gsize i = 0; i < count; i++) {
         if ( episode ==
                 g_key_file_get_integer(keyfile, groups[i], "episode", NULL)) {
             group = g_strdup(groups[i]);

@@ -12,6 +12,8 @@ extraction:
       - "doxygen"
       - "graphviz"
       - "markdown"
+      - "python3-cram"
+      - "handbrake-cli"
     after_prepare: "export GNU_MAKE=make"
     configure:
       command:
