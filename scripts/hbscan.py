@@ -22,23 +22,25 @@ import subprocess
 import os
 import pyparsing as pp
 
+argparser = None
 
 def parse_args(args=sys.argv[1:]):
     """Parse arguments."""
-    parser = argparse.ArgumentParser(
+    global argparser
+    argparser = argparse.ArgumentParser(
         description=sys.modules[__name__].__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('path', metavar='PATH', nargs='*',
+    argparser.add_argument('path', metavar='PATH', nargs='*',
                         help='file or directory to be scanned by HandBrake')
-    parser.add_argument('--minlength', metavar='SECONDS', default=0, type=int,
+    argparser.add_argument('--minlength', metavar='SECONDS', default=0, type=int,
                         help="Excludes titles shorter than SECONDS")
-    parser.add_argument("--setiso", action='store_true', dest='setiso',
+    argparser.add_argument("--setiso", action='store_true', dest='setiso',
                         help='include iso_filename in outfile sections')
-    parser.add_argument("-", action='store_true', dest='read_stdin',
+    argparser.add_argument("-", action='store_true', dest='read_stdin',
                         help='read from stdin')
 
-    return parser.parse_args(args)
+    return argparser.parse_args(args)
 
 
 class Chapter():
@@ -351,8 +353,17 @@ ARGS = None
 
 
 def main():
-    global ARGS
+    global ARGS, argparser
     ARGS = parse_args()
+
+    if not ARGS.path and not ARGS.read_stdin:
+        argparser.print_usage()
+        return
+
+    if ARGS.read_stdin and os.isatty(sys.stdin.fileno()):
+        print("error: Could not read data from stdin")
+        argparser.print_usage()
+        return
 
     title_list = []
     parser = build_parser(title_list)

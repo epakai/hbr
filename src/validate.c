@@ -96,12 +96,12 @@ gboolean post_validate_input_file(GKeyFile *input_keyfile, const gchar *infile,
 
     // check required keys exist (type, file naming stuff)
     if (!has_required_keys(input_keyfile, infile, config_keyfile)) {
-        valid = FALSE; // errors printed during has_required_keys()
+        return FALSE; // errors printed during has_required_keys()
     }
 
     // check required keys exist (requires)
     if (!has_requires(input_keyfile, infile, config_keyfile)) {
-        valid = FALSE; // errors printed during has_requires()
+        return FALSE; // errors printed during has_requires()
     }
 
     return valid;
@@ -253,6 +253,9 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
         merged_configs = merge_key_group(input_keyfile, "CONFIG",
                 config_keyfile, "CONFIG", "CONFIG");
     }
+    if (merged_configs == NULL) {
+        return FALSE;
+    }
     // iterate over each outfile section
     while (group_names[i] != NULL && merged_configs != NULL) {
         GKeyFile *test_keyfile = NULL;
@@ -357,6 +360,9 @@ gboolean has_required_keys(GKeyFile *input_keyfile, const gchar *infile,
     if (config_keyfile != NULL) {
         merged_configs = merge_key_group(input_keyfile, "CONFIG",
                 config_keyfile, "CONFIG", "CONFIG");
+    }
+    if (merged_configs == NULL) {
+        return FALSE;
     }
     // iterate over each outfile section
     while (group_names[i] != NULL && merged_configs != NULL) {

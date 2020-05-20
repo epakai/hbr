@@ -423,7 +423,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
             g_free(temp);
         } else {
             if (call_handbrake(args, i, opt_overwrite, opt_skip_existing, filename) == -1) {
-                hbr_error("%d: Handbrake call failed. %s was not encoded",
+                hbr_error("%lu: Handbrake call failed. %s was not encoded",
                     outfiles[i], NULL, NULL, NULL, i, filename);
                 g_object_unref(filename);
                 g_free(basename);
