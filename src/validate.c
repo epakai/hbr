@@ -25,7 +25,6 @@
 #include <string.h>     // for strnlen, strrchr, strncmp, strcmp
 #include <sys/param.h>  // for MAXPATHLEN
 
-
 #include "util.h"
 #include "validate.h"
 #include "keyfile.h"
@@ -60,7 +59,6 @@ gboolean pre_validate_key_file(const gchar *infile)
     g_object_unref(datastream);
     return valid;
 }
-
 
 /**
  * @brief Validates an input keyfile. Checks for valid groups, key names,
@@ -595,9 +593,6 @@ gboolean has_duplicate_keys(const gchar *infile)
  * post_validate_common function.
  */
 
-// type is a forward declaration about what will be defined for each outfile.
-// Checking it thoroughly without merging means iterating through each
-// outfile, but also checking for changes to type at a config/outfile level.
 gboolean valid_type(option_t *option, const gchar *group, GKeyFile *config,
         const gchar *config_path)
 {
@@ -1929,6 +1924,10 @@ gboolean valid_detelecine(option_t *option, const gchar *group, GKeyFile *config
     return FALSE; //TODO incomplete
 }
 
+/**
+ * @brief Set of iso_639_2 language codes for checking languages against.
+ *        Used in valid_iso_639() and valid_iso_639_list
+ */
 const gchar *iso_639_2[] = {
     "aar", "abk", "ace", "ach", "ada", "ady", "afa", "afh", "afr", "ain", "aka",
     "akk", "alb", "ale", "alg", "alt", "amh", "ang", "anp", "apa", "ara", "arc",

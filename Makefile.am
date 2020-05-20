@@ -1,32 +1,39 @@
-HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h src/handbrake/options-1.2.0.h
+HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h src/handbrake/options-1.2.0.h src/handbrake/options-1.3.0.h
 SUPPORT_SOURCES = src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h
 GEN_SOURCES = src/gen_hbr.c src/gen_hbr.h
 COMMON_SOURCES = src/util.c src/util.h
 
 bin_PROGRAMS = hbr hbr-gen
 
+COMMON_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
+
 hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
-hbr_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) $(WARN_CFLAGS)
-hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS) $(WARN_LDFLAGS)
+hbr_CFLAGS = $(COMMON_CFLAGS) $(WARN_CFLAGS)
+hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(WARN_LDFLAGS)
 
 hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
-hbr_gen_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) $(WARN_CFLAGS)
+hbr_gen_CFLAGS = $(COMMON_CFLAGS) $(WARN_CFLAGS)
 hbr_gen_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(ARGP_LIBS) $(WARN_LDFLAGS)
 
 dist_man_MANS = doc/hbr.1 doc/hbr-gen.1
 
-EXTRA_DIST = autogen.sh doc/Doxyfile.in doc/Makefile.am doc/Makefile.in
+EXTRA_DIST = LICENSE autogen.sh doc/Doxyfile.in doc/Makefile.am doc/Makefile.in tests scripts
+
+clean-local: clean-doc clean-test
+distclean-local: distclean-doc
 
 if HAVE_DOXYGEN
 doc:
 	$(MAKE) -C doc
-clean-local:
+clean-doc:
 	$(MAKE) -C doc clean
-distclean-local:
+distclean-doc:
 	$(MAKE) -C doc distclean
 else
 doc:
 	@echo Cannot generate source documentation. Doxygen not found.
+clean-doc: ;
+distclean-doc: ;
 endif
 
 SRC = src/hbr.c src/hbr-gen.c $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
@@ -35,7 +42,7 @@ PCH = $(addsuffix .gch, $(SOURCES))
 
 if HAVE_CLANG
 clang-analyzer:
-	@- clang $(hbr_CFLAGS) --analyze $(SOURCES)
+	@- clang $(COMMON_CFLAGS) --analyze $(SOURCES)
 	@- rm -f $(PCH)
 	@- rm *.plist
 else
@@ -43,8 +50,7 @@ clang-analyzer:
 	@echo *** clang not found.
 endif
 
-CPPCHECK_INCLUDES := $(filter-out -pthread, $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS) )
-
+CPPCHECK_INCLUDES := $(filter-out -pthread, $(COMMON_CFLAGS) )
 if HAVE_CPPCHECK
 cppcheck:
 	@- cppcheck --quiet --language=c -DDEBUG --enable=all $(CPPCHECK_INCLUDES) $(SOURCES) 
@@ -96,9 +102,12 @@ if HAVE_CRAM3
 cram: export CRAM_HBR = $(abs_builddir)/hbr
 cram: hbr
 	cram3 -qv $(top_srcdir)/tests
+clean-test:
+	@- rm $(top_srcdir)/tests/*.err
 else
 cram:
 	@echo *** cram3 not found. No tests run.
+clean-test: ;
 endif
 
 test: 

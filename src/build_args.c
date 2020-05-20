@@ -40,6 +40,12 @@
  * or control hbr features.
  */
 
+
+/**
+ * @brief hbr specific keys
+ *        { name, arg_type, key_type, negation, valid_function,
+ *          valid_values_count, valid_values }
+ */
 static option_t hbr_options[] =
 {
     { "type", hbr_only, k_string, FALSE, valid_type, 2,
@@ -63,6 +69,11 @@ static option_t hbr_options[] =
     { NULL, 0, 0, 0, NULL, 0, NULL}
 };
 
+
+/**
+ * @brief hbr keys that require other keys
+ *        { key, required key, specific require value }
+ */
 static require_t hbr_requires[] =
 {
     { "extra", "type", "movie"},
@@ -72,6 +83,10 @@ static require_t hbr_requires[] =
     { NULL, NULL, NULL}
 };
 
+/**
+ * @brief hbr keys that conflict
+ *        { key, key value, conflicting key, conflicting value }
+ */
 static conflict_t hbr_conflicts[] =
 {
     { "add_year", "true", "type", "series" },

@@ -24,15 +24,17 @@
 #include "util.h"
 #include "gen_hbr.h"
 
-/*
- * Argument handling setup for argp
- */
+/// argp version info
 const char *argp_program_version = ""; //TODO pull version from one place
+/// argp bug reporting info
 const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
+/// hbr-gen description for --help
 static const char gen_doc[] = "handbrake runner generator -- generates a hbr template "
 "with NUM outfile sections, or one outfile per line in an episode list.";
+/// usage documentation to specify required options
 static const char gen_args_doc[] = "{-n NUM|-l FILE}";
 
+/// Command line options for argp parser
 static const struct argp_option gen_options[] = {
 	{"count",          'n', "NUM",          0, "Number of outfile sections to generate", 1},
 	{"episodes",       'l', "FILE",         0, "Episode list", 1},
@@ -76,15 +78,16 @@ struct gen_arguments {
 // Function prototype
 static error_t parse_gen_opt(int token, char *arg, struct argp_state *state);
 
+/// argp struct of all parsing/help info
 static const struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc,
 	gen_doc, NULL, NULL, NULL};
 /**
- * @brief
+ * @brief Produces a hbr template based on arguments or an episode list
  *
- * @param argc
- * @param argv[]
+ * @param argc   argument count
+ * @param argv[] argument array
  *
- * @return
+ * @return 0 - success
  */
 int main(int argc, char * argv[])
 {

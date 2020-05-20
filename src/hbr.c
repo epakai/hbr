@@ -43,16 +43,26 @@ gboolean make_output_directory(GKeyFile *outfile, const gchar *group,
         const gchar* infile_path);
 
 // Command line options
-static gboolean opt_debug         = FALSE; // Print commands instead of executing
-static gboolean opt_preview       = FALSE; // Generate preview image using ffmpegthumbnailer
-static gboolean opt_overwrite     = FALSE; // Default to overwriting previous encodes
-static gboolean opt_skip_existing = FALSE; // Skip encode if existing file would be overwritten
-static int      opt_episode       = -1;    // Specifies a particular episode number to be encoded
-static gchar    *opt_hbversion    = NULL;  // Override handbrake version detection
-static gchar    *opt_config       = NULL;  // Override config file location
-static gchar    *opt_output       = NULL;  // Override location to write output files
-static gchar    **opt_input_files = NULL;  // List of files for hbr to use as input
 
+/// Print commands instead of executing
+static gboolean opt_debug         = FALSE;
+/// Generate preview image using ffmpegthumbnailer
+static gboolean opt_preview       = FALSE;
+/// Default to overwriting previous encodes
+static gboolean opt_overwrite     = FALSE;
+/// Skip encode if existing file would be overwritten
+static gboolean opt_skip_existing = FALSE;
+/// Specifies a particular episode number to be encoded
+static int      opt_episode       = -1;
+/// Override handbrake version detection
+static gchar    *opt_hbversion    = NULL;
+/// Override config file location
+static gchar    *opt_config       = NULL;
+/// Override location to write output files
+static gchar    *opt_output       = NULL;
+/// List of files for hbr to use as input
+static gchar    **opt_input_files = NULL;
+/// Specifies an alternate global config file
 static gchar    *config_file_path = NULL;
 
 static gboolean print_version(
@@ -68,6 +78,10 @@ static gboolean print_version(
     exit(0);
 }
 
+
+/**
+ * @brief Command line options for GOption parser
+ */
 static GOptionEntry entries[] =
 {
     {"debug",     'd', 0, G_OPTION_ARG_NONE,      &opt_debug,
