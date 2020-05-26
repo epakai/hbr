@@ -11,6 +11,8 @@ samples/*
 /autom4te.cache/
 /compile
 /configure
+/config.guess
+/config.sub
 /depcomp
 /install-sh
 /m4/

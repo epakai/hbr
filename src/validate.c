@@ -580,6 +580,92 @@ gboolean has_duplicate_keys(const gchar *infile)
     return duplicates;
 }
 
+/**
+ * @brief Validates custom formats used for some HandBrakeCLI options
+ *
+ * @param keys[] null terminated array of key names
+ * @param type[] null terminated array of key types (must contain same number of
+ *               items as keys, uses key_type enum in build_args.h
+ * @param config Keyfile to pull custom_format from
+ * @param group  group to pull custom_format from
+ * @param option option type to pull custom_format from
+ *
+ * @return true when all keys in custom_format are parts of keys, and all
+ *         values can be interpreted as the appropriate key_type
+ */
+gboolean check_custom_format (const gchar *keys[], const key_type type[],
+        GKeyFile *config, const gchar *group, option_t *option)
+{
+    gboolean valid = TRUE;
+    g_key_file_set_list_separator(config, ':');
+    GError *error = NULL;
+    gsize key_count = 0;
+    gchar **custom_format = g_key_file_get_string_list(config, group,
+            option->name, &key_count, &error);
+    if (error != NULL) {
+        valid = FALSE;
+        g_error_free(error);
+    } else {
+        for (gsize i = 0; i < key_count; i++) {
+            g_strstrip(custom_format[i]);
+            // split string on '=' into 2 tokens
+            gchar **tokens = g_strsplit(custom_format[i], "=", 2);
+            if (tokens[0] == NULL) {
+                valid = FALSE;
+            } else if (tokens[1] == NULL) {
+                valid = FALSE;
+                g_strfreev(tokens);
+            } else {
+                // verify first token is one of filter_names
+                int j = 0;
+                while (keys[j] != NULL) {
+                    if (strcmp(tokens[0], keys[j]) == 0) {
+                        break;
+                    }
+                    j++;
+                }
+                if (keys[j] == NULL) {
+                    // got to the end without a match
+                    valid = FALSE;
+                }
+                // verify second token is a valid type
+                int k = 0;
+                switch (type[j]) {
+                    case k_integer:
+                        {
+                            while (tokens[1][k] != '\0') {
+                                if (!g_ascii_isdigit(tokens[1][k])) {
+                                    valid = FALSE;
+                                }
+                                k++;
+                            }
+                            gchar *endptr = NULL;
+                            gint64 number = g_ascii_strtoll(tokens[1], &endptr, 10);
+                            if ((number == G_MAXINT64 || number == G_MININT64)
+                                    && errno == ERANGE) {
+                                // value would cause overflow
+                                valid = FALSE;
+                            }
+                            if (number == 0 && endptr == tokens[1]) {
+                                // string conversion failed
+                                valid = FALSE;
+                            }
+                            break;
+                        }
+                    default:
+                        hbr_error("Incomplete implementation of "
+                                "validate.c:check_custom_format()",
+                                NULL, NULL, NULL, NULL);
+                }
+                g_strfreev(tokens);
+            }
+        }
+    }
+    g_strfreev(custom_format);
+    // reset separator
+    g_key_file_set_list_separator(config, ',');
+    return valid;
+}
 
 //TODO add asserts that valid_values and valid_values_count are NULL/0 (for non-list items)
 //TODO add asserts throughout all valid_ functions because there's lots
@@ -1908,13 +1994,34 @@ gboolean valid_deblock(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_deinterlace(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    g_print("valid_deinterlace: %s\n", option->name);  //TODO REMOVE
-    // custom isn't really a preset, just designates a custom format was
-    // specified, REMOVE IT. NULL is just a terminator
-    /*gchar *preset_list[] = {"custom", "default", "skip-spatial", "bob", "qsv",
-     *   "fast", "slow", "slower", "qsv", NULL};
-     */
-    return FALSE; //TODO incomplete
+    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
+    // check for boolean value
+    GError *error = NULL;
+    g_key_file_get_boolean(config, group, option->name, &error);
+    if (error != NULL) {
+        valid_bool = FALSE;
+        g_error_free(error);
+    }
+
+    // check for presets (permissive, fast)
+    // TODO valid_string_set() errors, but we don't want to print an error
+    // here unless all three fail
+    valid_preset = valid_string_set(option, group, config, config_path);
+
+    // check for filter
+    // change separator temporarily to parse colon separated list
+    const gchar *filter_names[] = {"mode", "parity", NULL};
+    const key_type filter_types[] = {k_integer, k_integer};
+    valid_custom = check_custom_format(filter_names, filter_types, config,
+            group, option);
+
+    if (!valid_bool && !valid_preset && !valid_custom) {
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
+        hbr_error("Invalid deinterlace option", config_path, group, option->name,
+                value);
+        g_free(value);
+    }
+    return (valid_bool || valid_preset || valid_custom);
 }
 
 gboolean valid_detelecine(option_t *option, const gchar *group, GKeyFile *config,
@@ -2451,6 +2558,8 @@ gboolean valid_rotate(option_t *option, const gchar *group, GKeyFile *config,
         hbr_error(error->message, config_path, group, option->name, NULL);
         g_error_free(error);
     } else {
+        //note: we do not use check_custom_format() here because rotate
+        //      uses specific values for angle
         const gchar *filter_names[] = { "angle", "hflip", "disable", NULL};
         for (gsize i = 0; i < filter_count; i++) {
             g_strstrip(filters[i]);
@@ -2532,86 +2641,27 @@ gboolean valid_comb_detect(option_t *option, const gchar *group, GKeyFile *confi
     }
 
     // check for presets (permissive, fast)
-    error = NULL;
-    gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    if (error == NULL) {
-        if (strcmp(value, "permissive") != 0 && strcmp(value, "fast") != 0
-                && strcmp(value, "default") != 0 && strcmp(value, "off") != 0
-           ) {
-            valid_preset = FALSE;
-        }
-    } else {
-        valid_preset = FALSE;
-        g_error_free(error);
-    }
+    // TODO valid_string_set() errors, but we don't want to print an error
+    // here unless all three fail
+    valid_preset = valid_string_set(option, group, config, config_path);
 
     // check for filter
     // change separator temporarily to parse colon separated list
-    g_key_file_set_list_separator(config, ':');
-    error = NULL;
-    gsize filter_count = 0;
-    gchar **filters = g_key_file_get_string_list(config, group,
-            option->name, &filter_count, &error);
-    if (error != NULL) {
-        valid_custom = FALSE;
-        g_error_free(error);
-    } else {
-        const gchar *filter_names[] = {"mode", "spatial-metric",
-            "motion-thresh", "spatial-thresh", "filter-mode", "block-thresh",
-            "block-width", "block-height", "disable", NULL};
-        for (gsize i = 0; i < filter_count; i++) {
-            g_strstrip(filters[i]);
-            // split string on '=' into 2 tokens
-            gchar **tokens = g_strsplit(filters[i], "=", 2);
-            if (tokens[0] == NULL) {
-                valid_custom = FALSE;
-            } else if (tokens[1] == NULL) {
-                valid_custom = FALSE;
-                g_strfreev(tokens);
-            } else {
-                // verify first token is one of filter_names
-                int j = 0;
-                while (filter_names[j] != NULL) {
-                    if (strcmp(tokens[0], filter_names[j]) == 0) {
-                        break;
-                    }
-                    j++;
-                }
-                if (filter_names[j] == NULL) {
-                    valid_custom = FALSE;
-                }
-                // verify second token is a valid integer
-                int k = 0;
-                while (tokens[1][k] != '\0') {
-                    if (!g_ascii_isdigit(tokens[1][k])) {
-                        valid_custom = FALSE;
-                    }
-                    k++;
-                }
-                gchar *endptr = NULL;
-                gint64 number = g_ascii_strtoll(tokens[1], &endptr, 10);
-                if ((number == G_MAXINT64 || number == G_MININT64)
-                        && errno == ERANGE) {
-                    // value would cause overflow
-                    valid_custom = FALSE;
-                }
-                if (number == 0 && endptr == tokens[1]) {
-                    // string conversion failed
-                    valid_custom = FALSE;
-                }
-                g_strfreev(tokens);
-            }
-        }
-    }
-    g_strfreev(filters);
-    // reset separator
-    g_key_file_set_list_separator(config, ',');
+    const gchar *filter_names[] = {"mode", "spatial-metric",
+        "motion-thresh", "spatial-thresh", "filter-mode", "block-thresh",
+        "block-width", "block-height", "disable", NULL};
+    const key_type filter_types[] = {k_integer, k_integer,
+        k_integer, k_integer, k_integer, k_integer,
+        k_integer, k_integer, k_integer};
+    valid_custom = check_custom_format(filter_names, filter_types, config,
+            group, option);
 
     if (!valid_bool && !valid_preset && !valid_custom) {
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
         hbr_error("Invalid decomb option", config_path, group, option->name,
                 value);
+        g_free(value);
     }
-    g_free(value);
     return (valid_bool || valid_preset || valid_custom);
 }
 
@@ -2642,3 +2692,4 @@ gboolean valid_preset_name(option_t *option, const gchar *group, GKeyFile *confi
     g_print("valid_preset_name: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
+

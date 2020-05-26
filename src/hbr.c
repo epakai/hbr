@@ -25,6 +25,7 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
+#include "config.h"
 #include "util.h"
 #include "keyfile.h"
 #include "build_args.h"
@@ -70,11 +71,11 @@ static gboolean print_version(
         __attribute__((unused)) const gchar *value,
         __attribute__((unused)) gpointer data,
         __attribute__((unused)) GError **error) {
-    printf("hbr (handbrake runner) 0.0\n" //TODO someday we'll release and have a version number
+    printf("hbr (handbrake runner) %s\n" //TODO someday we'll release and have a version number
             "Copyright (C) 2018 Joshua Honeycutt\n"
             "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl2.html>\n"
             "This is free software: you are free to change and redistribute it.\n"
-            "There is NO WARRANTY, to the extent permitted by law.\n");
+            "There is NO WARRANTY, to the extent permitted by law.\n", VERSION);
     exit(0);
 }
 

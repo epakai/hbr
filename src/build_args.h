@@ -37,8 +37,8 @@ typedef struct depend_s depend_t;
 /**
  * @brief Possible key types (based on GKeyFile types)
  */
-enum key_types {k_string, k_boolean, k_integer, k_double, k_string_list,
-    k_integer_list, k_double_list};
+typedef enum key_types {k_string, k_boolean, k_integer, k_double, k_string_list,
+    k_integer_list, k_double_list} key_type;
 
 /**
  * @brief Data about options that get passed to HandBrakeCLI.

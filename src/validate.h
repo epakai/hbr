@@ -38,6 +38,8 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
 gboolean unknown_keys_exist(GKeyFile *keyfile, const gchar *infile);
 gboolean has_duplicate_groups(const gchar *infile);
 gboolean has_duplicate_keys(const gchar *infile);
+gboolean check_custom_format (const gchar *keys[], const key_type type[],
+        GKeyFile *config, const gchar *group, option_t *option);
 
 /*
  * Input validation for hbr specific options
