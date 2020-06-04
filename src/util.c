@@ -21,6 +21,19 @@
 
 #include "util.h"
 
+static enum message_level {
+    HBR_INFO,
+    HBR_WARN,
+    HBR_ERROR
+} MESSAGE_LEVEL = HBR_INFO;
+
+/// Only print info or worse messages
+void message_level_info(void) { MESSAGE_LEVEL = HBR_INFO; }
+/// Only print warning  or worse messages
+void message_level_warn(void) { MESSAGE_LEVEL = HBR_WARN; }
+/// Only print error or worse messages
+void message_level_error(void) { MESSAGE_LEVEL = HBR_ERROR; }
+
 /**
  * @brief Error message printed on stderr. Resulting output:
  *        hbr   ERROR: Format string: (path) [section] key=value
@@ -44,25 +57,28 @@ void hbr_error(const gchar *format, const gchar *path, const gchar *section,
 /**
  * @brief Variadic implementation for hbr_error
  */
+    __attribute__((__format__ (__printf__, 1, 0)))
 void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
-    fprintf(stderr, "hbr   ERROR: ");
-    vfprintf(stderr, format, argp);
-    if (path) {
-        fprintf(stderr, ": (%s)", path);
-    }
-    if (section) {
-        fprintf(stderr, " [%s]", section);
-    }
-    if (key) {
-        if (value) {
-            fprintf(stderr, " %s=%s\n", key, value);
-        } else {
-            fprintf(stderr, " %s= \n", key);
+    if (MESSAGE_LEVEL <= HBR_ERROR) {
+        fprintf(stderr, "hbr   ERROR: ");
+        vfprintf(stderr, format, argp);
+        if (path) {
+            fprintf(stderr, ": (%s)", path);
         }
-    } else {
-        fprintf(stderr, "\n");
+        if (section) {
+            fprintf(stderr, " [%s]", section);
+        }
+        if (key) {
+            if (value) {
+                fprintf(stderr, " %s=%s\n", key, value);
+            } else {
+                fprintf(stderr, " %s= \n", key);
+            }
+        } else {
+            fprintf(stderr, "\n");
+        }
     }
 }
 
@@ -89,25 +105,28 @@ void hbr_warn(const gchar *format, const gchar *path, const gchar *section,
 /**
  * @brief Variadic implementation for hbr_warn
  */
+    __attribute__((__format__ (__printf__, 1, 0)))
 void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
-    fprintf(stderr, "hbr WARNING: ");
-    vfprintf(stderr, format, argp);
-    if (path) {
-        fprintf(stderr, ": (%s)", path);
-    }
-    if (section) {
-        fprintf(stderr, " [%s]", section);
-    }
-    if (key) {
-        if (value) {
-            fprintf(stderr, " %s=%s\n", key, value);
-        } else {
-            fprintf(stderr, " %s= \n", key);
+    if (MESSAGE_LEVEL <= HBR_WARN) {
+        fprintf(stderr, "hbr WARNING: ");
+        vfprintf(stderr, format, argp);
+        if (path) {
+            fprintf(stderr, ": (%s)", path);
         }
-    } else {
-        fprintf(stderr, "\n");
+        if (section) {
+            fprintf(stderr, " [%s]", section);
+        }
+        if (key) {
+            if (value) {
+                fprintf(stderr, " %s=%s\n", key, value);
+            } else {
+                fprintf(stderr, " %s= \n", key);
+            }
+        } else {
+            fprintf(stderr, "\n");
+        }
     }
 }
 
@@ -134,25 +153,28 @@ void hbr_info(const gchar *format, const gchar *path, const gchar *section,
 /**
  * @brief Variadic implementation for hbr_info
  */
+    __attribute__((__format__ (__printf__, 1, 0)))
 void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
-    fprintf(stderr, "hbr    INFO: ");
-    vfprintf(stderr, format, argp);
-    if (path) {
-        fprintf(stderr, ": (%s)", path);
-    }
-    if (section) {
-        fprintf(stderr, " [%s]", section);
-    }
-    if (key) {
-        if (value) {
-            fprintf(stderr, " %s=%s\n", key, value);
-        } else {
-            fprintf(stderr, " %s= \n", key);
+    if (MESSAGE_LEVEL <= HBR_INFO) {
+        fprintf(stderr, "hbr    INFO: ");
+        vfprintf(stderr, format, argp);
+        if (path) {
+            fprintf(stderr, ": (%s)", path);
         }
-    } else {
-        fprintf(stderr, "\n");
+        if (section) {
+            fprintf(stderr, " [%s]", section);
+        }
+        if (key) {
+            if (value) {
+                fprintf(stderr, " %s=%s\n", key, value);
+            } else {
+                fprintf(stderr, " %s= \n", key);
+            }
+        } else {
+            fprintf(stderr, "\n");
+        }
     }
 }
 

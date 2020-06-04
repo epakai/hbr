@@ -28,6 +28,7 @@
 #include "config.h"
 #include "util.h"
 #include "keyfile.h"
+#include "validate.h"
 #include "build_args.h"
 
 // PROTOTYPES
@@ -39,7 +40,6 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
         gboolean skip, gchar *filename);
 int hb_fork(gchar *args[], gchar *log_filename);
-gboolean good_output_option_path(void);
 gboolean make_output_directory(GKeyFile *outfile, const gchar *group,
         const gchar* infile_path);
 
@@ -78,7 +78,6 @@ static gboolean print_version(
             "There is NO WARRANTY, to the extent permitted by law.\n", VERSION);
     exit(0);
 }
-
 
 /**
  * @brief Command line options for GOption parser
@@ -166,18 +165,30 @@ int main(int argc, char * argv[])
     }
 
     // check the output path from command line option
-    if (!good_output_option_path()) {
-        g_option_context_free(context);
-        g_strfreev(opt_input_files);
-        g_key_file_free(config);
-        exit(1);
+    GKeyFile *temp = g_key_file_new();
+    if (opt_output != NULL) {
+        g_key_file_set_string(temp, "--output", "output_basedir", opt_output);
+        gint option_index = GPOINTER_TO_INT(g_hash_table_lookup(options_index,
+                    "output_basedir"));
+        // NOTE error output is a little weird when reusing valid_ functions
+        if (!valid_writable_path(&options[option_index], "--output", temp, NULL)) {
+            g_option_context_free(context);
+            g_strfreev(opt_input_files);
+            g_key_file_free(config);
+            exit(1);
+        }
     }
 
     // loop over each input file
     int i = 0;
     while (opt_input_files[i] != NULL) {
+        // Disable info messages that occur during some utilities used for
+        // input file validation (merge_key_group(), etc.)
+        message_level_warn();
         // parse input file
         GKeyFile *current_infile = parse_validate_key_file(opt_input_files[i], config);
+        // re-enable info level messages
+        message_level_info();
         if (current_infile == NULL) {
             hbr_error("Could not complete input file", opt_input_files[i], NULL,
                     NULL, NULL);
@@ -218,35 +229,6 @@ int main(int argc, char * argv[])
     g_option_context_free(context);
     g_strfreev(opt_input_files);
     exit(0);
-}
-
-/**
- * @brief Verify --output path exists and is (symlink to) a directory
- *
- * @return TRUE when path is good
- */
-gboolean good_output_option_path(void)
-{
-    if (opt_output != NULL) {
-        // check if path exists
-        GFile *output_path = g_file_new_for_commandline_arg(opt_output);
-        if (!g_file_query_exists(output_path, NULL)) {
-            hbr_error("Invalid output path", g_file_get_path(output_path), NULL,
-                    NULL, NULL);
-            g_object_unref(output_path);
-            return FALSE;
-        }
-        // check if path is a directory (also allows symlinks to directories)
-        if (g_file_query_file_type(output_path, G_FILE_QUERY_INFO_NONE, NULL)
-                != G_FILE_TYPE_DIRECTORY) {
-            hbr_error("Output path is not a directory",
-                    g_file_get_path(output_path), NULL, NULL, NULL);
-            g_object_unref(output_path);
-            return FALSE;
-        }
-    }
-    // no path is a good path
-    return TRUE;
 }
 
 /**

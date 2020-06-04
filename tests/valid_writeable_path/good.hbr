@@ -1,0 +1,9 @@
+[CONFIG]
+output_basedir=/tmp
+iso_filename=test.iso
+title=1
+type=movie
+year=2000
+
+[OUTFILE1]
+name=good

@@ -130,7 +130,7 @@ struct episode_list read_episode_list(const gchar *episode_filename)
 /**
  * @brief Frees episode_array allocated by read_episode_list()
  *
- * @param list packed list of episodes, see gen_xml.h
+ * @param list packed list of episodes
  */
 void free_episode_list(struct episode_list list)
 {

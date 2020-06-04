@@ -99,7 +99,7 @@ code-analysis:
 	$(MAKE) pmccabe
 
 if HAVE_CRAM3
-cram: export CRAM_HBR = $(abs_builddir)/hbr
+cram: export CRAM_HBR=$(abs_builddir)/hbr
 cram: hbr
 	cram3 -qv $(top_srcdir)/tests
 clean-test:

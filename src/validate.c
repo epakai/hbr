@@ -629,10 +629,10 @@ gboolean check_custom_format (const gchar *keys[], const key_type type[],
                     valid = FALSE;
                 }
                 // verify second token is a valid type
-                int k = 0;
                 switch (type[j]) {
                     case k_integer:
                         {
+                            int k = 0;
                             while (tokens[1][k] != '\0') {
                                 if (!g_ascii_isdigit(tokens[1][k])) {
                                     valid = FALSE;
@@ -697,93 +697,130 @@ gboolean valid_type(option_t *option, const gchar *group, GKeyFile *config,
     // cases where relevant options are all defined in the same group
     if (strcmp(type, "series") == 0) {
         if (has_season && has_episode) {
+            g_free(type);
             return valid;
         }
     } else if (strcmp(type, "movie") == 0) {
         if (has_year) {
+            g_free(type);
             return valid;
         }
     }
 
     if (strcmp(group, "CONFIG") == 0) {
-        int i = 0;
-        gchar **group_names = (g_key_file_get_groups(config, NULL));
-        while (group_names[i] != NULL) {
-            if (strncmp(group_names[i], "OUTFILE", 7) == 0) {
-                // if outfile has type defined, ignore it, valid_type will
-                // be called on it later
-                if (g_key_file_has_key(config, group_names[i], "type", NULL)) {
-                    i++;
-                    continue;
-                }
-                // check that season/episode is defined for series
-                if (strcmp(type, "series") == 0) {
-                    gboolean outfile_has_season = (has_season ||
-                            g_key_file_has_key(config, group_names[i], "season", NULL));
-                    gboolean outfile_has_episode = (has_episode ||
-                            g_key_file_has_key(config, group_names[i], "episode", NULL));
-                    if (!outfile_has_season && !outfile_has_episode) {
-                        hbr_warn("Season and episode number not specified",
-                                config_path, group_names[i], NULL, NULL);
-                    } else {
-                        if (!outfile_has_season) {
-                            hbr_warn("Season number not specified", config_path,
-                                    group_names[i], NULL, NULL);
-                        }
-                        if (!outfile_has_episode) {
-                            hbr_warn("Episode number not specified", config_path,
-                                    group_names[i], NULL, NULL);
-                        }
-                    }
-                }
-                // check that year is defined for series
-                if (strcmp(type, "movie") == 0) {
-                    has_year = (has_year ||
-                            g_key_file_has_key(config, group_names[i], "year", NULL));
-                    if (!has_year) {
-                        hbr_warn("Year not specified", config_path,
-                                group_names[i], NULL, NULL);
-                    }
-                }
-            }
-            i++;
-        }
-        g_strfreev(group_names);
+        type_config_warnings(type, has_season, has_episode, has_year, config,
+                config_path);
     }
 
     if (strncmp(group, "OUTFILE", 7) == 0) {
-        if (strcmp(type, "series") == 0) {
-            has_season = (has_season ||
-                    g_key_file_has_key(config, "CONFIG", "season", NULL));
-            has_episode = (has_episode ||
-                    g_key_file_has_key(config, "CONFIG", "episode", NULL));
-            if (!has_season && !has_episode) {
-                hbr_warn("Season and episode number not specified",
-                        config_path, group, NULL, NULL);
-            } else {
-                if (!has_season) {
-                    hbr_warn("Season number not specified", config_path,
-                            group, NULL, NULL);
-                }
-                if (!has_episode) {
-                    hbr_warn("Episode number not specified", config_path,
-                            group, NULL, NULL);
-                }
-            }
-        }
-        // check that year is defined for series
-        if (strcmp(type, "movie") == 0) {
-            has_year = (has_year ||
-                    g_key_file_has_key(config, "CONFIG", "year", NULL));
-            if (!has_year) {
-                hbr_warn("Year not specified", config_path,
-                        group, NULL, NULL);
-            }
-        }
+        type_outfile_warnings(type, has_season, has_episode, has_year, group,
+                config, config_path);
     }
 
     g_free(type);
     return valid;
+}
+
+/**
+ * @brief Print warnings related to type key in CONFIG sections
+ *
+ * @param type value of type key (movie/series)
+ * @param has_season season key is defined
+ * @param has_episode episode key is defined
+ * @param has_year year key is defined
+ * @param config KeyFile to pull values from
+ * @param config_path KeyFile path for error printing
+ */
+void type_config_warnings(gchar *type, gboolean has_season,
+        gboolean has_episode, gboolean has_year, GKeyFile *config,
+        const gchar *config_path) {
+    int i = 0;
+    gchar **group_names = (g_key_file_get_groups(config, NULL));
+    while (group_names[i] != NULL) {
+        if (strncmp(group_names[i], "OUTFILE", 7) == 0) {
+            // if outfile has type defined, ignore it, valid_type will
+            // be called on it later
+            if (g_key_file_has_key(config, group_names[i], "type", NULL)) {
+                i++;
+                continue;
+            }
+            // check that season/episode is defined for series
+            if (strcmp(type, "series") == 0) {
+                gboolean outfile_has_season = (has_season ||
+                        g_key_file_has_key(config, group_names[i], "season", NULL));
+                gboolean outfile_has_episode = (has_episode ||
+                        g_key_file_has_key(config, group_names[i], "episode", NULL));
+                if (!outfile_has_season && !outfile_has_episode) {
+                    hbr_warn("Season and episode number not specified",
+                            config_path, group_names[i], NULL, NULL);
+                } else {
+                    if (!outfile_has_season) {
+                        hbr_warn("Season number not specified", config_path,
+                                group_names[i], NULL, NULL);
+                    }
+                    if (!outfile_has_episode) {
+                        hbr_warn("Episode number not specified", config_path,
+                                group_names[i], NULL, NULL);
+                    }
+                }
+            }
+            // check that year is defined for series
+            if (strcmp(type, "movie") == 0) {
+                has_year = (has_year ||
+                        g_key_file_has_key(config, group_names[i], "year", NULL));
+                if (!has_year) {
+                    hbr_warn("Year not specified", config_path,
+                            group_names[i], NULL, NULL);
+                }
+            }
+        }
+        i++;
+    }
+    g_strfreev(group_names);
+}
+
+/**
+ * @brief Print warnings related to type key in OUTFILE sections
+ *
+ * @param type value of type key (movie/series)
+ * @param has_season season key is defined
+ * @param has_episode episode key is defined
+ * @param has_year year key is defined
+ * @param group group to pull values from
+ * @param config KeyFile to pull values from
+ * @param config_path KeyFile path for error printing
+ */
+void type_outfile_warnings(gchar *type, gboolean has_season,
+        gboolean has_episode, gboolean has_year, const gchar *group,
+        GKeyFile *config, const gchar *config_path) {
+    if (strcmp(type, "series") == 0) {
+        has_season = (has_season ||
+                g_key_file_has_key(config, "CONFIG", "season", NULL));
+        has_episode = (has_episode ||
+                g_key_file_has_key(config, "CONFIG", "episode", NULL));
+        if (!has_season && !has_episode) {
+            hbr_warn("Season and episode number not specified",
+                    config_path, group, NULL, NULL);
+        } else {
+            if (!has_season) {
+                hbr_warn("Season number not specified", config_path,
+                        group, NULL, NULL);
+            }
+            if (!has_episode) {
+                hbr_warn("Episode number not specified", config_path,
+                        group, NULL, NULL);
+            }
+        }
+    }
+    // check that year is defined for series
+    if (strcmp(type, "movie") == 0) {
+        has_year = (has_year ||
+                g_key_file_has_key(config, "CONFIG", "year", NULL));
+        if (!has_year) {
+            hbr_warn("Year not specified", config_path,
+                    group, NULL, NULL);
+        }
+    }
 }
 
 gboolean valid_readable_path(option_t *option, const gchar *group, GKeyFile *config,
@@ -814,8 +851,8 @@ gboolean valid_readable_path(option_t *option, const gchar *group, GKeyFile *con
     return valid;
 }
 
-gboolean valid_writable_path(option_t *option, const gchar *group, GKeyFile *config,
-         const gchar *config_path)
+gboolean valid_writable_path(option_t *option, const gchar *group,
+        GKeyFile *config, const gchar *config_path)
 {
     gchar *orig_path = g_key_file_get_value(config, group, option->name, NULL);
 
@@ -868,7 +905,7 @@ gboolean valid_filename_component(option_t *option, const gchar *group,
         gsize component_length = strnlen(component, MAXPATHLEN);
         if ( component_length < 1 || component_length == MAXPATHLEN) {
             valid = FALSE;
-            hbr_error("Invalid component component length", config_path, group,
+            hbr_error("Invalid component length", config_path, group,
                     option->name, component);
         }
         for (gsize i = 0; i < component_length; i++) {
@@ -950,11 +987,18 @@ gboolean valid_integer_list(option_t *option, const gchar *group, GKeyFile *conf
     gsize count;
     gint *values = g_key_file_get_integer_list(config, group, option->name,
             &count, &error);
-    if (values == NULL && error != NULL) {
+    if (values == NULL || error != NULL) {
         valid = FALSE;
         gchar* string_value = g_key_file_get_value(config, group, option->name, NULL);
-        hbr_error("Value should be a comma separated integer list", config_path,
-                group, option->name, string_value);
+        if (g_error_matches(error, G_KEY_FILE_ERROR,
+                    G_KEY_FILE_ERROR_INVALID_VALUE)) {
+            hbr_error("Value should be comma-separated integer list", config_path, group,
+                    option->name, string_value);
+        } else {
+            // use glib error message for non-user error
+            hbr_error(error->message, config_path, group,
+                    option->name, string_value);
+        }
         g_error_free(error);
         g_free(string_value);
     }
@@ -1056,10 +1100,11 @@ gboolean valid_string(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_string_set(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    assert(option->valid_values_count != 0 && option->valid_values != NULL);
     gboolean valid = TRUE;
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
-    for (int i = 0; i < option->valid_values_count; i++) {
+    int i = 0;
+    while (i < option->valid_values_count) {
+        assert(option->valid_values_count != 0 && option->valid_values != NULL);
         if (strcmp(value, ((gchar **)option->valid_values)[i]) == 0) {
             // found a match, stop searching
             valid = TRUE;
@@ -1067,6 +1112,7 @@ gboolean valid_string_set(option_t *option, const gchar *group, GKeyFile *config
         } else {
             valid = FALSE;
         }
+        i++;
     }
     if (valid == FALSE) {
         hbr_error("Invalid key value", config_path, group, option->name, value);
@@ -1307,7 +1353,11 @@ gboolean valid_audio_quality(option_t *option, const gchar *group, GKeyFile *con
 gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid = TRUE;
+    if (!valid_integer_list(option, group, config, config_path)) {
+        return FALSE;
+    }
+
+    // this list must be ordered. we use first and last index later for bounds
     int valid_bitrates[] = {6, 12, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128,
         160, 192, 224, 256, 320, 384, 448, 512, 576, 640, 768, 960, 1152, 1344,
         1536, 2304, 3072, 4608, 6144};
@@ -1315,26 +1365,14 @@ gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *con
 
     // get bitrates
     gsize bitrate_count, aencoder_count;
-    GError *error = NULL;
+    // errors ignored because valid_integer_list above should fail and return
     gint *bitrates = g_key_file_get_integer_list(config, group, option->name,
-            &bitrate_count, &error);
+            &bitrate_count, NULL);
     gchar *bitrates_string = g_key_file_get_value(config, group,
             option->name, NULL);
-    if (error != NULL) {
-        if (g_error_matches(error, G_KEY_FILE_ERROR,
-                    G_KEY_FILE_ERROR_INVALID_VALUE)) {
-            hbr_error("Value should be comma-separated integer list", config_path, group,
-                    option->name, bitrates_string);
-        } else {
-            // use glib error message for non-user error
-            hbr_error(error->message, config_path, group,
-                    option->name, bitrates_string);
-        }
-        valid = FALSE;
-        g_error_free(error);
-    }
-    error = NULL;
 
+    gboolean valid = TRUE;
+    GError *error = NULL;
     // get audio encoders
     gchar **audio_encoders = g_key_file_get_string_list(config, group,
             "aencoder", &aencoder_count, &error);
@@ -1356,6 +1394,7 @@ gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *con
                 option->name, bitrates_string, bitrate_count, audio_count);
         valid = FALSE;
     }
+    // verify bitrates
     for (gsize i = 0; i < bitrate_count && i < aencoder_count; i++) {
         gboolean valid_bitrate = FALSE;
         // verify value is in list of accepted bitrates
@@ -1368,62 +1407,40 @@ gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *con
         // remove leading/trailing whitespace for consistent values
         g_strstrip(audio_encoders[i]);
         // verify value is in range for audio codec
+        gint lower_bitrate = valid_bitrates[0];
+        gint upper_bitrate = valid_bitrates[valid_bitrates_count-1];
+        gboolean bounded = FALSE;
         if (strcmp("av_aac", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 64 || bitrates[i] > 512) {
-                gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [64,512] for encoder %s",
-                        config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
-                valid = FALSE;
-                g_free(bad_bitrate);
-            }
+            lower_bitrate = 64;
+            upper_bitrate = 512;
+            bounded = TRUE;
+        } else if (strcmp("ac3", audio_encoders[i]) == 0) {
+            lower_bitrate = 96;
+            upper_bitrate = 640;
+            bounded = TRUE;
+        } else if (strcmp("eac3", audio_encoders[i]) == 0) {
+            lower_bitrate = 96;
+            upper_bitrate = 6144;
+            bounded = TRUE;
+        } else if (strcmp("mp3", audio_encoders[i]) == 0) {
+            lower_bitrate = 12;
+            upper_bitrate = 320;
+            bounded = TRUE;
+        } else if (strcmp("vorbis", audio_encoders[i]) == 0) {
+            lower_bitrate = 32;
+            upper_bitrate = 448;
+            bounded = TRUE;
+        } else if (strcmp("opus", audio_encoders[i]) == 0) {
+            lower_bitrate = 12;
+            upper_bitrate = 512;
+            bounded = TRUE;
         }
-        if (strcmp("ac3", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 96 || bitrates[i] > 640) {
+        if (bounded) {
+            if (bitrates[i] < lower_bitrate || bitrates[i] > upper_bitrate) {
                 gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [96,640] for encoder %s",
+                hbr_error("Bitrate outside range [%lu,%lu] for encoder %s",
                         config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
-                valid = FALSE;
-                g_free(bad_bitrate);
-            }
-        }
-        if (strcmp("eac3", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 96 || bitrates[i] > 6144) {
-                gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [96,6144] for encoder %s",
-                        config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
-                valid = FALSE;
-                g_free(bad_bitrate);
-            }
-        }
-        if (strcmp("mp3", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 12 || bitrates[i] > 320) {
-                gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [12,320] for encoder %s",
-                        config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
-                valid = FALSE;
-                g_free(bad_bitrate);
-            }
-        }
-        if (strcmp("vorbis", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 32 || bitrates[i] > 448) {
-                gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [32,448] for encoder %s",
-                        config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
-                valid = FALSE;
-                g_free(bad_bitrate);
-            }
-        }
-        if (strcmp("opus", audio_encoders[i]) == 0) {
-            if (bitrates[i] < 12 || bitrates[i] > 512) {
-                gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [12,512] for encoder %s",
-                        config_path, group, option->name, bad_bitrate,
-                        audio_encoders[i]);
+                        lower_bitrate, upper_bitrate, audio_encoders[i]);
                 valid = FALSE;
                 g_free(bad_bitrate);
             }
@@ -1485,8 +1502,8 @@ gboolean valid_audio_compression(option_t *option, const gchar *group, GKeyFile 
     if (compressions == NULL) {
         hbr_error("Encoder not specified. Unable to verify audio compression ",
                 config_path, group, option->name, compressions_value);
-        g_free(compressions);
         g_free (compressions_value);
+        g_free(encoders);
         g_error_free(error);
         return FALSE;
     }
@@ -1497,70 +1514,49 @@ gboolean valid_audio_compression(option_t *option, const gchar *group, GKeyFile 
                 option->name, compressions_value, compression_count,
                 encoder_count);
         valid = FALSE;
-    } else if (compression_count == 1 && encoder_count > 1) {
-        //try to validate compression against all encoders
-        for (gsize i = 0; i < encoder_count; i++) {
+    } else {
+        gsize count = 0, i = 0, zero = 0;
+        gsize *j;
+        if (compression_count == 1 && encoder_count > 1) {
+            //try to validate compression against all encoders
+            count = encoder_count;
+            j = &zero; // always reference first compression
+        } else {
+            // try to validate each compression against each encoder
+            count = compression_count;
+            j = &i; // reference compression with same index as encoder
+        }
+        for (i = 0; i < count; i++) {
             g_strstrip(encoders[i]);
-            gchar *value = g_strdup_printf("%f", compressions[0]);
-            if (fabs(compressions[0] - (-1.0)) < 0.001) {
+            gdouble lower_compression = 0.0, upper_compression = 0.0;
+            gboolean compressible = FALSE;
+            gchar *value = g_strdup_printf("%f", compressions[*j]);
+            if (fabs(compressions[*j] - (-1.0)) < 0.001) {
                 // default value, ignored
             } else if (strcmp(encoders[i], "flac") == 0 ||
                     strcmp(encoders[i], "flac24") == 0) {
-                if (compressions[0] < 0.0 || compressions[0] > 12.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for flac [0,12]",
-                            config_path, group, option->name, value);
-                }
+                lower_compression = 0.0;
+                upper_compression = 12.0;
+                compressible = TRUE;
             } else if (strcmp(encoders[i], "mp3") == 0) {
-                if (compressions[0] < 0.0 || compressions[0] > 9.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for mp3 [0,9]",
-                            config_path, group, option->name, value);
-                }
+                lower_compression = 0.0;
+                upper_compression = 9.0;
+                compressible = TRUE;
             } else if (strcmp(encoders[i], "opus") == 0) {
-                if (compressions[0] < 0.0 || compressions[0] > 10.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for opus [0,10]",
-                            config_path, group, option->name, value);
-                }
+                lower_compression = 0.0;
+                upper_compression = 10.0;
+                compressible = TRUE;
             } else {
                 valid = FALSE;
                 hbr_error("Compression value cannot apply to encoder %s",
                         config_path, group, option->name, value, encoders[i]);
             }
-            g_free(value);
-        }
-    } else {
-        // try to validate each compression against each encoder
-        for (gsize i = 0; i < compression_count; i++) {
-            gchar *value = g_strdup_printf("%f", compressions[i]);
-            g_strstrip(encoders[i]);
-            if (fabs(compressions[i] - (-1.0)) < 0.001) {
-                // default value, ignored
-            } else if (strcmp(encoders[i], "flac") == 0 ||
-                    strcmp(encoders[i], "flac24") == 0) {
-                if (compressions[i] < 0.0 || compressions[i] > 12.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for flac [0,12]",
-                            config_path, group, option->name, value);
-                }
-
-            } else if (strcmp(encoders[i], "mp3") == 0) {
-                if (compressions[i] < 0.0 || compressions[i] > 9.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for mp3 [0,9]",
-                            config_path, group, option->name, value);
-                }
-            } else if (strcmp(encoders[i], "opus") == 0) {
-                if (compressions[i] < 0.0 || compressions[i] > 10.0) {
-                    valid = FALSE;
-                    hbr_error("Compression value outside range for opus [0,10]",
-                            config_path, group, option->name, value);
-                }
-            } else {
+            if ((compressions[*j] < lower_compression ||
+                    compressions[*j] > upper_compression) && compressible) {
                 valid = FALSE;
-                hbr_error("Compression value cannot apply to encoder %s",
-                        config_path, group, option->name, value, encoders[i]);
+                hbr_error("Compression value outside range for %s [%f,%f]",
+                        config_path, group, option->name, value, encoders[i],
+                        lower_compression, upper_compression);
             }
             g_free(value);
         }
@@ -1591,44 +1587,35 @@ gboolean valid_video_quality(option_t *option, const gchar *group, GKeyFile *con
     if (error != NULL) {
         valid = FALSE;
         hbr_warn("Encoder not specified. Unable to verify video quality",
-                config_path, group, option->name, string);
+                 config_path, group, option->name, string);
         g_error_free(error);
     } else {
+        gint lower_value = 0, upper_value = 0;
         if (strcmp(encoder, "x264") == 0 || strcmp(encoder, "x265") == 0 ) {
-            if (value > 51 || value < 0) {
-                valid = FALSE;
-                hbr_error("Value outside range [0,51] for encoder %s",
-                        config_path, group, option->name, string, encoder);
-            }
+            lower_value = 0;
+            upper_value = 51;
+        } else if (strcmp(encoder, "x264_10bit") == 0 ||
+                   strcmp(encoder, "x265_10bit") == 0 ) {
+            lower_value = -12;
+            upper_value = 51;
+        } else if (strcmp(encoder, "x265_12bit") == 0 ) {
+            lower_value = -24;
+            upper_value = 51;
+        } else if (strcmp(encoder, "mpeg4") == 0 ||
+                   strcmp(encoder, "mpeg2") == 0 ) {
+            lower_value = 1;
+            upper_value = 31;
+        } else if (strcmp(encoder, "VP8") == 0 ||
+                   strcmp(encoder, "VP9") == 0 ||
+                   strcmp(encoder, "theora") == 0 ) {
+            lower_value = 0;
+            upper_value = 63;
         }
-        if (strcmp(encoder, "x264_10bit") == 0 || strcmp(encoder, "x265_10bit") == 0 ) {
-            if (value > 51 || value < -12) {
-                valid = FALSE;
-                hbr_error("Value outside range [-12,51] for encoder %s",
-                        config_path, group, option->name, string, encoder);
-            }
-        }
-        if (strcmp(encoder, "x265_12bit") == 0 ) {
-            if (value > 51 || value < -24) {
-                valid = FALSE;
-                hbr_error("Value outside range [-24,51] for encoder %s",
-                        config_path, group, option->name, string, encoder);
-            }
-        }
-        if (strcmp(encoder, "mpeg4") == 0 || strcmp(encoder, "mpeg2") == 0 ) {
-            if (value > 31 || value < 1) {
-                valid = FALSE;
-                hbr_error("Value outside range [0,31] for encoder %s",
-                        config_path, group, option->name, string, encoder);
-            }
-        }
-        if (strcmp(encoder, "VP8") == 0 || strcmp(encoder, "VP9") == 0 ||
-                strcmp(encoder, "theora") == 0 ) {
-            if (value > 63 || value < 0) {
-                valid = FALSE;
-                hbr_error("Value outside range [0,63] for encoder %s",
-                        config_path, group, option->name, string, encoder);
-            }
+        if (value < lower_value || value > upper_value) {
+            valid = FALSE;
+            hbr_error("Value outside range [%lu,%lu] for encoder %s",
+                      config_path, group, option->name, string,
+                      lower_value, upper_value, encoder);
         }
     }
     g_free(encoder);
@@ -1661,8 +1648,8 @@ gboolean valid_video_bitrate(option_t *option, const gchar *group, GKeyFile *con
     return valid;
 }
 
-gboolean valid_video_framerate(option_t *option, const gchar *group, GKeyFile *config,
-         const gchar *config_path)
+gboolean valid_video_framerate(option_t *option, const gchar *group,
+        GKeyFile *config, const gchar *config_path)
 {
     g_print("valid_video_framerate: %s\n", option->name);  //TODO REMOVE
     // try to interpret it with valid_string_set style lookup
@@ -1680,45 +1667,40 @@ gboolean valid_chroma(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid_bool = TRUE, valid_crop = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_bool = FALSE;
         g_error_free(error);
+    } else {
+        return TRUE;
     }
 
     // check crop values
     error = NULL;
     gsize crop_count;
     g_key_file_set_list_separator(config, ':');
-    gint *crop = g_key_file_get_integer_list(config, group, option->name, &crop_count, &error);
+    gint *crop = g_key_file_get_integer_list(config, group, option->name,
+            &crop_count, &error);
     g_key_file_set_list_separator(config, ',');
     if (error != NULL) {
-        valid_crop = FALSE;
         g_error_free(error);
-    }
-    if (crop_count != 4) {
-        valid_crop = FALSE;
     } else {
-        for (gsize i = 0; i < crop_count; i++) {
-            if (crop[i] < 0) {
-                valid_crop = FALSE;
-            }
+        if (crop_count == 4 && crop[0] >= 0 && crop[1] >= 0 && crop[2] >= 0
+                && crop[3] >= 0) {
+            g_free(crop);
+            return TRUE;
         }
     }
     g_free(crop);
 
-    if (!valid_bool && !valid_crop) {
-        gchar *value = g_key_file_get_value(config, group, option->name, NULL);
-        hbr_error("Crop should be true/false or 4 colon separated positive"
-                " integers (top:bottom:left:right)", config_path, group,
-                option->name, value);
-        g_free(value);
-    }
+    gchar *value = g_key_file_get_value(config, group, option->name, NULL);
+    hbr_error("Crop should be true/false or 4 colon separated positive"
+            " integers (top:bottom:left:right)", config_path, group,
+            option->name, value);
+    g_free(value);
 
-    return (valid_bool || valid_crop);
+    return FALSE;
 }
 
 gboolean valid_pixel_aspect(option_t *option, const gchar *group, GKeyFile *config,
@@ -1731,97 +1713,42 @@ gboolean valid_pixel_aspect(option_t *option, const gchar *group, GKeyFile *conf
 gboolean valid_decomb(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_bool = FALSE;
         g_error_free(error);
-    }
-
-    // check for presets (bob, eedi2, eedi2bob)
-    error = NULL;
-    gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    if (error == NULL) {
-        if (strcmp(value, "bob") != 0 && strcmp(value, "eedi2") != 0 &&
-                strcmp(value, "eedi2bob") != 0) {
-            valid_preset = FALSE;
-        }
     } else {
-        valid_preset = FALSE;
-        g_error_free(error);
+        return TRUE;
     }
 
     // check for filter
     // change separator temporarily to parse colon separated list
-    g_key_file_set_list_separator(config, ':');
-    error = NULL;
-    gsize filter_count = 0;
-    gchar **filters = g_key_file_get_string_list(config, group,
-            option->name, &filter_count, &error);
-    if (error != NULL) {
-        valid_custom = FALSE;
-        g_error_free(error);
-    } else {
-        const gchar *filter_names[] = { "mode", "magnitude-thresh",
+    const gchar *filter_names[] = { "mode", "magnitude-thresh",
             "variance-thresh", "laplacian-thresh", "dilation-thresh",
             "erosion-thresh", "noise-thresh", "search-distance", "postproc",
             "parity", NULL};
-        for (gsize i = 0; i < filter_count; i++) {
-            g_strstrip(filters[i]);
-            // split string on '=' into 2 tokens
-            gchar **tokens = g_strsplit(filters[i], "=", 2);
-            if (tokens[0] == NULL) {
-                valid_custom = FALSE;
-            } else if (tokens[1] == NULL) {
-                valid_custom = FALSE;
-                g_strfreev(tokens);
-            } else {
-                // verify first token is one of filter_names
-                int j = 0;
-                while (filter_names[j] != NULL) {
-                    if (strcmp(tokens[0], filter_names[j]) == 0) {
-                        break;
-                    }
-                    j++;
-                }
-                if (filter_names[j] == NULL) {
-                    valid_custom = FALSE;
-                }
-                // verify second token is a valid integer
-                int k = 0;
-                while (tokens[1][k] != '\0') {
-                    if (!g_ascii_isdigit(tokens[1][k])) {
-                        valid_custom = FALSE;
-                    }
-                    k++;
-                }
-                gchar *endptr = NULL;
-                gint64 number = g_ascii_strtoll(tokens[1], &endptr, 10);
-                if ((number == G_MAXINT64 || number == G_MININT64)
-                        && errno == ERANGE) {
-                    // value would cause overflow
-                    valid_custom = FALSE;
-                }
-                if (number == 0 && endptr == tokens[1]) {
-                    // string conversion failed
-                    valid_custom = FALSE;
-                }
-                g_strfreev(tokens);
-            }
-        }
+    const key_type filter_types[] = {k_integer, k_integer, k_integer,
+        k_integer, k_integer, k_integer, k_integer, k_integer, k_integer,
+        k_integer};
+    if (check_custom_format(filter_names, filter_types, config,
+            group, option)) {
+        return TRUE;
     }
-    g_strfreev(filters);
-    // reset separator
-    g_key_file_set_list_separator(config, ',');
 
-    if (!valid_bool && !valid_preset && !valid_custom) {
-        hbr_error("Invalid decomb option", config_path, group, option->name,
-                value);
+    // check for presets (set in handbrake/options*.h)
+    // we do the preset check last so that it does not give errors if
+    // the key value is a boolean or custom format
+    if (valid_string_set(option, group, config, config_path)) {
+        return TRUE;
     }
+
+
+    gchar* value = g_key_file_get_string(config, group, option->name, &error);
+    hbr_error("Invalid decomb option", config_path, group, option->name,
+            value);
     g_free(value);
-    return (valid_bool || valid_preset || valid_custom);
+    return FALSE;
 }
 
 gboolean valid_denoise(option_t *option, const gchar *group, GKeyFile *config,
@@ -1913,115 +1840,78 @@ gboolean valid_denoise(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_deblock(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid_bool = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_bool = FALSE;
-        g_error_free(error);
-    }
-
-    // check for custom format
-    error = NULL;
-    gsize filter_count = 0;
-
-    g_key_file_set_list_separator(config, ':');
-    gchar **filters = g_key_file_get_string_list(config, group,
-            option->name, &filter_count, &error);
-    g_key_file_set_list_separator(config, ',');
-
-    if (error != NULL) {
-        valid_custom = FALSE;
         g_error_free(error);
     } else {
-        const gchar *filter_names[] = { "qp", "mode", "disable", NULL};
-        for (gsize i = 0; i < filter_count; i++) {
-            g_strstrip(filters[i]);
-            // split string on '=' into 2 tokens
-            gchar **tokens = g_strsplit(filters[i], "=", 2);
-            if (tokens[0] == NULL) {
-                valid_custom = FALSE;
-            } else if (tokens[1] == NULL) {
-                valid_custom = FALSE;
-                g_strfreev(tokens);
-            } else {
-                // verify first token is one of filter_names
-                int j = 0;
-                while (filter_names[j] != NULL) {
-                    if (strcmp(tokens[0], filter_names[j]) == 0) {
-                        break;
-                    }
-                    j++;
-                }
-                if (filter_names[j] == NULL) {
-                    valid_custom = FALSE;
-                }
-                // verify second token is a valid integer
-                int k = 0;
-                while (tokens[1][k] != '\0') {
-                    if (!g_ascii_isdigit(tokens[1][k])) {
-                        valid_custom = FALSE;
-                    }
-                    k++;
-                }
-                gchar *endptr = NULL;
-                gint64 number = g_ascii_strtoll(tokens[1], &endptr, 10);
-                if ((number == G_MAXINT64 || number == G_MININT64)
-                        && errno == ERANGE) {
-                    // value would cause overflow
-                    valid_custom = FALSE;
-                }
-                if (number == 0 && endptr == tokens[1]) {
-                    // string conversion failed
-                    valid_custom = FALSE;
-                }
-                g_strfreev(tokens);
-            }
-        }
+        return TRUE;
     }
-    g_strfreev(filters);
+
+    //TODO FIXME deblock custom type changed in 1.3
+    // perhaps I need to rethink holding custom formats here and somehow
+    // move them to the options file. Am I going to need a new array?
+
+    // check for filter
+    // change separator temporarily to parse colon separated list
+    const gchar *filter_names[] = { "qp", "mode", "disable", NULL};
+    const key_type filter_types[] = {k_integer, k_integer, k_integer};
+    //1.3.x stuff
+    // const gchar *filter_names[] = { "strength", "thresh", "blocksize", "disable", NULL};
+    // const key_type filter_types[] = {k_string, k_integer, k_integer, k_bool???};
+    if (check_custom_format(filter_names, filter_types, config,
+            group, option)) {
+        return TRUE;
+    }
+
+    // check for presets (set in handbrake/options*.h)
+    // we do the preset check last so that it does not give errors if
+    // the key value is a boolean or custom format
+    if (valid_string_set(option, group, config, config_path)) {
+        return TRUE;
+    }
 
     gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    if (!valid_bool && !valid_custom) {
-        hbr_error("Invalid deblock option", config_path, group, option->name,
-                value);
-    }
+    hbr_error("Invalid deblock option", config_path, group, option->name,
+            value);
     g_free(value);
-    return (valid_bool || valid_custom);
+    return FALSE;
 }
 
 gboolean valid_deinterlace(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_bool = FALSE;
         g_error_free(error);
+    } else {
+        return TRUE;
     }
-
-    // check for presets (permissive, fast)
-    // TODO valid_string_set() errors, but we don't want to print an error
-    // here unless all three fail
-    valid_preset = valid_string_set(option, group, config, config_path);
 
     // check for filter
     // change separator temporarily to parse colon separated list
     const gchar *filter_names[] = {"mode", "parity", NULL};
     const key_type filter_types[] = {k_integer, k_integer};
-    valid_custom = check_custom_format(filter_names, filter_types, config,
-            group, option);
-
-    if (!valid_bool && !valid_preset && !valid_custom) {
-        gchar* value = g_key_file_get_string(config, group, option->name, &error);
-        hbr_error("Invalid deinterlace option", config_path, group, option->name,
-                value);
-        g_free(value);
+    if (check_custom_format(filter_names, filter_types, config,
+            group, option)) {
+        return TRUE;
     }
-    return (valid_bool || valid_preset || valid_custom);
+
+    // check for presets (set in handbrake/options*.h)
+    // we do the preset check last so that it does not give errors if
+    // the key value is a boolean or custom format
+    if (valid_string_set(option, group, config, config_path)) {
+        return TRUE;
+    }
+
+    gchar* value = g_key_file_get_string(config, group, option->name, &error);
+    hbr_error("Invalid deinterlace option", config_path, group, option->name,
+            value);
+    g_free(value);
+    return FALSE;
 }
 
 gboolean valid_detelecine(option_t *option, const gchar *group, GKeyFile *config,
@@ -2631,19 +2521,14 @@ gboolean valid_qsv_decoding(option_t *option, const gchar *group, GKeyFile *conf
 gboolean valid_comb_detect(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    gboolean valid_bool = TRUE, valid_preset = TRUE, valid_custom = TRUE;
     // check for boolean value
     GError *error = NULL;
     g_key_file_get_boolean(config, group, option->name, &error);
     if (error != NULL) {
-        valid_bool = FALSE;
         g_error_free(error);
+    } else {
+        return TRUE;
     }
-
-    // check for presets (permissive, fast)
-    // TODO valid_string_set() errors, but we don't want to print an error
-    // here unless all three fail
-    valid_preset = valid_string_set(option, group, config, config_path);
 
     // check for filter
     // change separator temporarily to parse colon separated list
@@ -2653,16 +2538,23 @@ gboolean valid_comb_detect(option_t *option, const gchar *group, GKeyFile *confi
     const key_type filter_types[] = {k_integer, k_integer,
         k_integer, k_integer, k_integer, k_integer,
         k_integer, k_integer, k_integer};
-    valid_custom = check_custom_format(filter_names, filter_types, config,
-            group, option);
-
-    if (!valid_bool && !valid_preset && !valid_custom) {
-        gchar* value = g_key_file_get_string(config, group, option->name, &error);
-        hbr_error("Invalid decomb option", config_path, group, option->name,
-                value);
-        g_free(value);
+    if (check_custom_format(filter_names, filter_types, config,
+            group, option)) {
+        return TRUE;
     }
-    return (valid_bool || valid_preset || valid_custom);
+
+    // check for presets (set in handbrake/options*.h)
+    // we do the preset check last so that it does not give errors if
+    // the key value is a boolean or custom format
+    if (valid_string_set(option, group, config, config_path)) {
+        return TRUE;
+    }
+
+    gchar* value = g_key_file_get_string(config, group, option->name, &error);
+    hbr_error("Invalid decomb option", config_path, group, option->name,
+            value);
+    g_free(value);
+    return FALSE;
 }
 
 gboolean valid_pad(option_t *option, const gchar *group, GKeyFile *config,
@@ -2692,4 +2584,3 @@ gboolean valid_preset_name(option_t *option, const gchar *group, GKeyFile *confi
     g_print("valid_preset_name: %s\n", option->name);  //TODO REMOVE
     return FALSE; //TODO incomplete
 }
-

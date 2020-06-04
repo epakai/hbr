@@ -187,8 +187,9 @@ GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
          * I forgot the exact issue I was having, but I'm pretty sure there was an issue
          * with remove_conflicts not actually removing conflicts
          */
-        remove_conflicts(key_list[i], k, new_group, alt, a_group);
+
         gchar *temp = g_key_file_get_value(pref, p_group, key_list[i], NULL);
+        remove_conflicts(key_list[i], temp, k, new_group, alt, a_group);
         g_key_file_set_value(k, new_group, key_list[i], temp);
         g_free(temp);
     }
@@ -201,6 +202,7 @@ GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
  *        This enables us to override conflicting options.
  *
  * @param key              The key we are checking has any conflicts
+ * @param value            Value of the key, okay if NULL
  * @param modified_keyfile Keyfile to be modified (conflicting keys removed)
  * @param mod_group        Group that the keys are in
  * @param checked_keyfile  Keyfile we actually check against.
@@ -210,7 +212,7 @@ GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
  *                         validation instead.
  * @param check_group      Group in the checked_keyfile
  */
-void remove_conflicts(gchar *key, GKeyFile *modified_keyfile,
+void remove_conflicts(gchar *key, gchar *value, GKeyFile *modified_keyfile,
         const gchar *mod_group, GKeyFile *checked_keyfile,
         const gchar* check_group)
 {
@@ -228,33 +230,32 @@ void remove_conflicts(gchar *key, GKeyFile *modified_keyfile,
         if (g_key_file_has_key(checked_keyfile, check_group,
                     conflict.conflict_name, NULL)) {
             // skip keys that don't have the necessary specific to be a conflict
-            if (conflict.value != NULL) {
-                gchar *value = g_key_file_get_value(modified_keyfile, mod_group,
-                        conflict.name, NULL);
-                if (!(g_strcmp0(value, conflict.value) == 0)) {
-                    g_free(value);
-                    continue;
-                }
-                g_free(value);
+            if (conflict.value != NULL
+                    && !(g_strcmp0(value, conflict.value) == 0)) {
+                continue;
             }
+            gchar *checked_value = g_key_file_get_value(checked_keyfile, check_group,
+                    conflict.conflict_name, NULL);
             // check if the conflict value matches
             if (conflict.conflict_value != NULL){
-                gchar *value = g_key_file_get_value(checked_keyfile, check_group,
-                        conflict.conflict_name, NULL);
-                if (strcmp(value, conflict.conflict_value) == 0) {
-                    hbr_info("Removed conflicting option", NULL, mod_group,
-                            conflict.conflict_name, conflict.conflict_value);
+                if (strcmp(checked_value, conflict.conflict_value) == 0) {
+                    hbr_info("Removed conflicting option", NULL, check_group,
+                            conflict.conflict_name, checked_value);
+                    hbr_info("for option", NULL, mod_group, key,
+                            value);
                     g_key_file_remove_key(modified_keyfile, mod_group,
                             conflict.conflict_name, NULL);
                 }
-                g_free(value);
             } else {
                 // no value to match, just remove the key
-                hbr_info("Dropping conflicting option in", NULL, mod_group,
-                        conflict.conflict_name, conflict.conflict_value);
+                hbr_info("Dropping conflicting option", NULL, check_group,
+                        conflict.conflict_name, checked_value);
+                hbr_info("for option", NULL, mod_group, key,
+                        value);
                 g_key_file_remove_key(modified_keyfile, mod_group,
                         conflict.conflict_name, NULL);
             }
+            g_free(checked_value);
         }
     } while ((conflict_indexes = g_slist_next(conflict_indexes)));
 }

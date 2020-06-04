@@ -24,6 +24,11 @@
 #include <gio/gio.h>
 #include <stdarg.h>
 
+
+void message_level_info(void);
+void message_level_warn(void);
+void message_level_error(void);
+
 void hbr_error(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, ...);
 void hbr_verror(const gchar *format, const gchar *path, const gchar *section,

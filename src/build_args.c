@@ -107,7 +107,7 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
 {
     GPtrArray *args = g_ptr_array_new_full(32, g_free);
 
-    int i = 0;
+    gint i = 0;
     while (options[i].name != NULL) {
         // Skip hbr_only keys
         if (options[i].arg_type == hbr_only) {
@@ -139,172 +139,27 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
          */
         //assert(options[i].valid_option(&options[i], config, group));
 
-        gchar *string_value;
-        gint integer_value;
-        gdouble double_value;
-        gchar **string_list_values;
-        gint *integer_list_values;
-        gdouble *double_list_values;
-        gsize count;
-        GString *arg;
         switch (options[i].key_type) {
             case k_string:
-                // handle boolean values for keys without optional arguments
-                if (options[i].arg_type == optional_argument) {
-                    GError *error = NULL;
-                    gboolean b = g_key_file_get_boolean(config, group,
-                            options[i].name, &error);
-                    if (error == NULL) {
-                        if (b == TRUE) {
-                            g_ptr_array_add(args, g_strdup_printf("--%s",
-                                        options[i].name));
-                        } else if (options[i].negation_option){
-                            gchar * negation_name = g_strdup_printf("no-%s",
-                                    options[i].name);
-                            if (g_key_file_has_key(config, group, negation_name,
-                                        NULL)) {
-                                if (g_key_file_get_boolean(config, group,
-                                            negation_name, NULL)) {
-                                    g_ptr_array_add(args,
-                                            g_strdup_printf("--%s",
-                                                negation_name));
-                                }
-                            }
-                            g_free(negation_name);
-                        }
-                        break;
-                    } else {
-                        g_error_free(error);
-                    }
-                }
-                // regular string option
-                string_value = g_key_file_get_string(config, group,
-                    options[i].name, NULL);
-                if (string_value != NULL) {
-                    g_ptr_array_add(args, g_strdup_printf("--%s=%s",
-                                options[i].name, string_value));
-                }
-                g_free(string_value);
+                build_arg_string(config, group, args, i);
                 break;
             case k_boolean:
-                // check for affirmative boolean (i.e. markers)
-                if (g_key_file_get_boolean(config, group, options[i].name, NULL)) {
-                    g_ptr_array_add(args, g_strdup_printf("--%s", options[i].name));
-                }
-                // check for negating boolean (i.e. no-markers)
-                if (options[i].negation_option) {
-                    gchar * negation_name = g_strdup_printf("no-%s", options[i].name);
-                    if (g_key_file_has_key(config, group, negation_name, NULL)) {
-                        if (g_key_file_get_boolean(config, group, negation_name, NULL)) {
-                            g_ptr_array_add(args, g_strdup_printf("--%s", negation_name));
-                        }
-                    }
-                    g_free(negation_name);
-                }
+                build_arg_boolean(config, group, args, i);
                 break;
             case k_integer:
-                // special case for keys with arg_type optional_argument
-                // if integer value is 0 or 1, take integer value
-                // otherwise interpret as boolean and output bare option if true
-                integer_value = g_key_file_get_integer(config, group,
-                        options[i].name, NULL);
-                if (options[i].arg_type == optional_argument &&
-                        integer_value != 0 && integer_value != 1) {
-                    GError *error = NULL;
-                    gboolean b = g_key_file_get_boolean(config, group,
-                            options[i].name, &error);
-                    if (error == NULL) {
-                        if (b == TRUE) {
-                            g_ptr_array_add(args, g_strdup_printf("--%s",
-                                        options[i].name));
-                        } else if (options[i].negation_option){
-                            gchar * negation_name = g_strdup_printf("no-%s",
-                                    options[i].name);
-                            if (g_key_file_has_key(config, group, negation_name,
-                                        NULL)) {
-                                if (g_key_file_get_boolean(config, group,
-                                            negation_name, NULL)) {
-                                    g_ptr_array_add(args,
-                                            g_strdup_printf("--%s",
-                                                negation_name));
-                                }
-                            }
-                            g_free(negation_name);
-                        }
-                        break;
-                    }
-                }
-                g_ptr_array_add(args, g_strdup_printf("--%s=%d",
-                            options[i].name, integer_value));
+                build_arg_integer(config, group, args, i);
                 break;
             case k_double:
-                double_value = g_key_file_get_double(config, group,
-                        options[i].name, NULL);
-                g_ptr_array_add(args, g_strdup_printf("--%s=%f",
-                            options[i].name, double_value));
+                build_arg_double(config, group, args, i);
                 break;
             case k_string_list:
-                // handle boolean values for keys with optional arguments
-                if (options[i].arg_type == optional_argument) {
-                    GError *error = NULL;
-                    gboolean b = g_key_file_get_boolean(config, group,
-                            options[i].name, &error);
-                    if (error == NULL) {
-                        if (b == TRUE) {
-                            g_ptr_array_add(args, g_strdup_printf("--%s",
-                                        options[i].name));
-                        } else if (options[i].negation_option){
-                            gchar * negation_name = g_strdup_printf("no-%s",
-                                    options[i].name);
-                            if (g_key_file_has_key(config, group, negation_name,
-                                        NULL)) {
-                                if (g_key_file_get_boolean(config, group,
-                                            negation_name, NULL)) {
-                                    g_ptr_array_add(args,
-                                            g_strdup_printf("--%s",
-                                                negation_name));
-                                }
-                            }
-                            g_free(negation_name);
-                        }
-                        break;
-                    }
-                }
-                string_list_values = g_key_file_get_string_list(config, group,
-                        options[i].name, &count, NULL);
-                arg = g_string_new(NULL);
-                g_string_append_printf(arg, "--%s=", options[i].name);
-                for (gsize m = 0; m < count; m++) {
-                    g_string_append_printf(arg, "%s,",
-                            g_strstrip(string_list_values[m]));
-                }
-                g_strfreev(string_list_values);
-                g_ptr_array_add(args, arg->str);
-                g_string_free(arg, FALSE);
+                build_arg_string_list(config, group, args, i);
                 break;
             case k_integer_list:
-                integer_list_values = g_key_file_get_integer_list(config, group,
-                        options[i].name, &count, NULL);
-                arg = g_string_new(NULL);
-                g_string_append_printf(arg, "--%s=", options[i].name);
-                for (gsize n = 0; n < count; n++) {
-                    g_string_append_printf(arg, "%d,", integer_list_values[n]);
-                }
-                g_free(integer_list_values);
-                g_ptr_array_add(args, arg->str);
-                g_string_free(arg, FALSE);
+                build_arg_integer_list(config, group, args, i);
                 break;
             case k_double_list:
-                double_list_values = g_key_file_get_double_list(config, group,
-                        options[i].name, &count, NULL);
-                arg = g_string_new(NULL);
-                g_string_append_printf(arg, "--%s=", options[i].name);
-                for (gsize o = 0; o < count; o++) {
-                    g_string_append_printf(arg, "%.1f,", double_list_values[o]);
-                }
-                g_free(double_list_values);
-                g_ptr_array_add(args, arg->str);
-                g_string_free(arg, FALSE);
+                build_arg_double_list(config, group, args, i);
                 break;
             default:
                 hbr_error("Invalid key type. This should not be reached " \
@@ -354,6 +209,234 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
     return args;
 }
 
+/**
+ * @brief Builds arguments where the key type is a string
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_string(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    gchar *string_value;
+    // handle boolean values for keys without optional arguments
+    if (options[i].arg_type == optional_argument) {
+        GError *error = NULL;
+        gboolean b = g_key_file_get_boolean(config, group,
+                options[i].name, &error);
+        if (error == NULL) {
+            if (b == TRUE) {
+                g_ptr_array_add(args, g_strdup_printf("--%s",
+                            options[i].name));
+            } else if (options[i].negation_option){
+                gchar * negation_name = g_strdup_printf("no-%s",
+                        options[i].name);
+                if (g_key_file_has_key(config, group, negation_name,
+                            NULL)) {
+                    if (g_key_file_get_boolean(config, group,
+                                negation_name, NULL)) {
+                        g_ptr_array_add(args,
+                                g_strdup_printf("--%s",
+                                    negation_name));
+                    }
+                }
+                g_free(negation_name);
+            }
+            return;
+        } else {
+            g_error_free(error);
+        }
+    }
+    // regular string option
+    string_value = g_key_file_get_string(config, group,
+            options[i].name, NULL);
+    if (string_value != NULL) {
+        g_ptr_array_add(args, g_strdup_printf("--%s=%s",
+                    options[i].name, string_value));
+    }
+    g_free(string_value);
+    return;
+}
+
+/**
+ * @brief Builds arguments where the key type is a boolean
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_boolean(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    // check for affirmative boolean (i.e. markers)
+    if (g_key_file_get_boolean(config, group, options[i].name, NULL)) {
+        g_ptr_array_add(args, g_strdup_printf("--%s", options[i].name));
+    }
+    // check for negating boolean (i.e. no-markers)
+    if (options[i].negation_option) {
+        gchar * negation_name = g_strdup_printf("no-%s", options[i].name);
+        if (g_key_file_has_key(config, group, negation_name, NULL)) {
+            if (g_key_file_get_boolean(config, group, negation_name, NULL)) {
+                g_ptr_array_add(args, g_strdup_printf("--%s", negation_name));
+            }
+        }
+        g_free(negation_name);
+    }
+}
+
+/**
+ * @brief Builds arguments where the key type is a integer
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_integer(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    // special case for keys with arg_type optional_argument
+    // if integer value is 0 or 1, take integer value
+    // otherwise interpret as boolean and output bare option if true
+    gint integer_value = g_key_file_get_integer(config, group,
+            options[i].name, NULL);
+    if (options[i].arg_type == optional_argument &&
+            integer_value != 0 && integer_value != 1) {
+        GError *error = NULL;
+        gboolean b = g_key_file_get_boolean(config, group,
+                options[i].name, &error);
+        if (error == NULL) {
+            if (b == TRUE) {
+                g_ptr_array_add(args, g_strdup_printf("--%s",
+                            options[i].name));
+            } else if (options[i].negation_option){
+                gchar * negation_name = g_strdup_printf("no-%s",
+                        options[i].name);
+                if (g_key_file_has_key(config, group, negation_name,
+                            NULL)) {
+                    if (g_key_file_get_boolean(config, group,
+                                negation_name, NULL)) {
+                        g_ptr_array_add(args,
+                                g_strdup_printf("--%s",
+                                    negation_name));
+                    }
+                }
+                g_free(negation_name);
+            }
+            return;
+        }
+    }
+    g_ptr_array_add(args, g_strdup_printf("--%s=%d",
+                options[i].name, integer_value));
+}
+
+/**
+ * @brief Builds arguments where the key type is a double
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_double(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    gdouble double_value = g_key_file_get_double(config, group,
+            options[i].name, NULL);
+    g_ptr_array_add(args, g_strdup_printf("--%s=%f",
+                options[i].name, double_value));
+}
+
+/**
+ * @brief Builds arguments where the key type is a list of strings
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_string_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    GString *arg;
+    gsize count;
+    // handle boolean values for keys with optional arguments
+    if (options[i].arg_type == optional_argument) {
+        GError *error = NULL;
+        gboolean b = g_key_file_get_boolean(config, group,
+                options[i].name, &error);
+        if (error == NULL) {
+            if (b == TRUE) {
+                g_ptr_array_add(args, g_strdup_printf("--%s",
+                            options[i].name));
+            } else if (options[i].negation_option){
+                gchar * negation_name = g_strdup_printf("no-%s",
+                        options[i].name);
+                if (g_key_file_has_key(config, group, negation_name,
+                            NULL)) {
+                    if (g_key_file_get_boolean(config, group,
+                                negation_name, NULL)) {
+                        g_ptr_array_add(args,
+                                g_strdup_printf("--%s",
+                                    negation_name));
+                    }
+                }
+                g_free(negation_name);
+            }
+            return;
+        }
+    }
+    gchar **string_list_values = g_key_file_get_string_list(config, group,
+            options[i].name, &count, NULL);
+    arg = g_string_new(NULL);
+    g_string_append_printf(arg, "--%s=", options[i].name);
+    for (gsize m = 0; m < count; m++) {
+        g_string_append_printf(arg, "%s,",
+                g_strstrip(string_list_values[m]));
+    }
+    g_strfreev(string_list_values);
+    g_ptr_array_add(args, arg->str);
+    g_string_free(arg, FALSE);
+}
+
+/**
+ * @brief Builds arguments where the key type is a list of integers
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_integer_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    GString *arg;
+    gsize count;
+    gint *integer_list_values = g_key_file_get_integer_list(config, group,
+            options[i].name, &count, NULL);
+    arg = g_string_new(NULL);
+    g_string_append_printf(arg, "--%s=", options[i].name);
+    for (gsize n = 0; n < count; n++) {
+        g_string_append_printf(arg, "%d,", integer_list_values[n]);
+    }
+    g_free(integer_list_values);
+    g_ptr_array_add(args, arg->str);
+    g_string_free(arg, FALSE);
+}
+
+/**
+ * @brief Builds arguments where the key type is a list of doubles
+ *
+ * @param config KeyFile to pull values from
+ * @param group  group to pull values from
+ * @param args   argument array to append argument to
+ * @param i      index of the option being built
+ */
+void build_arg_double_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+    GString *arg;
+    gsize count;
+    gdouble *double_list_values = g_key_file_get_double_list(config, group,
+            options[i].name, &count, NULL);
+    arg = g_string_new(NULL);
+    g_string_append_printf(arg, "--%s=", options[i].name);
+    for (gsize o = 0; o < count; o++) {
+        g_string_append_printf(arg, "%.1f,", double_list_values[o]);
+    }
+    g_free(double_list_values);
+    g_ptr_array_add(args, arg->str);
+    g_string_free(arg, FALSE);
+}
 
 /**
  * @brief Generate a filename for an OUTFILE group
@@ -392,39 +475,31 @@ gchar * build_filename(GKeyFile *config, const gchar *group)
             append_year(config, group, filename);
             g_string_append(filename, G_DIR_SEPARATOR_S);
         }
+        // extras subdirectories
         if (extra_type) {
-            gchar *extra_name = NULL;
-            if (strcmp(extra_type, "behindthescenes") == 0) {
-                extra_name = g_strdup("Behind The Scenes");
-            }
-            if (strcmp(extra_type, "deleted") == 0) {
-                extra_name = g_strdup("Deleted Scenes");
-            }
-            if (strcmp(extra_type, "featurette") == 0) {
-                extra_name = g_strdup("Featurettes");
-            }
-            if (strcmp(extra_type, "interview") == 0) {
-                extra_name = g_strdup("Interviews");
-            }
-            if (strcmp(extra_type, "scene") == 0) {
-                extra_name = g_strdup("Scenes");
-            }
-            if (strcmp(extra_type, "short") == 0) {
-                extra_name = g_strdup("Shorts");
-            }
-            if (strcmp(extra_type, "trailer") == 0) {
-                extra_name = g_strdup("Trailers");
-            }
-            if (strcmp(extra_type, "other") == 0) {
-                extra_name = g_strdup("Others");
+            struct extra {
+                const char *extra_type;
+                const char *extra_name;
+            } extras[] = {
+                {"behindthescenes", "Behind The Scenes"},
+                {"deleted", "Deleted Scenes"},
+                {"featurette", "Featurettes"},
+                {"interview", "Interviews"},
+                {"scene", "Scenes"},
+                {"short", "Shorts"},
+                {"trailer", "Trailers"},
+                {"other", "Others"},
+                {NULL, NULL}
+            };
+            int i = 0;
+            while (extras[i].extra_type != NULL) {
+                if (strcmp(extra_type, extras[i].extra_type) == 0) {
+                    g_string_append(filename, extras[i].extra_name);
+                    g_string_append(filename, G_DIR_SEPARATOR_S);
+                }
+                i++;
             }
             g_free(extra_type);
-            if (extra_name) {
-                g_string_append(filename, extra_name);
-                g_string_append(filename, G_DIR_SEPARATOR_S);
-            }
-
-            g_free(extra_name);
         } else {
             g_string_append(filename, name);
         }
@@ -435,14 +510,14 @@ gchar * build_filename(GKeyFile *config, const gchar *group)
         g_string_append(filename, name);
         gboolean has_season = g_key_file_has_key(config, group, "season", NULL);
         gboolean has_episode = g_key_file_has_key(config, group, "episode", NULL);
-        if (has_season || has_episode) {
-            g_string_append(filename, " - ");
-            if (has_season) {
-                g_string_append_printf(filename, "s%02d", season);
+        if (has_season) {
+            g_string_append_printf(filename, " - s%02d", season);
+        }
+        if (has_episode) {
+            if (!has_season) {
+                g_string_append(filename, " - ");
             }
-            if (has_episode) {
-                g_string_append_printf(filename, "e%03d", episode);
-            }
+            g_string_append_printf(filename, "e%03d", episode);
         }
     }
     if (specific_name && !extra_type) {

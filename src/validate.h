@@ -40,7 +40,12 @@ gboolean has_duplicate_groups(const gchar *infile);
 gboolean has_duplicate_keys(const gchar *infile);
 gboolean check_custom_format (const gchar *keys[], const key_type type[],
         GKeyFile *config, const gchar *group, option_t *option);
-
+void type_config_warnings(gchar *type, gboolean has_season,
+        gboolean has_episode, gboolean has_year, GKeyFile *config,
+        const gchar *config_path);
+void type_outfile_warnings(gchar *type, gboolean has_season,
+        gboolean has_episode, gboolean has_year, const gchar *group,
+        GKeyFile *config, const gchar *config_path);
 /*
  * Input validation for hbr specific options
  */

@@ -204,6 +204,13 @@ GHashTable *conflicts_index;
 GHashTable *depends_index;
 
 GPtrArray *build_args(GKeyFile *config, const gchar *group, gboolean quoted);
+void build_arg_string(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_boolean(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_integer(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_double(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_string_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_integer_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
+void build_arg_double_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i);
 gchar *build_filename(GKeyFile *config, const gchar *group);
 void append_year(GKeyFile *config, const gchar *group, GString *path);
 
