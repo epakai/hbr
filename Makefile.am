@@ -84,7 +84,7 @@ endif
 
 if HAVE_CODESPELL
 codespell:
-	@- codespell --quiet-level=3 --ignore-words-list=ang,dum,fro,que,som,tha $(SOURCES) @MAINPAGE_MDFILE@
+	@- codespell --quiet-level=3 -I $(top_srcdir)/.codespell_ignore $(SOURCES) @MAINPAGE_MDFILE@
 else
 codespell:
 	@echo *** codespell not found.
