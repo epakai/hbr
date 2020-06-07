@@ -1,0 +1,32 @@
+Tests are implemented using cram (a simple CLI testing framework). In Debian
+this is packaged as python3-cram.
+
+Tests consist of a test file (test.t), some hbr configs (in configs dir), and
+some hbr input files in a directory of the same name as the test file (test,
+in this case). The test file contains the commands to be run (lines start with
+two spaces, a $, then one space followed by the command)
+
+Normally you can run these tests with the make target from your build directory:
+    make test
+
+For modifying, updating, or creating new tests an environment variable with your
+hbr path needs to be set before running cram.
+    export CRAM_HBR=/path/to/hbr/under/test/hbr
+
+Then cram can be run manually on individual tests:
+    cram3 test.t
+
+Updating test output is done via an interactive mode:
+    cram3 -i test.t
+
+Cram will display a diff and ask for confirmation to update the test file with
+the new output.
+
+Notes on creating tests:
+    Tests have to be reproducible on other platforms independent of the build
+    location. My method for this so far is to use the $TESTDIR envvar provided
+    by cram, then use sed to strip it out of all output and replace it with 
+    a literal string "TESTDIR".
+
+    Cram also uses a tmp directory for it's working directory. These random
+    names also cause issues if they are included in test output.
