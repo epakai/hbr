@@ -1,11 +1,11 @@
 good queue-import-file path (queue-import-file=/filename)
-  $ "$CRAM_HBR" -d -c "$TESTDIR"/configs/empty "$TESTDIR"/valid_filename_component/good.hbr 2>&1 | sed 's@'"$TESTDIR"'@TESTDIR@g'
+  $ "$CRAM_HBR" "$CRAM_HBR_ARGS" -d -c "$TESTDIR"/configs/empty "$TESTDIR"/valid_filename_component/good.hbr 2>&1 | sed 's@'"$TESTDIR"'@TESTDIR@g'
   \x1b[1m# Encoding: 1/1: good (2000).mkv (esc)
   \x1b[0mHandBrakeCLI --title=1 --queue-import-file=/filename -i '/test.iso' -o 'good (2000).mkv' (esc)
 
 Bad values (one per ascii control character (1-10,11,12,14-31, 127)
 Newline (10) and Carriage Return (13) are excluded because glib Keyfile eats those
-  $ "$CRAM_HBR" -d -c "$TESTDIR"/configs/empty "$TESTDIR"/valid_filename_component/bad.hbr 2>&1 | sed 's@'"$TESTDIR"'@TESTDIR@g'
+  $ "$CRAM_HBR" "$CRAM_HBR_ARGS" -d -c "$TESTDIR"/configs/empty "$TESTDIR"/valid_filename_component/bad.hbr 2>&1 | sed 's@'"$TESTDIR"'@TESTDIR@g'
   hbr   ERROR: Filename component contains control character: (TESTDIR/valid_filename_component/bad.hbr) [OUTFILE1] queue-import-file= 
   hbr   ERROR: Filename component contains control character: (TESTDIR/valid_filename_component/bad.hbr) [OUTFILE2] queue-import-file= 
   hbr   ERROR: Filename component contains control character: (TESTDIR/valid_filename_component/bad.hbr) [OUTFILE3] queue-import-file= 

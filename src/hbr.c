@@ -141,7 +141,7 @@ int main(int argc, char * argv[])
     }
 
     // setup options pointers and lookup tables
-    determine_handbrake_version(NULL);
+    determine_handbrake_version(opt_hbversion);
     arg_hash_generate();
 
     // parse hbr config or create a default

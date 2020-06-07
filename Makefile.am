@@ -100,6 +100,8 @@ code-analysis:
 
 if HAVE_CRAM3
 cram: export CRAM_HBR=$(abs_builddir)/hbr
+# Set handbrake version explicitly otherwise tests may not be reproducible
+cram: export CRAM_HBR_ARGS=--hbversion=1.3.0
 cram: hbr
 	cram3 -qv $(top_srcdir)/tests
 clean-test:
