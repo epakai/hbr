@@ -235,10 +235,15 @@ def build_parser(title_list):
     autocrop = '+ autocrop:' + pp.Word(pp.nums + '/')("autocrop")
     autocrop.setParseAction(set_autocrop(title_list))
 
+    # old output
+    # + 1: cells 0->0, 830371 blocks, duration 00:27:06
+    # new output
+    # + 1: duration 00:27:06
     chapter = ('+'
                + pp.Word(pp.nums)("chapter_number")
                + ':'
-               + pp.Word(pp.printables) * 5
+               + pp.Optional(pp.Word(pp.printables) * 4)
+               + 'duration'
                + time("chapter_duration"))
     chapter.setParseAction(add_chapter(title_list))
 
