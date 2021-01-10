@@ -80,15 +80,15 @@ GKeyFile * parse_key_file(char *infile)
                 G_KEY_FILE_KEEP_COMMENTS, &error))
     {
         if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
-            hbr_error("Error loading file: %s", infile, NULL, NULL, NULL);
+            hbr_error("Error loading file:", infile, NULL, NULL, NULL);
             hbr_error("%s", NULL, NULL, NULL, NULL, error->message);
         } else if (g_error_matches (error, G_KEY_FILE_ERROR,
                     G_KEY_FILE_ERROR_PARSE)) {
-            hbr_error("Error parsing file: %s", infile, NULL, NULL, NULL);
+            hbr_error("Error parsing file:", infile, NULL, NULL, NULL);
             hbr_error("%s", NULL, NULL, NULL, NULL, error->message);
         } else if (g_error_matches (error, G_KEY_FILE_ERROR,
                     G_KEY_FILE_ERROR_UNKNOWN_ENCODING)) {
-            hbr_error("File has unknown encoding: %s", infile, NULL, NULL, NULL);
+            hbr_error("File has unknown encoding:", infile, NULL, NULL, NULL);
             hbr_error("%s", NULL, NULL, NULL, NULL, error->message);
         }
         g_error_free(error);
