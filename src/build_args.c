@@ -33,13 +33,30 @@
 #include "handbrake/options-1.2.0.h"
 #include "handbrake/options-1.3.0.h"
 
+// see build_args.h
+option_t *version_options;
+custom_t *version_customs;
+require_t *version_requires;
+conflict_t *version_conflicts;
+size_t version_options_size;
+size_t version_customs_size;
+size_t version_requires_size;
+size_t version_conflicts_size;
+option_t *options;
+custom_t *customs;
+require_t *requires;
+conflict_t *conflicts;
+GHashTable *options_index;
+GHashTable *customs_index;
+GHashTable *requires_index;
+GHashTable *conflicts_index;
+
 /*
  * hbr specific options tables
  * These aren't valid options to pass to HandBrakeCLI.
  * They are used by hbr to generate file names, specify file locations,
  * or control hbr features.
  */
-
 
 /**
  * @brief hbr specific keys
@@ -56,9 +73,9 @@ static option_t hbr_options[] =
     { "output_basedir", hbr_only, k_string, FALSE, valid_writable_path, 0, NULL},
     { "iso_filename", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
     { "name", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
-    { "year", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
-    { "season", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
-    { "episode", hbr_only, k_integer, FALSE, valid_integer, 0, NULL},
+    { "year", hbr_only, k_integer, FALSE, valid_positive_integer, 0, NULL},
+    { "season", hbr_only, k_integer, FALSE, valid_positive_integer, 0, NULL},
+    { "episode", hbr_only, k_integer, FALSE, valid_positive_integer, 0, NULL},
     { "specific_name", hbr_only, k_string, FALSE, valid_filename_component, 0, NULL},
     { "preview", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL },
     // TODO document extra (it causes subdirectories to be created for extras)
@@ -68,7 +85,6 @@ static option_t hbr_options[] =
     { "debug", hbr_only, k_boolean, FALSE, valid_boolean, 0, NULL},
     { NULL, 0, 0, 0, NULL, 0, NULL}
 };
-
 
 /**
  * @brief hbr keys that require other keys
@@ -141,7 +157,7 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
 
         switch (options[i].key_type) {
             case k_string:
-                build_arg_string(config, group, args, i);
+                build_arg_string(config, group, args, i, FALSE);
                 break;
             case k_boolean:
                 build_arg_boolean(config, group, args, i);
@@ -153,13 +169,23 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
                 build_arg_double(config, group, args, i);
                 break;
             case k_string_list:
-                build_arg_string_list(config, group, args, i);
+                build_arg_string_list(config, group, args, i, FALSE);
                 break;
             case k_integer_list:
                 build_arg_integer_list(config, group, args, i);
                 break;
             case k_double_list:
                 build_arg_double_list(config, group, args, i);
+                break;
+            /*
+             * Paths are handled differently than other strings because they
+             * need to be quoted.
+             */
+            case k_path:
+                build_arg_string(config, group, args, i, TRUE);
+                break;
+            case k_path_list:
+                build_arg_string_list(config, group, args, i, TRUE);
                 break;
             default:
                 hbr_error("Invalid key type. This should not be reached " \
@@ -212,12 +238,14 @@ GPtrArray * build_args(GKeyFile *config, const gchar *group, gboolean quoted)
 /**
  * @brief Builds arguments where the key type is a string
  *
- * @param config KeyFile to pull values from
- * @param group  group to pull values from
- * @param args   argument array to append argument to
- * @param i      index of the option being built
+ * @param config       KeyFile to pull values from
+ * @param group        group to pull values from
+ * @param args         argument array to append argument to
+ * @param i            index of the option being built
+ * @param param_quoted when true strings are single quoted
  */
-void build_arg_string(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+void build_arg_string(GKeyFile *config, const gchar *group, GPtrArray *args,
+        gint i, gboolean param_quoted) {
     gchar *string_value;
     // handle boolean values for keys without optional arguments
     if (options[i].arg_type == optional_argument) {
@@ -251,8 +279,13 @@ void build_arg_string(GKeyFile *config, const gchar *group, GPtrArray *args, gin
     string_value = g_key_file_get_string(config, group,
             options[i].name, NULL);
     if (string_value != NULL) {
-        g_ptr_array_add(args, g_strdup_printf("--%s=%s",
-                    options[i].name, string_value));
+        if (param_quoted) {
+            g_ptr_array_add(args, g_strdup_printf("--%s=\"%s\"",
+                        options[i].name, string_value));
+        } else {
+            g_ptr_array_add(args, g_strdup_printf("--%s=%s",
+                        options[i].name, string_value));
+        }
     }
     g_free(string_value);
     return;
@@ -345,12 +378,14 @@ void build_arg_double(GKeyFile *config, const gchar *group, GPtrArray *args, gin
 /**
  * @brief Builds arguments where the key type is a list of strings
  *
- * @param config KeyFile to pull values from
- * @param group  group to pull values from
- * @param args   argument array to append argument to
- * @param i      index of the option being built
+ * @param config       KeyFile to pull values from
+ * @param group        group to pull values from
+ * @param args         argument array to append argument to
+ * @param i            index of the option being built
+ * @param param_quoted when true strings are single quoted
  */
-void build_arg_string_list(GKeyFile *config, const gchar *group, GPtrArray *args, gint i) {
+void build_arg_string_list(GKeyFile *config, const gchar *group, GPtrArray *args,
+        gint i, gboolean param_quoted) {
     GString *arg;
     gsize count;
     // handle boolean values for keys with optional arguments
@@ -384,8 +419,16 @@ void build_arg_string_list(GKeyFile *config, const gchar *group, GPtrArray *args
     arg = g_string_new(NULL);
     g_string_append_printf(arg, "--%s=", options[i].name);
     for (gsize m = 0; m < count; m++) {
-        g_string_append_printf(arg, "%s,",
-                g_strstrip(string_list_values[m]));
+        if (param_quoted) {
+            g_string_append_printf(arg, "\"%s\"",
+                    g_strstrip(string_list_values[m]));
+        } else {
+            g_string_append_printf(arg, "%s",
+                    g_strstrip(string_list_values[m]));
+        }
+        if (m < count-1) {
+            g_string_append(arg, ",");
+        }
     }
     g_strfreev(string_list_values);
     g_ptr_array_add(args, arg->str);
@@ -408,7 +451,10 @@ void build_arg_integer_list(GKeyFile *config, const gchar *group, GPtrArray *arg
     arg = g_string_new(NULL);
     g_string_append_printf(arg, "--%s=", options[i].name);
     for (gsize n = 0; n < count; n++) {
-        g_string_append_printf(arg, "%d,", integer_list_values[n]);
+        g_string_append_printf(arg, "%d", integer_list_values[n]);
+        if (n < count-1) {
+            g_string_append(arg, ",");
+        }
     }
     g_free(integer_list_values);
     g_ptr_array_add(args, arg->str);
@@ -431,7 +477,10 @@ void build_arg_double_list(GKeyFile *config, const gchar *group, GPtrArray *args
     arg = g_string_new(NULL);
     g_string_append_printf(arg, "--%s=", options[i].name);
     for (gsize o = 0; o < count; o++) {
-        g_string_append_printf(arg, "%.1f,", double_list_values[o]);
+        g_string_append_printf(arg, "%.1f", double_list_values[o]);
+        if (o < count-1) {
+            g_string_append(arg, ",");
+        }
     }
     g_free(double_list_values);
     g_ptr_array_add(args, arg->str);
@@ -643,6 +692,7 @@ void determine_handbrake_version(gchar *arg_version)
      * Baseline version if detection fails
      */
     version_options = option_v0_9_9;
+    version_customs = custom_v0_9_9;
     version_requires = require_v0_9_9;
     version_conflicts = conflict_v0_9_9;
     /*
@@ -657,6 +707,8 @@ void determine_handbrake_version(gchar *arg_version)
                 NULL, NULL, NULL, NULL, version);
         version_options = option_v1_3_0;
         version_options_size = sizeof(option_v1_3_0);
+        version_customs = custom_v1_3_0;
+        version_customs_size = sizeof(custom_v1_3_0);
         version_requires = require_v1_3_0;
         version_requires_size = sizeof(require_v1_3_0);
         version_conflicts = conflict_v1_3_0;
@@ -664,6 +716,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 1 && minor >= 3) {
         version_options = option_v1_3_0;
         version_options_size = sizeof(option_v1_3_0);
+        version_customs = custom_v1_3_0;
+        version_customs_size = sizeof(custom_v1_3_0);
         version_requires = require_v1_3_0;
         version_requires_size = sizeof(require_v1_3_0);
         version_conflicts = conflict_v1_3_0;
@@ -671,6 +725,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 1 && minor >= 2) {
         version_options = option_v1_2_0;
         version_options_size = sizeof(option_v1_2_0);
+        version_customs = custom_v1_2_0;
+        version_customs_size = sizeof(custom_v1_2_0);
         version_requires = require_v1_2_0;
         version_requires_size = sizeof(require_v1_2_0);
         version_conflicts = conflict_v1_2_0;
@@ -678,6 +734,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 1 && minor > 0) {
         version_options = option_v1_1_0;
         version_options_size = sizeof(option_v1_1_0);
+        version_customs = custom_v1_1_0;
+        version_customs_size = sizeof(custom_v1_1_0);
         version_requires = require_v1_1_0;
         version_requires_size = sizeof(require_v1_1_0);
         version_conflicts = conflict_v1_1_0;
@@ -685,6 +743,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 1 && minor >= 0) {
         version_options = option_v1_0_0;
         version_options_size = sizeof(option_v1_0_0);
+        version_customs = custom_v1_0_0;
+        version_customs_size = sizeof(custom_v1_0_0);
         version_requires = require_v1_0_0;
         version_requires_size = sizeof(require_v1_0_0);
         version_conflicts = conflict_v1_0_0;
@@ -692,6 +752,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 0 && minor == 10 && patch >= 3) {
         version_options = option_v0_10_3;
         version_options_size = sizeof(option_v0_10_3);
+        version_customs = custom_v0_10_3;
+        version_customs_size = sizeof(custom_v0_10_3);
         version_requires = require_v0_10_3;
         version_requires_size = sizeof(require_v0_10_3);
         version_conflicts = conflict_v0_10_3;
@@ -699,6 +761,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 0 && minor == 10) {
         version_options = option_v0_10_0;
         version_options_size = sizeof(option_v0_10_0);
+        version_customs = custom_v0_10_0;
+        version_customs_size = sizeof(custom_v0_10_0);
         version_requires = require_v0_10_0;
         version_requires_size = sizeof(require_v0_10_0);
         version_conflicts = conflict_v0_10_0;
@@ -706,6 +770,8 @@ void determine_handbrake_version(gchar *arg_version)
     } else if (major == 0 && minor == 9 && patch >= 9) {
         version_options = option_v0_9_9;
         version_options_size = sizeof(option_v0_9_9);
+        version_customs = custom_v0_9_9;
+        version_customs_size = sizeof(custom_v0_9_9);
         version_requires = require_v0_9_9;
         version_requires_size = sizeof(require_v0_9_9);
         version_conflicts = conflict_v0_9_9;
@@ -724,6 +790,8 @@ void determine_handbrake_version(gchar *arg_version)
     // overwrite final null option
     option_t *last_option = &(options[version_options_count-1]);
     memcpy(last_option, hbr_options, sizeof(hbr_options));
+
+    customs = version_customs;
 
     requires = g_malloc(version_requires_size + sizeof(hbr_requires));
     memcpy(requires, version_requires, version_requires_size);
@@ -748,6 +816,11 @@ void arg_hash_generate(void)
     options_index = g_hash_table_new(g_str_hash, g_str_equal);
     for (int i = 0; options[i].name != NULL; i++) {
         g_hash_table_insert(options_index, (void *)options[i].name,
+                GINT_TO_POINTER(i));
+    }
+    customs_index = g_hash_table_new(g_str_hash, g_str_equal);
+    for (int i = 0; customs[i].name != NULL; i++) {
+        g_hash_table_insert(customs_index, (void *)customs[i].name,
                 GINT_TO_POINTER(i));
     }
     /*
@@ -780,11 +853,14 @@ void arg_hash_generate(void)
 void arg_hash_cleanup(void)
 {
     g_hash_table_destroy(options_index);
+    g_hash_table_destroy(customs_index);
     g_hash_table_foreach(requires_index, free_slist_in_hash, NULL);
     g_hash_table_destroy(requires_index);
     g_hash_table_foreach(conflicts_index, free_slist_in_hash, NULL);
     g_hash_table_destroy(conflicts_index);
     g_free(options);
+    // customs is all allocated on the stack
+    // never reallocated to merge like the other sets
     g_free(requires);
     g_free(conflicts);
 }

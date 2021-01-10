@@ -583,9 +583,6 @@ gboolean has_duplicate_keys(const gchar *infile)
 /**
  * @brief Validates custom formats used for some HandBrakeCLI options
  *
- * @param keys[] null terminated array of key names
- * @param type[] null terminated array of key types (must contain same number of
- *               items as keys, uses key_type enum in build_args.h
  * @param config Keyfile to pull custom_format from
  * @param group  group to pull custom_format from
  * @param option option type to pull custom_format from
@@ -593,9 +590,11 @@ gboolean has_duplicate_keys(const gchar *infile)
  * @return true when all keys in custom_format are parts of keys, and all
  *         values can be interpreted as the appropriate key_type
  */
-gboolean check_custom_format (const gchar *keys[], const key_type type[],
-        GKeyFile *config, const gchar *group, option_t *option)
+gboolean check_custom_format (GKeyFile *config, const gchar *group, option_t *option,
+        const gchar *config_path)
 {
+    gint custom_index = GPOINTER_TO_INT(
+            g_hash_table_lookup(customs_index, option->name));
     gboolean valid = TRUE;
     g_key_file_set_list_separator(config, ':');
     GError *error = NULL;
@@ -618,18 +617,22 @@ gboolean check_custom_format (const gchar *keys[], const key_type type[],
             } else {
                 // verify first token is one of filter_names
                 int j = 0;
-                while (keys[j] != NULL) {
-                    if (strcmp(tokens[0], keys[j]) == 0) {
+                custom_key_t *custom_keys = (custom_key_t *) customs[custom_index].key;
+                while (custom_keys[j].key_name != NULL) {
+                    if (strcmp(tokens[0], custom_keys[j].key_name) == 0) {
                         break;
                     }
                     j++;
                 }
-                if (keys[j] == NULL) {
-                    // got to the end without a match
+                if (custom_keys[j].key_name == NULL) {
+                    // got to the end without token 0 matching a custom key
+                    hbr_error("Unsupported custom filter", config_path, group,
+                            option->name, custom_format[i]);
                     valid = FALSE;
+                    continue;
                 }
                 // verify second token is a valid type
-                switch (type[j]) {
+                switch (custom_keys[j].key_type) {
                     case k_integer:
                         {
                             int k = 0;
@@ -903,7 +906,7 @@ gboolean valid_filename_component(option_t *option, const gchar *group,
         hbr_error(error->message, config_path, group, option->name, NULL);
     } else {
         gsize component_length = strnlen(component, MAXPATHLEN);
-        if ( component_length < 1 || component_length == MAXPATHLEN) {
+        if ( component_length < 1 || component_length >= MAXPATHLEN) {
             valid = FALSE;
             hbr_error("Invalid component length", config_path, group,
                     option->name, component);
@@ -953,6 +956,7 @@ gboolean valid_boolean(option_t *option, const gchar *group, GKeyFile *config,
     return FALSE;
 }
 
+/* Not currently used for anything, do you want valid_positive_integer?
 gboolean valid_integer(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
@@ -970,6 +974,7 @@ gboolean valid_integer(option_t *option, const gchar *group, GKeyFile *config,
     }
     return valid;
 }
+*/
 
 gboolean valid_integer_set(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
@@ -1102,6 +1107,9 @@ gboolean valid_string_set(option_t *option, const gchar *group, GKeyFile *config
 {
     gboolean valid = TRUE;
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
+    if (option->valid_values_count == 0) {
+        valid = FALSE;
+    }
     int i = 0;
     while (i < option->valid_values_count) {
         assert(option->valid_values_count != 0 && option->valid_values != NULL);
@@ -1328,6 +1336,13 @@ gboolean valid_audio_encoder(option_t *option, const gchar *group, GKeyFile *con
     g_strfreev(audio_encoders);
     gchar *aencoder_string = g_key_file_get_value(config, group, option->name,
             NULL);
+    /* TODO:
+     * I ignored when audio_encoder_count is 1, but in this case HandBrakeCLI
+     * just uses its default encoder for all subsequent audio tracks. My desired
+     * behavior is to use the singly specified encoder for ALL tracks
+     * I don't want to modify values during validate though. It should probably
+     * happen elsewhere, but where?
+     */
     if (audio_encoder_count != 1 && audio_encoder_count != audio_count) {
         hbr_error("Number of audio encoders (%lu) specified does not match the"
                 " number of audio tracks (%lu)", config_path, group,
@@ -1438,7 +1453,7 @@ gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *con
         if (bounded) {
             if (bitrates[i] < lower_bitrate || bitrates[i] > upper_bitrate) {
                 gchar *bad_bitrate = g_strdup_printf("%d", bitrates[i]);
-                hbr_error("Bitrate outside range [%lu,%lu] for encoder %s",
+                hbr_error("Bitrate outside range [%d,%d] for encoder %s",
                         config_path, group, option->name, bad_bitrate,
                         lower_bitrate, upper_bitrate, audio_encoders[i]);
                 valid = FALSE;
@@ -1613,7 +1628,7 @@ gboolean valid_video_quality(option_t *option, const gchar *group, GKeyFile *con
         }
         if (value < lower_value || value > upper_value) {
             valid = FALSE;
-            hbr_error("Value outside range [%lu,%lu] for encoder %s",
+            hbr_error("Value outside range [%d,%d] for encoder %s",
                       config_path, group, option->name, string,
                       lower_value, upper_value, encoder);
         }
@@ -1723,16 +1738,7 @@ gboolean valid_decomb(option_t *option, const gchar *group, GKeyFile *config,
     }
 
     // check for filter
-    // change separator temporarily to parse colon separated list
-    const gchar *filter_names[] = { "mode", "magnitude-thresh",
-            "variance-thresh", "laplacian-thresh", "dilation-thresh",
-            "erosion-thresh", "noise-thresh", "search-distance", "postproc",
-            "parity", NULL};
-    const key_type filter_types[] = {k_integer, k_integer, k_integer,
-        k_integer, k_integer, k_integer, k_integer, k_integer, k_integer,
-        k_integer};
-    if (check_custom_format(filter_names, filter_types, config,
-            group, option)) {
+    if (check_custom_format(config, group, option, config_path)) {
         return TRUE;
     }
 
@@ -1849,19 +1855,8 @@ gboolean valid_deblock(option_t *option, const gchar *group, GKeyFile *config,
         return TRUE;
     }
 
-    //TODO FIXME deblock custom type changed in 1.3
-    // perhaps I need to rethink holding custom formats here and somehow
-    // move them to the options file. Am I going to need a new array?
-
     // check for filter
-    // change separator temporarily to parse colon separated list
-    const gchar *filter_names[] = { "qp", "mode", "disable", NULL};
-    const key_type filter_types[] = {k_integer, k_integer, k_integer};
-    //1.3.x stuff
-    // const gchar *filter_names[] = { "strength", "thresh", "blocksize", "disable", NULL};
-    // const key_type filter_types[] = {k_string, k_integer, k_integer, k_bool???};
-    if (check_custom_format(filter_names, filter_types, config,
-            group, option)) {
+    if (check_custom_format(config, group, option, config_path)) {
         return TRUE;
     }
 
@@ -1892,11 +1887,7 @@ gboolean valid_deinterlace(option_t *option, const gchar *group, GKeyFile *confi
     }
 
     // check for filter
-    // change separator temporarily to parse colon separated list
-    const gchar *filter_names[] = {"mode", "parity", NULL};
-    const key_type filter_types[] = {k_integer, k_integer};
-    if (check_custom_format(filter_names, filter_types, config,
-            group, option)) {
+    if (check_custom_format(config, group, option, config_path)) {
         return TRUE;
     }
 
@@ -2531,15 +2522,7 @@ gboolean valid_comb_detect(option_t *option, const gchar *group, GKeyFile *confi
     }
 
     // check for filter
-    // change separator temporarily to parse colon separated list
-    const gchar *filter_names[] = {"mode", "spatial-metric",
-        "motion-thresh", "spatial-thresh", "filter-mode", "block-thresh",
-        "block-width", "block-height", "disable", NULL};
-    const key_type filter_types[] = {k_integer, k_integer,
-        k_integer, k_integer, k_integer, k_integer,
-        k_integer, k_integer, k_integer};
-    if (check_custom_format(filter_names, filter_types, config,
-            group, option)) {
+    if (check_custom_format(config, group, option, config_path)) {
         return TRUE;
     }
 

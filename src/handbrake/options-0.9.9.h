@@ -51,7 +51,7 @@ static option_t option_v0_9_9[] =
     { "subtitle-forced", optional_argument, k_string_list, FALSE, valid_subtitle_forced, 0, NULL},
     { "subtitle-burned", optional_argument, k_string, FALSE, valid_subtitle_burned, 0, NULL},
     { "subtitle-default", optional_argument, k_string, FALSE, valid_subtitle_default, 0, NULL},
-    { "srt-file", required_argument, k_string_list, FALSE, valid_filename_exists_list, 0, NULL},
+    { "srt-file", required_argument, k_path_list, FALSE, valid_filename_exists_list, 0, NULL},
     { "srt-codeset", required_argument, k_string_list, FALSE, valid_codeset, 0, NULL},
     { "srt-offset", required_argument, k_integer_list, FALSE, valid_integer_list, 0, NULL},
     { "srt-lang", required_argument, k_string_list, FALSE, valid_iso_639, 0, NULL},
@@ -119,6 +119,11 @@ static option_t option_v0_9_9[] =
     { "audio-fallback", required_argument, k_string, FALSE, valid_string_set, 6,
         (const gchar*[]){"av_aac", "ac3", "mp3", "vorbis", "flac16", "flac24"}},
     { NULL, 0, 0, 0, NULL, 0, NULL}
+};
+
+static custom_t custom_v0_9_9[] =
+{
+    { NULL, NULL }
 };
 
 static require_t require_v0_9_9[] =

@@ -38,8 +38,8 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
 gboolean unknown_keys_exist(GKeyFile *keyfile, const gchar *infile);
 gboolean has_duplicate_groups(const gchar *infile);
 gboolean has_duplicate_keys(const gchar *infile);
-gboolean check_custom_format (const gchar *keys[], const key_type type[],
-        GKeyFile *config, const gchar *group, option_t *option);
+gboolean check_custom_format (GKeyFile *config, const gchar *group,
+        option_t *option, const gchar *config_path);
 void type_config_warnings(gchar *type, gboolean has_season,
         gboolean has_episode, gboolean has_year, GKeyFile *config,
         const gchar *config_path);

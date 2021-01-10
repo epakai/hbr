@@ -327,7 +327,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
  */
 void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
         const gchar *infile) {
-    // loop for each out_file tag in keyfile
+    // loop for each OUTFILE tag in keyfile
     gsize out_count = 0;
     gchar **outfiles = get_outfile_list(inkeyfile, &out_count);
     if (out_count < 1) {
@@ -387,8 +387,13 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
         g_print("Encoding: %lu/%lu: %s\n", i+1, out_count, basename);
         g_print("%c[0m", 27);
 
-        // Create directory
-        if (!debug) {
+        if (debug) {
+            // print full handbrake command
+            gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
+            g_print("HandBrakeCLI %s\n", temp);
+            g_free(temp);
+        } else {
+            // Create directory
             gchar *dirname = g_path_get_dirname(filename);
             if (g_mkdir_with_parents(dirname, 0777) != 0) {
                 // TODO BUG: g_mkdir_with_parents fails due to permissions
@@ -396,9 +401,9 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
                 // permissions to create it.
                 hbr_error("Failed to make directory for encode", infile,
                         NULL, NULL, NULL);
-                g_key_file_free(current_outfile);
                 g_free(filename);
                 g_free(basename);
+                g_key_file_free(current_outfile);
                 g_strfreev(outfiles);
                 g_free(dirname);
                 return;
@@ -406,36 +411,33 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
             g_free(dirname);
             if (!make_output_directory(current_outfile, "CURRENT_OUTFILE", infile)) {
                 // skip this outfile, error output comes from make_extra_directory()
-                g_key_file_free(current_outfile);
                 g_free(filename);
-                g_free(basename);
-                continue;
-            }
-        }
-
-        if (debug) {
-            // print full handbrake command
-            gchar *temp = g_strjoinv(" ", (gchar**)args->pdata);
-            g_print("HandBrakeCLI %s\n", temp);
-            g_free(temp);
-        } else {
-            if (call_handbrake(args, i, opt_overwrite, opt_skip_existing, filename) == -1) {
-                hbr_error("%lu: Handbrake call failed. %s was not encoded",
-                    outfiles[i], NULL, NULL, NULL, i, filename);
-                g_object_unref(filename);
                 g_free(basename);
                 g_ptr_array_free(args, TRUE);
                 g_key_file_free(current_outfile);
                 continue;
             }
-        }
-        // produce a thumbnail
-        gboolean preview = FALSE;
-        if (g_key_file_has_key(current_outfile, "CURRENT_OUTFILE", "preview", NULL)) {
-            preview = g_key_file_get_boolean(current_outfile, "CURRENT_OUTFILE", "preview", NULL);
-        }
-        if (opt_preview || preview) {
-            generate_thumbnail(filename, i, out_count, debug);
+            // Run handbrake
+            if (call_handbrake(args, i, opt_overwrite, opt_skip_existing, filename) == -1) {
+                hbr_error("%lu: Handbrake call failed. %s was not encoded",
+                    outfiles[i], NULL, NULL, NULL, i, filename);
+                g_free(filename);
+                g_free(basename);
+                g_ptr_array_free(args, TRUE);
+                g_key_file_free(current_outfile);
+                continue;
+            }
+
+            // produce a thumbnail
+            gboolean preview = FALSE;
+            if (g_key_file_has_key(current_outfile,
+                        "CURRENT_OUTFILE", "preview", NULL)) {
+                preview = g_key_file_get_boolean(current_outfile,
+                        "CURRENT_OUTFILE", "preview", NULL);
+            }
+            if (opt_preview || preview) {
+                generate_thumbnail(filename, i, out_count, debug);
+            }
         }
 
         g_free(filename);

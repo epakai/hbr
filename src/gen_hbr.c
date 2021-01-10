@@ -33,22 +33,22 @@
  */
 struct episode_list read_episode_list(const gchar *episode_filename)
 {
-	int max_count = 30;
-	struct episode_list list;
-	list.count = 0;
-	GDataInputStream *episode_list_file = open_datastream(episode_filename);
-	if (episode_list_file == NULL)  {
+    int max_count = 30;
+    struct episode_list list;
+    list.count = 0;
+    GDataInputStream *episode_list_file = open_datastream(episode_filename);
+    if (episode_list_file == NULL)  {
         hbr_error("Failed to open episode list", episode_filename, NULL, NULL, NULL);
-		list.count = 0;
-		list.array = NULL;
-		return list;
-	}
+        list.count = 0;
+        list.array = NULL;
+        return list;
+    }
 
-	list.array = calloc(max_count, sizeof(struct episode));
+    list.array = calloc(max_count, sizeof(struct episode));
     gchar *line;
     gchar *episode;
     gsize line_length = 0;
-	while ((line = g_data_input_stream_read_line_utf8(episode_list_file,
+    while ((line = g_data_input_stream_read_line_utf8(episode_list_file,
                     &line_length, NULL, NULL)) && list.count < max_count) {
         g_strchug(line);
         gchar **split_line = g_strsplit_set(line, " \t", 2);
@@ -99,32 +99,32 @@ struct episode_list read_episode_list(const gchar *episode_filename)
             list.array[list.count].season = -1;
         }
 
-		// store the rest of the string as the episode name
-		list.array[list.count].name = g_strdup(split_line[1]);
-		if (list.array[list.count].name == NULL) {
-			hbr_error("No episode name found on line: %d", NULL, NULL, NULL,
+        // store the rest of the string as the episode name
+        list.array[list.count].name = g_strdup(split_line[1]);
+        if (list.array[list.count].name == NULL) {
+            hbr_error("No episode name found on line: %d", NULL, NULL, NULL,
                     NULL, list.count+1);
-			free_episode_list(list);
-			list.count = 0;
-			list.array = NULL;
-			break;
-		}
+            free_episode_list(list);
+            list.count = 0;
+            list.array = NULL;
+            break;
+        }
         g_strfreev(split_line);
         g_free(line);
-		// Allocate more space if episodes is about to exceed max_count
-		if ( list.count == max_count - 1 ) {
-			struct episode *temp;
-			if ((temp = realloc(list.array, (max_count+20) *
+        // Allocate more space if episodes is about to exceed max_count
+        if ( list.count == max_count - 1 ) {
+            struct episode *temp;
+            if ((temp = realloc(list.array, (max_count+20) *
                             sizeof(struct episode))) != NULL){
-				list.array = temp;
-				max_count += 20;
-			}
-		}
+                list.array = temp;
+                max_count += 20;
+            }
+        }
         list.count++;
-	}
+    }
     g_input_stream_close((GInputStream *)episode_list_file, NULL, NULL);
     g_object_unref(episode_list_file);
-	return list;
+    return list;
 }
 
 /**
@@ -134,13 +134,13 @@ struct episode_list read_episode_list(const gchar *episode_filename)
  */
 void free_episode_list(struct episode_list list)
 {
-	int i;
-	for ( i = 0; i < list.count; i++) {
-		free(list.array[i].name);
-	}
-	free(list.array);
-	list.count = 0;
-	list.array = NULL;
+    int i;
+    for ( i = 0; i < list.count; i++) {
+        free(list.array[i].name);
+    }
+    free(list.array);
+    list.count = 0;
+    list.array = NULL;
 }
 
 /**
@@ -165,29 +165,29 @@ void free_episode_list(struct episode_list list)
  * @return GKeyFile pointer for the generated config
  */
 GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *type,
-		const gchar *iso_filename, const gchar *year, const gchar *crop,
+        const gchar *iso_filename, const gchar *year, const gchar *crop,
         const gchar *name, const gchar *input_basedir, const gchar *output_basedir,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *episodes)
 {
-	struct episode_list list;
-	list.count = 0;
-	list.array = NULL;
-	if (episodes != NULL) {
-		list = read_episode_list(episodes);
-		outfiles_count = list.count;
-		if (outfiles_count == 0) {
+    struct episode_list list;
+    list.count = 0;
+    list.array = NULL;
+    if (episodes != NULL) {
+        list = read_episode_list(episodes);
+        outfiles_count = list.count;
+        if (outfiles_count == 0) {
             hbr_error("Failed to parse episode list", NULL, NULL, NULL, NULL);
-			free_episode_list(list);
-			return NULL;
-		}
-	}
-	if (outfiles_count <= 0 || outfiles_count > 999) {
+            free_episode_list(list);
+            return NULL;
+        }
+    }
+    if (outfiles_count <= 0 || outfiles_count > 999) {
         hbr_error("Invalid number of outfile sections (%d)", NULL, NULL, NULL,
                 NULL, outfiles_count);
         free_episode_list(list);
-		return NULL;
-	}
+        return NULL;
+    }
 
     GKeyFile *config = g_key_file_new();
     const gchar *group = "CONFIG";
@@ -203,20 +203,20 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
     gboolean is_movie = (g_strcmp0(inferred_type, "movie") == 0);
     gboolean is_series = (g_strcmp0(inferred_type, "series") == 0);
 
-	// create CONFIG section with values
+    // create CONFIG section with values
     // keys that are always in CONFIG
     g_key_file_set_value(config, group, "input_basedir", input_basedir ? input_basedir : "");
     g_key_file_set_value(config, group, "output_basedir", output_basedir ? output_basedir : "");
-	if (is_movie || is_series) {
+    if (is_movie || is_series) {
         g_key_file_set_value(config, group, "type", inferred_type);
-	} else {
+    } else {
         hbr_error("Unknown type=%s. Should be \'movies\' or \'series\'", NULL,
                 NULL, NULL, NULL, inferred_type);
         g_free(inferred_type);
         g_key_file_unref(config);
         free_episode_list(list);
         return NULL;
-	}
+    }
     if (is_movie) {
         g_key_file_set_value(config, group, "year", year ? year : "");
     }
@@ -245,13 +245,13 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
         g_key_file_set_value(config, group, "chapters", chapters);
     }
 
-	int i;
-	for (i = 0; i< outfiles_count; i++) {
-		if (episodes != NULL){
+    int i;
+    for (i = 0; i< outfiles_count; i++) {
+        if (episodes != NULL){
             create_outfile_section(config, i+1, list.array[i].number, title,
                     list.array[i].season, inferred_type, iso_filename, audio, subtitle,
                     chapters, list.array[i].name);
-		} else {
+        } else {
             int episode;
             if (is_series) {
                 episode = i;
@@ -265,11 +265,11 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
             }
             create_outfile_section(config, i+1, episode, title, season, inferred_type,
                     iso_filename, audio, subtitle, chapters, "");
-		}
-	}
-	if (episodes != NULL) {
-		free_episode_list(list);
-	}
+        }
+    }
+    if (episodes != NULL) {
+        free_episode_list(list);
+    }
     g_free(inferred_type);
     return config;
 }
