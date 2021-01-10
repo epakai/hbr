@@ -1,0 +1,14 @@
+[CONFIG]
+input_basedir=/
+iso_filename=test.iso
+title=1
+type=movie
+year=2000
+
+[OUTFILE1]
+name=good
+markers=true
+
+[OUTFILE2]
+name=good
+markers=false

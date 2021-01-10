@@ -12,6 +12,7 @@ Normally you can run these tests with the make target from your build directory:
 For modifying, updating, or creating new tests an environment variable with your
 hbr path needs to be set before running cram.
     export CRAM_HBR=/path/to/hbr/under/test/hbr
+    export CRAM_HBR_ARGS=--hbversion=1.3.0
 
 Then cram can be run manually on individual tests:
     cram3 test.t
