@@ -14,8 +14,13 @@ or the output of HandBrake's scan can be piped to hbscan.py
 using the '-' argument.
 
     HandBrakeCLI --scan -t 0 -i MOVIE.iso 2>&1 | hbscan.py -
+
+Note: HandBrakeCLI scan defaults to ignoring titles shorter
+than 10 seconds, but hbscan.py sets --min-duration 0 unless
+overridden.
 """
 
+from __future__ import print_function
 import argparse
 import sys
 import subprocess
@@ -28,17 +33,20 @@ def parse_args(args=sys.argv[1:]):
     """Parse arguments."""
     global argparser
     argparser = argparse.ArgumentParser(
-        description=sys.modules[__name__].__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+            description=sys.modules[__name__].__doc__,
+            formatter_class=argparse.RawDescriptionHelpFormatter)
 
     argparser.add_argument('path', metavar='PATH', nargs='*',
-                        help='file or directory to be scanned by HandBrake')
-    argparser.add_argument('--minlength', metavar='SECONDS', default=0, type=int,
-                        help="Excludes titles shorter than SECONDS")
+            help='file or directory to be scanned by HandBrake')
+    argparser.add_argument('--min-duration', metavar='SECONDS', default=0,
+            type=int, dest='min_duration',
+            help="Excludes titles shorter than SECONDS")
+    argparser.add_argument('--no-dvdnav', action="store_true", dest='nodvdnav',
+            help="Do not use dvdnav for reading DVDs")
     argparser.add_argument("--setiso", action='store_true', dest='setiso',
-                        help='include iso_filename in outfile sections')
+            help='include iso_filename in outfile sections')
     argparser.add_argument("-", action='store_true', dest='read_stdin',
-                        help='read from stdin')
+            help='read from stdin')
 
     return argparser.parse_args(args)
 
@@ -51,13 +59,14 @@ class Chapter():
 
 class Audio():
     def __init__(self, audio_number, codec, channels, iso639, frequency,
-                 bitrate):
+            bitrate, bitrate_short):
         self.audio_number = audio_number
         self.codec = codec
         self.channels = channels
         self.iso639 = iso639
         self.frequency = frequency
         self.bitrate = bitrate
+        self.bitrate_short = bitrate_short
 
 
 class Subtitle():
@@ -91,8 +100,7 @@ NOTHING_COUNT = 0
 def donothing(string):
     global NOTHING_COUNT
     NOTHING_COUNT += 1
-    print('Encountered unknown line in HandBrake\'s scan output:',
-          file=sys.stderr)
+    print('Encountered unknown line in HandBrake\'s scan output:', file=sys.stderr)
     print(string, file=sys.stderr)
 
 
@@ -140,26 +148,27 @@ def set_autocrop(title_list):
 def add_chapter(title_list):
     def parse_action(token):
         title_list[-1].chapters.append(Chapter(token.chapter_number,
-                                               token.chapter_duration))
+            token.chapter_duration))
     return parse_action
 
 
 def add_audio(title_list):
     def parse_action(token):
         title_list[-1].audio.append(Audio(token.audio_number,
-                                          token.audio_codec,
-                                          token.audio_channels,
-                                          token.audio_iso639,
-                                          token.audio_freq,
-                                          token.audio_bitrate))
+            token.audio_codec,
+            token.audio_channels,
+            token.audio_iso639,
+            token.audio_freq,
+            token.audio_bitrate,
+            token.audio_bitrate_short))
     return parse_action
 
 
 def add_subtitle(title_list):
     def parse_action(token):
         title_list[-1].subtitle.append(Subtitle(token.sub_number,
-                                                token.sub_lang,
-                                                token.sub_format))
+            token.sub_lang,
+            token.sub_format))
     return parse_action
 
 
@@ -184,19 +193,19 @@ def build_parser(title_list):
     if pp_unicode_support is False:
         # This is a really slow way to grab a list of all unicode characters.
         unicode_printables = ''.join(chr(c) for c in range(sys.maxunicode)
-                                     if not chr(c).isspace())
+                if not chr(c).isspace())
     else:
         # PyParsing 2.3.0 adds pyparsing_unicode.printables so use that instead
         unicode_printables = pp.pyparsing_unicode.printables
 
     # ignored stuff
     time = (pp.Combine(pp.Word(pp.nums, exact=2)
-                       + ':' + pp.Word(pp.nums, exact=2)
-                       + ':' + pp.Word(pp.nums, exact=2)))
+        + ':' + pp.Word(pp.nums, exact=2)
+        + ':' + pp.Word(pp.nums, exact=2)))
     log_output = ('[' + time("time") + ']' +
-                  pp.OneOrMore(pp.Word(pp.printables)))
+            pp.OneOrMore(pp.Word(pp.printables)))
     progress_update = ("Scanning title" + pp.Word(pp.nums)
-                       + pp.OneOrMore(pp.Word(pp.printables)))
+            + pp.OneOrMore(pp.Word(pp.printables)))
     general_output = pp.Word(pp.printables)
     title_headers = '+' + pp.OneOrMore(pp.Word(pp.alphas)) + ':'
 
@@ -208,9 +217,9 @@ def build_parser(title_list):
     title_info.setParseAction(donothing)
 
     title_path = ('[' + time + ']'
-                  + 'hb_scan:'
-                  + pp.Combine('path=' + pp.SkipTo(', ')("path"))
-                  + pp.Combine('title_index=' + pp.Word(pp.nums)))
+            + 'hb_scan:'
+            + pp.Combine('path=' + pp.SkipTo(', ')("path"))
+            + pp.Combine('title_index=' + pp.Word(pp.nums)))
     title_path.setParseAction(update_path)
 
     title_number = '+ title' + pp.Word(pp.nums)("title_num") + ':'
@@ -223,13 +232,13 @@ def build_parser(title_list):
     duration.setParseAction(set_duration(title_list))
 
     sizes = ('+ size:'
-             + pp.Combine(pp.Word(pp.nums) + 'x'
-                          + pp.Word(pp.nums))("resolution")
-             + 'pixel aspect:'
-             + pp.Word(pp.nums + '/')("pixel_aspect")
-             + 'display aspect:'
-             + pp.Word(pp.nums + '.')("display_aspect")
-             + pp.Word(pp.nums + '.')("fps") + 'fps')
+            + pp.Combine(pp.Word(pp.nums) + 'x'
+                + pp.Word(pp.nums))("resolution")
+            + 'pixel aspect:'
+            + pp.Word(pp.nums + '/')("pixel_aspect")
+            + 'display aspect:'
+            + pp.Word(pp.nums + '.')("display_aspect")
+            + pp.Word(pp.nums + '.')("fps") + 'fps')
     sizes.setParseAction(set_size(title_list))
 
     autocrop = '+ autocrop:' + pp.Word(pp.nums + '/')("autocrop")
@@ -240,37 +249,43 @@ def build_parser(title_list):
     # new output
     # + 1: duration 00:27:06
     chapter = ('+'
-               + pp.Word(pp.nums)("chapter_number")
-               + ':'
-               + pp.Optional(pp.Word(pp.printables) * 4)
-               + 'duration'
-               + time("chapter_duration"))
+            + pp.Word(pp.nums)("chapter_number")
+            + ':'
+            + pp.Optional(pp.Word(pp.printables) * 4)
+            + 'duration'
+            + time("chapter_duration"))
     chapter.setParseAction(add_chapter(title_list))
 
+    # old output
+    # + 1, Unknown (AC3) (2.0 ch) (iso639-2: und), 48000Hz, 192000bps
+    # new output
+    # + 1, Unknown (AC3) (2.0 ch) (192 kbps) (iso639-2: und), 48000Hz, 192000bps
     audio = ('+'
-             + pp.Word(pp.nums)("audio_number")
-             + pp.OneOrMore(pp.Word(unicode_printables,
-                                    excludeChars='()'))("audio_lang")
-             + pp.Combine('(' + pp.Word(pp.alphanums + '- ')
-                          ("audio_codec") + ')')
-             + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphanums + "'"))
-                           + ')')
-             + '(' + pp.Word(pp.nums + '.')("audio_channels") + 'ch)'
-             + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphas)) + ')')
-             + '(iso639-2:' + pp.Word(pp.alphas)("audio_iso639") + ')'
-             + pp.Optional(pp.Combine(pp.Word(pp.nums) + 'Hz')("audio_freq"))
-             + pp.Optional(pp.Combine(pp.Word(pp.nums) + 'bps')
-                           ("audio_bitrate")))
+            + pp.Word(pp.nums)("audio_number")
+            + pp.OneOrMore(pp.Word(unicode_printables,
+                excludeChars='()'))("audio_lang")
+            + pp.Combine('(' + pp.Word(pp.alphanums + '- ')
+                ("audio_codec") + ')')
+            + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphanums + "'"))
+                + ')')
+            + '(' + pp.Word(pp.nums + '.')("audio_channels") + 'ch)'
+            + pp.Optional('(' + pp.Combine(pp.Word(pp.nums) + 'kbps')
+                ("audio_bitrate_short") + ')')
+            + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphas)) + ')')
+            + '(iso639-2:' + pp.Word(pp.alphas)("audio_iso639") + ')'
+            + pp.Optional(pp.Combine(pp.Word(pp.nums) + 'Hz')("audio_freq"))
+            + pp.Optional(pp.Combine(pp.Word(pp.nums) + 'bps')
+                ("audio_bitrate")))
     audio.setParseAction(add_audio(title_list))
 
     subtitle = ('+'
-                + pp.Word(pp.nums)("sub_number")
-                + pp.Combine(pp.OneOrMore(pp.Word(unicode_printables,
-                                                  excludeChars=',([')))
-                ("sub_lang")
-                + pp.ZeroOrMore(pp.Word(pp.alphanums + '(:)')) + '['
-                + pp.Word(pp.alphanums)("sub_format")
-                + ']')
+            + pp.Word(pp.nums)("sub_number")
+            + pp.Combine(pp.OneOrMore(pp.Word(unicode_printables,
+                excludeChars=',([')))
+            ("sub_lang")
+            + pp.ZeroOrMore(pp.Word(pp.alphanums + '(:)')) + '['
+            + pp.Word(pp.alphanums)("sub_format")
+            + ']')
     subtitle.setParseAction(add_subtitle(title_list))
 
     combing = '+ combing detected' + pp.OneOrMore(pp.Word(pp.alphas))
@@ -290,20 +305,13 @@ def build_parser(title_list):
 def emit_outfile_sections(title_list):
     global ARGS
     outfile_counter = 1
-    ftr = [3600, 60, 1]
     last_title = None
 
     for title in title_list:
-        # Don't output for titles shorter than minlength
-        seconds = sum([a*b for a, b in
-                       zip(ftr, map(int, title.duration.split(':')))])
-        if (ARGS.minlength > 0 and seconds < ARGS.minlength):
-            continue
-
         if title.filename != last_title:
             print()
             print('###', os.path.basename(os.path.normpath(title.filename)),
-                  '###')
+                    '###')
             last_title = title.filename
 
         print('')
@@ -318,34 +326,34 @@ def emit_outfile_sections(title_list):
             print('#', title.playlist.lower(), title.duration)
         else:
             mpls_file_path = os.path.join(title.filename, "BDMV", "PLAYLIST",
-                                          title.playlist.lower())
+                    title.playlist.lower())
             mpls_dump_out = subprocess.run(['mpls_dump', '-l', mpls_file_path],
-                                           stdout=subprocess.PIPE,
-                                           cwd=os.getcwd(), text=True,
-                                           universal_newlines=True)
+                    stdout=subprocess.PIPE,
+                    cwd=os.getcwd(), text=True,
+                    universal_newlines=True)
 
             m2ts_list = []
             for line in mpls_dump_out.stdout.splitlines():
                 if 'm2ts' in line:
                     m2ts_list.append(line.strip().lower())
             print('#', title.playlist.lower(), title.duration, '(',
-                  ', '.join(m2ts_list), ')')
+                    ', '.join(m2ts_list), ')')
         print('title=', title.title_number, sep='')
         print('chapters=', title.chapters[0].chapter_number, '-',
-              title.chapters[-1].chapter_number, sep='')
+                title.chapters[-1].chapter_number, sep='')
         if title.audio:
             print('# ', ','.join([str(audio.iso639 + ' (' + audio.codec + ','
-                                      + audio.channels + ')')
-                                  for audio in title.audio]), sep='')
+                + audio.channels + ')')
+                for audio in title.audio]), sep='')
             print('audio=', ','.join([audio.audio_number
-                                      for audio in title.audio]), sep='')
+                for audio in title.audio]), sep='')
         if title.subtitle:
             print('# ', ','.join([str(subtitle.language + ' [' +
-                                      subtitle.sub_format + ']')
-                                  for subtitle in title.subtitle]), sep='')
+                subtitle.sub_format + ']')
+                for subtitle in title.subtitle]), sep='')
             print('subtitle=', ','.join([subtitle.subtitle_number
-                                         for subtitle in title.subtitle]),
-                  sep='')
+                for subtitle in title.subtitle]),
+                sep='')
         if title.detected_main:
             print('crop=0:0:0:0')
         else:
@@ -353,9 +361,7 @@ def emit_outfile_sections(title_list):
         print('extra=')
         outfile_counter += 1
 
-
 ARGS = None
-
 
 def main():
     global ARGS, argparser
@@ -382,17 +388,24 @@ def main():
                     CURRENT_PATH is not None):
                 title_list[-1].filename = CURRENT_PATH
     elif len(ARGS.path) >= 1:
-        for path in ARGS.path:
-            # TODO the HandBrakeCLI run could be done in parallel since it's
-            # time consuming as long as the parsing is still done in order
-            hb_out = subprocess.run(['HandBrakeCLI', '--scan', '-t', '0', '-i',
-                                     path], stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, cwd=os.getcwd())
+        if (ARGS.nodvdnav):
+            cmds_list = [['HandBrakeCLI', '--min-duration', str(ARGS.min_duration),
+                '--scan', '-t', '0', '-i', path] for path in ARGS.path]
+        else:
+            cmds_list = [['HandBrakeCLI', '--no-dvdnav', '--min-duration',
+                str(ARGS.min_duration), '--scan', '-t', '0', '-i', path]
+                for path in ARGS.path]
+        procs_list = [subprocess.Popen(cmd, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, cwd=os.getcwd()) for cmd in cmds_list]
+        proc_outputs = [proc.communicate()[0] for proc in procs_list]
+        for proc in procs_list:
+            proc.wait()
+        for proc_output, path in zip(proc_outputs, ARGS.path):
             # Strip libdvdnav lines because they have iso-8859-1 encodings
             # that are not valid utf-8, we don't need them for our purpose.
-            output = b'\n'.join(line for line in hb_out.stdout.splitlines()
-                                if not
-                                line.startswith(b'libdvdnav:')).decode('utf-8')
+            output = b'\n'.join(line for line in proc_output.splitlines()
+                    if not
+                    line.startswith(b'libdvdnav:')).decode('utf-8')
             for line in output.splitlines():
                 if (title_list and title_list[-1].filename is None):
                     title_list[-1].filename = path
