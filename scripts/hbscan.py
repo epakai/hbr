@@ -29,6 +29,7 @@ import pyparsing as pp
 
 argparser = None
 
+
 def parse_args(args=sys.argv[1:]):
     """Parse arguments."""
     global argparser
@@ -37,16 +38,17 @@ def parse_args(args=sys.argv[1:]):
             formatter_class=argparse.RawDescriptionHelpFormatter)
 
     argparser.add_argument('path', metavar='PATH', nargs='*',
-            help='file or directory to be scanned by HandBrake')
+                           help='file or directory to be scanned by HandBrake')
     argparser.add_argument('--min-duration', metavar='SECONDS', default=0,
-            type=int, dest='min_duration',
-            help="Excludes titles shorter than SECONDS")
+                           type=int, dest='min_duration',
+                           help="Excludes titles shorter than SECONDS (passed to HandBrakeCLI)")
     argparser.add_argument('--no-dvdnav', action="store_true", dest='nodvdnav',
-            help="Do not use dvdnav for reading DVDs")
+                           help="Do not use dvdnav for reading DVDs (passed to HandBrakeCLI)")
     argparser.add_argument("--setiso", action='store_true', dest='setiso',
-            help='include iso_filename in outfile sections')
+                           help='include iso_filename in outfile sections, automatically \
+                    enabled if multiple inputs are specified')
     argparser.add_argument("-", action='store_true', dest='read_stdin',
-            help='read from stdin')
+                           help='read HandBrakeCLI scan output from stdin')
 
     return argparser.parse_args(args)
 
@@ -59,7 +61,7 @@ class Chapter():
 
 class Audio():
     def __init__(self, audio_number, codec, channels, iso639, frequency,
-            bitrate, bitrate_short):
+                 bitrate, bitrate_short):
         self.audio_number = audio_number
         self.codec = codec
         self.channels = channels
@@ -316,9 +318,10 @@ def emit_outfile_sections(title_list):
 
         print('')
         print('[OUTFILE', outfile_counter, ']', sep='')
-        if ARGS.setiso:
+        if ARGS.setiso or len (ARGS.path) > 1:
             print("iso_filename=", os.path.basename(os.path.normpath(
                 title.filename)), sep='')
+
         print('specific_name=')
         if title.playlist is None:
             print('#', title.duration)
@@ -331,33 +334,34 @@ def emit_outfile_sections(title_list):
                     stdout=subprocess.PIPE,
                     cwd=os.getcwd(), text=True,
                     universal_newlines=True)
-
             m2ts_list = []
             for line in mpls_dump_out.stdout.splitlines():
                 if 'm2ts' in line:
                     m2ts_list.append(line.strip().lower())
             print('#', title.playlist.lower(), title.duration, '(',
                     ', '.join(m2ts_list), ')')
+
         print('title=', title.title_number, sep='')
         print('chapters=', title.chapters[0].chapter_number, '-',
                 title.chapters[-1].chapter_number, sep='')
         if title.audio:
             print('# ', ','.join([str(audio.iso639 + ' (' + audio.codec + ','
-                + audio.channels + ')')
-                for audio in title.audio]), sep='')
+                + audio.channels + ')') for audio in title.audio]), sep='')
             print('audio=', ','.join([audio.audio_number
                 for audio in title.audio]), sep='')
+
         if title.subtitle:
             print('# ', ','.join([str(subtitle.language + ' [' +
                 subtitle.sub_format + ']')
                 for subtitle in title.subtitle]), sep='')
             print('subtitle=', ','.join([subtitle.subtitle_number
-                for subtitle in title.subtitle]),
-                sep='')
+                for subtitle in title.subtitle]), sep='')
+
         if title.detected_main:
             print('crop=0:0:0:0')
         else:
             print('crop=true')
+
         print('extra=')
         outfile_counter += 1
 
@@ -384,28 +388,31 @@ def main():
         CURRENT_PATH = None
         for line in sys.stdin.readlines():
             parser.parseString(line)
-            if (title_list and title_list[-1].filename is None and
+            if (title_list and
+                    title_list[-1].filename is None and
                     CURRENT_PATH is not None):
                 title_list[-1].filename = CURRENT_PATH
     elif len(ARGS.path) >= 1:
         if (ARGS.nodvdnav):
-            cmds_list = [['HandBrakeCLI', '--min-duration', str(ARGS.min_duration),
-                '--scan', '-t', '0', '-i', path] for path in ARGS.path]
-        else:
             cmds_list = [['HandBrakeCLI', '--no-dvdnav', '--min-duration',
                 str(ARGS.min_duration), '--scan', '-t', '0', '-i', path]
                 for path in ARGS.path]
+        else:
+            cmds_list = [['HandBrakeCLI', '--min-duration', str(ARGS.min_duration),
+                '--scan', '-t', '0', '-i', path] for path in ARGS.path]
+
         procs_list = [subprocess.Popen(cmd, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, cwd=os.getcwd()) for cmd in cmds_list]
         proc_outputs = [proc.communicate()[0] for proc in procs_list]
+
         for proc in procs_list:
             proc.wait()
+
         for proc_output, path in zip(proc_outputs, ARGS.path):
             # Strip libdvdnav lines because they have iso-8859-1 encodings
             # that are not valid utf-8, we don't need them for our purpose.
             output = b'\n'.join(line for line in proc_output.splitlines()
-                    if not
-                    line.startswith(b'libdvdnav:')).decode('utf-8')
+                    if not line.startswith(b'libdvdnav:')).decode('utf-8')
             for line in output.splitlines():
                 if (title_list and title_list[-1].filename is None):
                     title_list[-1].filename = path
