@@ -1682,17 +1682,12 @@ gboolean valid_chroma(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    // check for boolean value
-    GError *error = NULL;
-    g_key_file_get_boolean(config, group, option->name, &error);
-    if (error != NULL) {
-        g_error_free(error);
-    } else {
-        return TRUE;
-    }
+    // default is to autocrop
+    // to disable crop should be 0:0:0:0
+    // to override set top:bottom:left:right
 
     // check crop values
-    error = NULL;
+    GError *error = NULL;
     gsize crop_count;
     g_key_file_set_list_separator(config, ':');
     gint *crop = g_key_file_get_integer_list(config, group, option->name,
@@ -1701,8 +1696,8 @@ gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
     if (error != NULL) {
         g_error_free(error);
     } else {
-        if (crop_count == 4 && crop[0] >= 0 && crop[1] >= 0 && crop[2] >= 0
-                && crop[3] >= 0) {
+        if (crop_count == 4 &&
+                crop[0] >= 0 && crop[1] >= 0 && crop[2] >= 0 && crop[3] >= 0) {
             g_free(crop);
             return TRUE;
         }
@@ -1710,8 +1705,8 @@ gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
     g_free(crop);
 
     gchar *value = g_key_file_get_value(config, group, option->name, NULL);
-    hbr_error("Crop should be true/false or 4 colon separated positive"
-            " integers (top:bottom:left:right)", config_path, group,
+    hbr_error("Crop should be 4 colon separated positive integers"
+            " (top:bottom:left:right)", config_path, group,
             option->name, value);
     g_free(value);
 

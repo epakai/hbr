@@ -492,6 +492,7 @@ gboolean make_output_directory(GKeyFile *outfile, const gchar *group,
 void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
         gboolean debug)
 {
+    errno = 0;
     GString *ft_command = g_string_new("ffmpegthumbnailer");
     g_string_append_printf(ft_command,
             " -i\"%s\" -o\"%s.png\" -s0 -q10 2>&1 >/dev/null", filename,
@@ -502,8 +503,9 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
     g_print("%c[0m", 27);
     if (debug) {
         g_print("%s\n", ft_command->str);
-    } else {
-        system((char *) ft_command->str);
+    } else if(system((char *) ft_command->str) == -1) {
+        hbr_error("Failed to run ffmpegthumbnailer: %s", NULL, NULL, NULL,
+                NULL, g_strerror(errno));
     }
     g_string_free(ft_command, TRUE);
 }
@@ -613,8 +615,11 @@ int hb_fork(gchar *args[], gchar *log_filename)
         close(2);
         dup2(hb_err[1], 2);
         close(hb_err[1]);
-        //TODO fix so this errors before handbrake is called and outputs a log file
-        execvp("HandBrakeCLI", args);
+        errno = 0;
+        if (execvp("HandBrakeCLI", args) == -1) {
+            hbr_error("Failed to exec HandBrakeCLI: %s", log_filename, NULL,
+                    NULL, NULL, g_strerror(errno));
+        }
         _exit(1);
     } else {
         perror("hb_fork(): Failed to fork");
