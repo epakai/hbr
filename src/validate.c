@@ -1682,12 +1682,29 @@ gboolean valid_chroma(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    // default is to autocrop
-    // to disable crop should be 0:0:0:0
-    // to override set top:bottom:left:right
+    /* default is to autocrop
+     * to disable crop should be 0:0:0:0
+     * to override set top:bottom:left:right
+     */
+
+    /* HandBrakeCLI behavior is to autocrop when --crop= is specified
+     * but this may be accidental and could change (--crop alone causes no crop)
+     * currently relying on this behavior by passing the empty key through to
+     * override CONFIG level crop.
+     * It might be prudent to just drop the argument, but that's extra complexity
+     * in build args so I'm ok with this.
+     */
+
+    // accept empty key
+    GError *error = NULL;
+    gchar* value = g_key_file_get_string(config, group, option->name, &error);
+    if (error == NULL && strcmp(value, "") == 0) {
+        g_free(value);
+        return TRUE;
+    }
 
     // check crop values
-    GError *error = NULL;
+    error = NULL;
     gsize crop_count;
     g_key_file_set_list_separator(config, ':');
     gint *crop = g_key_file_get_integer_list(config, group, option->name,
@@ -1704,10 +1721,9 @@ gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
     }
     g_free(crop);
 
-    gchar *value = g_key_file_get_value(config, group, option->name, NULL);
     hbr_error("Crop should be 4 colon separated positive integers"
-            " (top:bottom:left:right)", config_path, group,
-            option->name, value);
+            " (top:bottom:left:right), or empty for autocrop.",
+            config_path, group, option->name, value);
     g_free(value);
 
     return FALSE;

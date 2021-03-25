@@ -358,11 +358,7 @@ def emit_outfile_sections(title_list):
             print('subtitle=', ','.join([subtitle.subtitle_number
                                          for subtitle in title.subtitle]), sep='')
 
-        if title.detected_main:
-            print('crop=0:0:0:0')
-        else:
-            print('crop=true')
-
+        print('crop=')
         print('extra=')
         outfile_counter += 1
 
