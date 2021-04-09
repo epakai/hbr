@@ -24,6 +24,8 @@
 #include "keyfile.h"
 #include "validate.h"
 
+extern option_data_t option_data;
+
 /**
  * @brief Parses and validates the key value file.
  *
@@ -155,8 +157,8 @@ GKeyFile * copy_group_new(GKeyFile *keyfile, const gchar *group,
  * @return new GKeyfile, NULL when p_group or a_group does not exist, or
  *         NULL when p_group and a_group are both empty
  */
-GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
-        const gchar *a_group, const gchar *new_group)
+GKeyFile * merge_key_group(GKeyFile *pref, const gchar *p_group,
+        GKeyFile *alt, const gchar *a_group, const gchar *new_group)
 {
     // check groups exist
     if (!g_key_file_has_group(pref, p_group) ||
@@ -221,14 +223,15 @@ void remove_conflicts(gchar *key, gchar *value, GKeyFile *modified_keyfile,
 {
     // TODO this function doesn't remove negation conflicts (--markers --no-markers)
     // get list of indexes for conflicts
-    GSList *conflict_indexes = g_hash_table_lookup(conflicts_index, key);
+    GSList *conflict_indexes = g_hash_table_lookup(option_data.conflicts_index, key);
     // return when no conflicts found
     if (conflict_indexes == NULL) {
         return;
     }
     // iterate for each possible conflict
     do {
-        conflict_t conflict = conflicts[GPOINTER_TO_INT(conflict_indexes->data)];
+        conflict_t conflict =
+            option_data.conflicts [GPOINTER_TO_INT(conflict_indexes->data)];
         // check if the conflict value exists
         if (g_key_file_has_key(checked_keyfile, check_group,
                     conflict.conflict_name, NULL)) {

@@ -1,5 +1,5 @@
 HB_INFO_SOURCES = src/handbrake/options-0.9.9.h src/handbrake/options-0.10.0.h src/handbrake/options-0.10.3.h src/handbrake/options-1.0.0.h src/handbrake/options-1.1.0.h src/handbrake/options-1.2.0.h src/handbrake/options-1.3.0.h
-SUPPORT_SOURCES = src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h
+SUPPORT_SOURCES = src/options.c src/options.h src/keyfile.c src/keyfile.h src/build_args.c src/build_args.h src/validate.c src/validate.h
 GEN_SOURCES = src/gen_hbr.c src/gen_hbr.h
 COMMON_SOURCES = src/util.c src/util.h
 

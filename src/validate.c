@@ -29,6 +29,8 @@
 #include "validate.h"
 #include "keyfile.h"
 
+extern option_data_t option_data;
+
 /**
  * @brief Check that a file can be read, and no group names are duplicate, and
  *        no keys within groups are duplicate
@@ -164,7 +166,7 @@ gboolean post_validate_config_file(GKeyFile *keyfile, const gchar *infile)
  * @return TRUE when a config section is valid
  */
 gboolean post_validate_common(GKeyFile *keyfile, const gchar *infile,
-    GKeyFile *config_keyfile)
+        GKeyFile *config_keyfile)
 {
     gboolean valid = TRUE;
     gboolean checking_local_config = config_keyfile != NULL;
@@ -213,6 +215,7 @@ gboolean post_validate_common(GKeyFile *keyfile, const gchar *infile,
     // call valid_option function (requires merging for complex validation)
 
     i = 0;
+    option_t *options = option_data.options;
     while (group_names[i] != NULL) {
         int j = 0;
         while (options[j].name != NULL) {
@@ -277,43 +280,45 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
                  * necessary)
                  */
                 gint option_index = GPOINTER_TO_INT(
-                        g_hash_table_lookup(options_index, keys[j]));
-                if (options[option_index].key_type == k_boolean &&
-                        options[option_index].negation_option) {
+                        g_hash_table_lookup(option_data.options_index,
+                            keys[j]));
+                if (option_data.options[option_index].key_type == k_boolean &&
+                        option_data.options[option_index].negation_option) {
                     if (g_key_file_get_boolean(test_keyfile, group_names[i],
                                 keys[j], NULL) == FALSE) {
                         j++;
                         continue;
                     }
                 }
-                GSList* requires_list = g_hash_table_lookup(requires_index, keys[j]);
+                GSList* requires_list =
+                    g_hash_table_lookup(option_data.requires_index, keys[j]);
                 /* iterate over gslist (pointers are actually int which
                    are the index to the requires table) */
                 while (requires_list != NULL) {
                     gint index = GPOINTER_TO_INT(requires_list->data);
                     // check if require is defined
                     if (!g_key_file_has_key(test_keyfile, group_names[i],
-                                requires[index].require_name,
+                                option_data.requires[index].require_name,
                                 NULL)) {
                         gchar *value = g_key_file_get_value(
                                 test_keyfile, group_names[i], keys[j], NULL);
                         hbr_error("Key \"%s\" requires \"%s\" but it is not"
                                 " set", infile, group_names[i], keys[j], value,
-                                keys[j], requires[index].require_name);
+                                keys[j], option_data.requires[index].require_name);
                         valid = FALSE;
                         g_free(value);
                     } else {
                         // if require has specific value check it
                         gchar *requires_value = g_key_file_get_value(
                                 test_keyfile, group_names[i],
-                                requires[index].require_name, NULL);
-                        if (requires[index].require_value != NULL &&
+                                option_data.requires[index].require_name, NULL);
+                        if (option_data.requires[index].require_value != NULL &&
                                 strcmp(requires_value,
-                                    requires[index].require_value) != 0) {
+                                    option_data.requires[index].require_value) != 0) {
                             hbr_error("Key \"%s\" requires setting \"%s=%s\"",
                                     infile, group_names[i], keys[j], NULL,
-                                    keys[j], requires[index].require_name,
-                                    requires[index].require_value);
+                                    keys[j], option_data.requires[index].require_name,
+                                    option_data.requires[index].require_value);
                             valid = FALSE;
                         }
                         g_free(requires_value);
@@ -434,7 +439,7 @@ gboolean unknown_keys_exist(GKeyFile *keyfile, const gchar *infile)
         gchar **keys = g_key_file_get_keys(keyfile, groups[i], NULL, NULL);
         int j = 0;
         while (keys[j] != NULL) {
-            if (!g_hash_table_contains(options_index, keys[j])) {
+            if (!g_hash_table_contains(option_data.options_index, keys[j])) {
                 gchar *value = g_key_file_get_value(keyfile, groups[i], keys[j],
                         NULL);
                 hbr_error("Invalid key", infile, groups[i], keys[j], value);
@@ -594,7 +599,7 @@ gboolean check_custom_format (GKeyFile *config, const gchar *group, option_t *op
         const gchar *config_path)
 {
     gint custom_index = GPOINTER_TO_INT(
-            g_hash_table_lookup(customs_index, option->name));
+            g_hash_table_lookup(option_data.customs_index, option->name));
     gboolean valid = TRUE;
     g_key_file_set_list_separator(config, ':');
     GError *error = NULL;
@@ -617,7 +622,8 @@ gboolean check_custom_format (GKeyFile *config, const gchar *group, option_t *op
             } else {
                 // verify first token is one of filter_names
                 int j = 0;
-                custom_key_t *custom_keys = (custom_key_t *) customs[custom_index].key;
+                custom_key_t *custom_keys =
+                    (custom_key_t *) option_data.customs[custom_index].key;
                 while (custom_keys[j].key_name != NULL) {
                     if (strcmp(tokens[0], custom_keys[j].key_name) == 0) {
                         break;

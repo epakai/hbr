@@ -30,6 +30,7 @@
 #include "keyfile.h"
 #include "validate.h"
 #include "build_args.h"
+#include "options.h"
 
 // PROTOTYPES
 GKeyFile * fetch_or_generate_keyfile(void);
@@ -107,6 +108,9 @@ static GOptionEntry entries[] =
     { NULL }
 };
 
+/* Global data for options */
+option_data_t option_data;
+
 /**
  * @brief Reads the input file and calls handbrake for each specified outfile
  *
@@ -168,10 +172,11 @@ int main(int argc, char * argv[])
     GKeyFile *temp = g_key_file_new();
     if (opt_output != NULL) {
         g_key_file_set_string(temp, "--output", "output_basedir", opt_output);
-        gint option_index = GPOINTER_TO_INT(g_hash_table_lookup(options_index,
+        gint option_index = GPOINTER_TO_INT(g_hash_table_lookup(
+                    option_data.options_index,
                     "output_basedir"));
         // NOTE error output is a little weird when reusing valid_ functions
-        if (!valid_writable_path(&options[option_index], "--output", temp, NULL)) {
+        if (!valid_writable_path(&option_data.options[option_index], "--output", temp, NULL)) {
             g_option_context_free(context);
             g_strfreev(opt_input_files);
             g_key_file_free(config);
@@ -197,8 +202,8 @@ int main(int argc, char * argv[])
         }
 
         // merge config sections from global config and current infile
-        GKeyFile *merged = merge_key_group(current_infile, "CONFIG",
-                config, "CONFIG", "MERGED_CONFIG");
+        GKeyFile *merged = merge_key_group(current_infile, "CONFIG", config,
+                "CONFIG", "MERGED_CONFIG");
 
         /*
          * merged may be null if both CONFIG sections are empty or
@@ -503,7 +508,7 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
     g_print("%c[0m", 27);
     if (debug) {
         g_print("%s\n", ft_command->str);
-    } else if(system((char *) ft_command->str) == -1) {
+    } else if (system((char *) ft_command->str) == -1) {
         hbr_error("Failed to run ffmpegthumbnailer: %s", NULL, NULL, NULL,
                 NULL, g_strerror(errno));
     }

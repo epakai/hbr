@@ -23,7 +23,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
-#include "build_args.h"
+#include "options.h"
 
 gboolean pre_validate_key_file(const gchar *infile);
 gboolean post_validate_input_file(GKeyFile *input_keyfile, const gchar *infile,

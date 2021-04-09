@@ -22,12 +22,14 @@
 
 #include <glib.h>
 
+#include "options.h"
+
 GKeyFile *parse_validate_key_file(char *infile, GKeyFile *config);
 GKeyFile *parse_key_file(char *infile);
 GKeyFile *copy_group_new(GKeyFile *keyfile, const gchar *group,
         const gchar *new_group);
-GKeyFile *merge_key_group(GKeyFile *pref, const gchar *p_group, GKeyFile *alt,
-        const gchar *a_group, const gchar *new_group);
+GKeyFile *merge_key_group(GKeyFile *pref, const gchar *p_group,
+        GKeyFile *alt, const gchar *a_group, const gchar *new_group);
 void remove_conflicts(gchar *key, gchar *value, GKeyFile *modified_keyfile,
         const gchar *mod_group, GKeyFile *checked_keyfile,
         const gchar *check_group);
