@@ -1,0 +1,1 @@
+Some characters in status output don't appear correctly. For example "specific_name=Amélie" gives status output "Am?lie" when running hbr however the resulting filenames do match input.
