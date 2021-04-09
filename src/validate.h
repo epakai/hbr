@@ -117,6 +117,8 @@ gboolean valid_crop(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path);
 gboolean valid_pixel_aspect(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path);
+gboolean valid_combined_decomb_deblock_deinterlace_comb_detect(option_t *option,
+    const gchar *group, GKeyFile *config, const gchar *config_path);
 gboolean valid_decomb(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path);
 gboolean valid_denoise(option_t *option, const gchar *group, GKeyFile *config,
