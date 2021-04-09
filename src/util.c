@@ -35,6 +35,30 @@ void message_level_warn(void) { MESSAGE_LEVEL = HBR_WARN; }
 void message_level_error(void) { MESSAGE_LEVEL = HBR_ERROR; }
 
 /**
+ * @brief Message printing routine for hbr_verror(),
+ *        hbr_vwarn(), hbr_vinfo()
+ */
+void hbr_print_message(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp) {
+    vfprintf(stderr, format, argp);
+    if (path) {
+        fprintf(stderr, ": (%s)", path);
+    }
+    if (section) {
+        fprintf(stderr, " [%s]", section);
+    }
+    if (key) {
+        if (value) {
+            fprintf(stderr, " %s=%s\n", key, value);
+        } else {
+            fprintf(stderr, " %s= \n", key);
+        }
+    } else {
+        fprintf(stderr, "\n");
+    }
+}
+
+/**
  * @brief Error message printed on stderr. Resulting output:
  *        hbr   ERROR: Format string: (path) [section] key=value
  *
@@ -63,22 +87,7 @@ void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
 {
     if (MESSAGE_LEVEL <= HBR_ERROR) {
         fprintf(stderr, "hbr   ERROR: ");
-        vfprintf(stderr, format, argp);
-        if (path) {
-            fprintf(stderr, ": (%s)", path);
-        }
-        if (section) {
-            fprintf(stderr, " [%s]", section);
-        }
-        if (key) {
-            if (value) {
-                fprintf(stderr, " %s=%s\n", key, value);
-            } else {
-                fprintf(stderr, " %s= \n", key);
-            }
-        } else {
-            fprintf(stderr, "\n");
-        }
+        hbr_print_message(format, path, section, key, value, argp);
     }
 }
 
@@ -111,22 +120,7 @@ void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
 {
     if (MESSAGE_LEVEL <= HBR_WARN) {
         fprintf(stderr, "hbr WARNING: ");
-        vfprintf(stderr, format, argp);
-        if (path) {
-            fprintf(stderr, ": (%s)", path);
-        }
-        if (section) {
-            fprintf(stderr, " [%s]", section);
-        }
-        if (key) {
-            if (value) {
-                fprintf(stderr, " %s=%s\n", key, value);
-            } else {
-                fprintf(stderr, " %s= \n", key);
-            }
-        } else {
-            fprintf(stderr, "\n");
-        }
+        hbr_print_message(format, path, section, key, value, argp);
     }
 }
 
@@ -159,22 +153,7 @@ void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
 {
     if (MESSAGE_LEVEL <= HBR_INFO) {
         fprintf(stderr, "hbr    INFO: ");
-        vfprintf(stderr, format, argp);
-        if (path) {
-            fprintf(stderr, ": (%s)", path);
-        }
-        if (section) {
-            fprintf(stderr, " [%s]", section);
-        }
-        if (key) {
-            if (value) {
-                fprintf(stderr, " %s=%s\n", key, value);
-            } else {
-                fprintf(stderr, " %s= \n", key);
-            }
-        } else {
-            fprintf(stderr, "\n");
-        }
+        hbr_print_message(format, path, section, key, value, argp);
     }
 }
 

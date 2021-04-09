@@ -1760,19 +1760,24 @@ gboolean valid_combined_decomb_deblock_deinterlace_comb_detect(option_t *option,
         return TRUE;
     }
 
-
-    gchar* value = g_key_file_get_string(config, group, option->name, &error);
-    hbr_error("Invalid decomb option", config_path, group, option->name,
-            value);
-    g_free(value);
     return FALSE;
 }
 
 gboolean valid_decomb(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    return valid_combined_decomb_deblock_deinterlace_comb_detect(option, group,
-            config, config_path);
+    gboolean valid = valid_combined_decomb_deblock_deinterlace_comb_detect(
+            option, group, config, config_path);
+
+    if (!valid) {
+        GError *error = NULL;
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
+        hbr_error("Invalid decomb option", config_path, group, option->name,
+                value);
+        g_free(value);
+    }
+
+    return valid;
 }
 
 gboolean valid_denoise(option_t *option, const gchar *group, GKeyFile *config,
@@ -1864,15 +1869,35 @@ gboolean valid_denoise(option_t *option, const gchar *group, GKeyFile *config,
 gboolean valid_deblock(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    return valid_combined_decomb_deblock_deinterlace_comb_detect(option, group,
-            config, config_path);
+    gboolean valid = valid_combined_decomb_deblock_deinterlace_comb_detect(
+            option, group, config, config_path);
+
+    if (!valid) {
+        GError *error = NULL;
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
+        hbr_error("Invalid deblock option", config_path, group, option->name,
+                value);
+        g_free(value);
+    }
+
+    return valid;
 }
 
 gboolean valid_deinterlace(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    return valid_combined_decomb_deblock_deinterlace_comb_detect(option, group,
-            config, config_path);
+    gboolean valid = valid_combined_decomb_deblock_deinterlace_comb_detect(
+            option, group, config, config_path);
+
+    if (!valid) {
+        GError *error = NULL;
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
+        hbr_error("Invalid deinterlace option", config_path, group, option->name,
+                value);
+        g_free(value);
+    }
+
+    return valid;
 }
 
 gboolean valid_detelecine(option_t *option, const gchar *group, GKeyFile *config,
@@ -2482,8 +2507,18 @@ gboolean valid_qsv_decoding(option_t *option, const gchar *group, GKeyFile *conf
 gboolean valid_comb_detect(option_t *option, const gchar *group, GKeyFile *config,
          const gchar *config_path)
 {
-    return valid_combined_decomb_deblock_deinterlace_comb_detect(option, group,
-            config, config_path);
+    gboolean valid = valid_combined_decomb_deblock_deinterlace_comb_detect(
+            option, group, config, config_path);
+
+    if (!valid) {
+        GError *error = NULL;
+        gchar* value = g_key_file_get_string(config, group, option->name, &error);
+        hbr_error("Invalid comb_detect option", config_path, group, option->name,
+                value);
+        g_free(value);
+    }
+
+    return valid;
 }
 
 gboolean valid_pad(option_t *option, const gchar *group, GKeyFile *config,
