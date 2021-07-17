@@ -22,37 +22,11 @@
 
 #include <glib.h>
 
-/**
- * @brief Episode structure used to build episode list when -l option is used.
- */
-struct episode {
-	gint number;
-    gint season;
-	gchar *name;
-};
-
-/**
- * @brief
- */
-struct episode_list {
-	gint count;
-	struct episode *array;
-};
-
-struct episode_list read_episode_list(const gchar *episode_filename);
-
-void free_episode_list(struct episode_list list);
-
 GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *type,
 		const gchar *iso_filename, const gchar *year, const gchar *crop,
         const gchar *name, const gchar *input_basedir, const gchar *output_basedir,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *episodes);
-
-void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
-        gint title, gint season, const gchar *type, const gchar *iso_filename,
-        const gchar *audio, const gchar *subtitle, const gchar *chapters,
-        const gchar *specific_name);
 
 void print_hbr(GKeyFile *config);
 

@@ -25,13 +25,36 @@
 #include "util.h"
 
 /**
+ * @brief Episode structure used to build episode list when -l option is used.
+ */
+struct episode {
+	gint number;
+    gint season;
+	gchar *name;
+};
+
+/**
+ * @brief Episode list structure
+ */
+struct episode_list {
+	gint count;
+	struct episode *array;
+};
+
+static struct episode_list read_episode_list(const gchar *episode_filename);
+static void free_episode_list(struct episode_list list);
+static void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
+        gint title, gint season, const gchar *type, const gchar *iso_filename,
+        const gchar *audio, const gchar *subtitle, const gchar *chapters,
+        const gchar *specific_name);
+/**
  * @brief Builds an episode_list from a file
  *
  * @param episode_filename Path to the episode list.
  *
  * @return List of episodes, must be free'd with free_episode_list()
  */
-struct episode_list read_episode_list(const gchar *episode_filename)
+static struct episode_list read_episode_list(const gchar *episode_filename)
 {
     int max_count = 30;
     struct episode_list list;
@@ -132,7 +155,7 @@ struct episode_list read_episode_list(const gchar *episode_filename)
  *
  * @param list packed list of episodes
  */
-void free_episode_list(struct episode_list list)
+static void free_episode_list(struct episode_list list)
 {
     int i;
     for ( i = 0; i < list.count; i++) {
@@ -289,7 +312,7 @@ GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *typ
  * @param chapters Chapter range (i.e. 2-18)
  * @param specific_name Name of the episode or particular movie version
  */
-void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
+static void create_outfile_section(GKeyFile *config, gint outfile_count, gint episode,
         gint title, gint season, const gchar *type, const gchar *iso_filename,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *specific_name)
