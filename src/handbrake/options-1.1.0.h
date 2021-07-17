@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "../build_args.h"
+#include "../options.h"
 #include "../validate.h"
 
 static option_t option_v1_1_0[] =
