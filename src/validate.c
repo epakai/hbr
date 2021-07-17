@@ -258,7 +258,7 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
         return FALSE;
     }
     // iterate over each outfile section
-    while (group_names[i] != NULL && merged_configs != NULL) {
+    while (group_names[i] != NULL) {
         GKeyFile *test_keyfile = NULL;
         if (strncmp("OUTFILE", group_names[i], sizeof("OUTFILE")-1) == 0) {
             // merge outfile section with config. maintain same names
@@ -335,7 +335,7 @@ gboolean has_requires(GKeyFile *input_keyfile, const gchar *infile,
         i++;
     }
     // Free the merged configs unless it still points to input_keyfile
-    if (merged_configs != input_keyfile && merged_configs != NULL) {
+    if (merged_configs != input_keyfile) {
         g_key_file_free(merged_configs);
     }
     g_strfreev(group_names);
@@ -368,7 +368,7 @@ gboolean has_required_keys(GKeyFile *input_keyfile, const gchar *infile,
         return FALSE;
     }
     // iterate over each outfile section
-    while (group_names[i] != NULL && merged_configs != NULL) {
+    while (group_names[i] != NULL) {
         GKeyFile *test_keyfile = NULL;
         if (strncmp("OUTFILE", group_names[i], sizeof("OUTFILE")-1) == 0) {
             // merge outfile section with config. maintain same names
@@ -414,7 +414,7 @@ gboolean has_required_keys(GKeyFile *input_keyfile, const gchar *infile,
         i++;
     }
     // Free the merged configs unless it still points to input_keyfile
-    if (merged_configs != input_keyfile && merged_configs != NULL) {
+    if (merged_configs != input_keyfile) {
         g_key_file_free(merged_configs);
     }
     g_strfreev(group_names);
