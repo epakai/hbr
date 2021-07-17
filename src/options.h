@@ -72,12 +72,12 @@ typedef struct option_s {
     void *valid_values;
 } option_t;
 
-typedef struct custom_key_s {
+typedef struct {
     key_type key_type;
     const gchar *key_name;
 } custom_key_t;
 
-typedef struct custom_s {
+typedef struct {
     const gchar *name;
     const void *key;
 } custom_t;
@@ -86,7 +86,7 @@ typedef struct custom_s {
  * @brief Data about which options conflict.
  *        name may repeat for options with multiple conflicts.
  */
-typedef struct conflict_s {
+typedef struct {
     /**
      * @brief name of option being considered
      */
@@ -109,7 +109,7 @@ typedef struct conflict_s {
  * @brief Data about which options require others.
  *        name may repeat for options with multiple requires.
  */
-typedef struct require_s {
+typedef struct {
     /**
      * @brief name of option being considered
      */
@@ -124,7 +124,7 @@ typedef struct require_s {
     const gchar *require_value;
 } require_t;
 
-typedef struct option_data_s {
+typedef struct {
     /*
      * Pointers for dynamically allocated array that combines
      * options/hbr_options, requires/hbr_requires, and conflicts/hbr_conflicts
