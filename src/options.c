@@ -26,6 +26,8 @@
 
 #include "util.h"
 #include "options.h"
+#include <stdlib.h>
+#include <string.h>
 
 extern option_data_t option_data;
 

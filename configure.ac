@@ -94,7 +94,7 @@ esac
 
 AX_IS_RELEASE([git-directory])
 AX_COMPILER_FLAGS()
-AX_APPEND_COMPILE_FLAGS([-Wno-error -Wno-declaration-after-statement -fsanitize=address -Wshadow -Wmissing-variable-declarations])
+AX_APPEND_COMPILE_FLAGS([-Wno-error -Wall -Wno-declaration-after-statement -Wshadow -Wmissing-variable-declarations])
 
 dnl argp-standalone does not provide a pkg-config file
 AC_CHECK_HEADER([argp.h], AC_DEFINE(HAVE_ARGP, 1, [have argp]))
