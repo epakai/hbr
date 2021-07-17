@@ -77,7 +77,7 @@ static gboolean print_version(
             "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl2.html>\n"
             "This is free software: you are free to change and redistribute it.\n"
             "There is NO WARRANTY, to the extent permitted by law.\n", VERSION);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 /**
@@ -134,7 +134,7 @@ int main(int argc, char * argv[])
         hbr_error("Option parsing failed: %s\n", NULL, NULL, NULL, NULL, error->message);
         g_error_free(error);
         g_option_context_free(context);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // error and exit if these conflicting options are both present
@@ -142,7 +142,7 @@ int main(int argc, char * argv[])
         hbr_error("Option 'overwrite' (-y) is not compatible with 'skip' (-n).",
                 NULL, NULL, NULL, NULL);
         g_option_context_free(context);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // setup options pointers and lookup tables
@@ -154,7 +154,7 @@ int main(int argc, char * argv[])
     if ((config = fetch_or_generate_keyfile()) == NULL) {
         g_option_context_free(context);
         g_strfreev(opt_input_files);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // print help when there are no file arguments to process
@@ -166,7 +166,7 @@ int main(int argc, char * argv[])
         g_option_context_free(context);
         g_strfreev(opt_input_files);
         g_key_file_free(config);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // check the output path from command line option
@@ -181,7 +181,7 @@ int main(int argc, char * argv[])
             g_option_context_free(context);
             g_strfreev(opt_input_files);
             g_key_file_free(config);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -234,13 +234,13 @@ int main(int argc, char * argv[])
     g_key_file_free(config);
     g_option_context_free(context);
     g_strfreev(opt_input_files);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 /**
  * @brief Tries to read an existing config file or generate a new one
  *
- * @return Parsed config keyfile
+ * @return Parsed config keyfile or NULL
  */
 GKeyFile *fetch_or_generate_keyfile(void)
 {
@@ -268,7 +268,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
     if (g_mkdir_with_parents(config_dir->str, 0700) == -1) {
         hbr_error("Failed to create config file", config_dir->str, NULL, NULL,
                 NULL);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     GString *config_file = g_string_new(NULL);
@@ -280,8 +280,8 @@ GKeyFile *fetch_or_generate_keyfile(void)
         g_string_printf(config_file, "%s%s", config_dir->str, "hbr.conf");
         g_string_printf(alt_config_file, "%s%s", config_dir->str, "hbr.conf");
     }
-    g_string_free(config_dir, TRUE);
-    g_string_free(alt_config_dir, TRUE);
+    (void) g_string_free(config_dir, TRUE);
+    (void) g_string_free(alt_config_dir, TRUE);
 
     GKeyFile *keyfile = NULL;
     // check config file exists
@@ -291,7 +291,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
         keyfile = parse_validate_key_file(config_file->str, NULL);
         if (keyfile == NULL) {
             // Quit, parse_validate_key_file() will report errors
-            g_string_free(config_file, TRUE);
+            (void) g_string_free(config_file, TRUE);
             return NULL;
         }
     } else if (g_file_test (alt_config_file->str,
@@ -300,7 +300,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
         keyfile = parse_validate_key_file(config_file->str, NULL);
         if (keyfile == NULL) {
             // Quit, parse_validate_key_file() will report errors
-            g_string_free(config_file, TRUE);
+            (void) g_string_free(config_file, TRUE);
             return NULL;
         }
     } else {
@@ -311,7 +311,7 @@ GKeyFile *fetch_or_generate_keyfile(void)
             hbr_error("Error writing config file: %s", config_file->str, NULL,
                     NULL, NULL, error->message);
             g_error_free(error);
-            g_string_free(config_file, TRUE);
+            (void) g_string_free(config_file, TRUE);
             return NULL;
         } else {
             hbr_info("Default config file generated", config_file->str, NULL,
@@ -319,8 +319,8 @@ GKeyFile *fetch_or_generate_keyfile(void)
         }
     }
     config_file_path = g_strdup(config_file->str);
-    g_string_free(config_file, TRUE);
-    g_string_free(alt_config_file, TRUE);
+    (void) g_string_free(config_file, TRUE);
+    (void) g_string_free(alt_config_file, TRUE);
     return keyfile;
 }
 
@@ -339,7 +339,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
     if (out_count < 1) {
         hbr_error("No valid outfile sections found. Quitting", infile, NULL,
                 NULL, NULL);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     // Handle -e option to encode a single episode
     if (opt_episode >= 0) {
@@ -357,7 +357,7 @@ void encode_loop(GKeyFile *inkeyfile, GKeyFile *merged_config,
         } else {
             hbr_error("Could not find specified episode (-e %d). Quitting",
                     NULL, NULL, NULL, NULL, opt_episode);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
     // encode all the episodes if loop parameters weren't modified above
@@ -626,7 +626,7 @@ int hb_fork(gchar *args[], gchar *log_filename)
             hbr_error("Failed to exec HandBrakeCLI: %s", log_filename, NULL,
                     NULL, NULL, g_strerror(errno));
         }
-        _exit(1);
+        _exit(EXIT_FAILURE);
     } else {
         perror("hb_fork(): Failed to fork");
         close(hb_err[1]);
@@ -640,7 +640,7 @@ int hb_fork(gchar *args[], gchar *log_filename)
                 NULL, NULL);
         close(hb_err[1]);
         fclose(logfile);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     int bytes;
     while ( (bytes = read(hb_err[0], buf, 1024)) > 0) {

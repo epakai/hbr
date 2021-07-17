@@ -133,7 +133,7 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
         argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, (char *)"hbr-gen");
         argp_help(&gen_argp, stdout, ARGP_HELP_LONG, (char *)"hbr-gen");
         printf("Report bugs to %s\n", argp_program_bug_address);
-        exit(0);
+        exit(EXIT_SUCCESS);
         break;
     case 'l':
         gen_arguments->episodes = arg;

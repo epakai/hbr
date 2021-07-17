@@ -26,7 +26,7 @@ AC_CHECK_PROGS([CODESPELL], [codespell])
 AM_CONDITIONAL([HAVE_CODESPELL], [test -n "$CODESPELL"])
 AC_CHECK_PROGS([CRAM3], [cram3])
 AM_CONDITIONAL([HAVE_CRAM3], [test -n "$CRAM3"])
-AX_PROG_SPLINT(["+gnuextensions -warnposix -badflag -nullassign -nullpass +boolint"])
+AX_PROG_SPLINT(["+gnuextensions -warnposix -badflag -nullassign -nullpass +boolint -nullret"])
 
 # Doxygen for source code documentation
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
