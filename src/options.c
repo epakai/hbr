@@ -160,9 +160,9 @@ void determine_handbrake_version(gchar *arg_version)
         g_strfreev(split_version);
         exit(1);
     }
-    major = atoi(split_version[0]);
-    minor = atoi(split_version[1]);
-    patch = atoi(split_version[2]);
+    major = g_ascii_strtoll(split_version[0], NULL, 10);
+    minor = g_ascii_strtoll(split_version[1], NULL, 10);
+    patch = g_ascii_strtoll(split_version[2], NULL, 10);
     g_strfreev(split_version);
 
     /*

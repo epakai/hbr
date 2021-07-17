@@ -72,7 +72,7 @@ static gboolean print_version(
         __attribute__((unused)) const gchar *value,
         __attribute__((unused)) gpointer data,
         __attribute__((unused)) GError **error) {
-    printf("hbr (handbrake runner) %s\n" //TODO someday we'll release and have a version number
+    printf("hbr (handbrake runner) %s\n"
             "Copyright (C) 2018 Joshua Honeycutt\n"
             "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl2.html>\n"
             "This is free software: you are free to change and redistribute it.\n"
@@ -101,9 +101,9 @@ static GOptionEntry entries[] =
         "override location to write output files", "PATH"},
     {"hbversion", 'H', 0, G_OPTION_ARG_STRING,    &opt_hbversion,
         "override handbrake version detection", "X.Y.Z"},
-    {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, print_version,
+    {"version",   'V', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, (gpointer) print_version,
         "prints version info and exit", NULL},
-    {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_input_files,
+    {G_OPTION_REMAINING, (gchar) 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_input_files,
         NULL, NULL},
     { NULL }
 };

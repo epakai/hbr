@@ -19,13 +19,14 @@
 
 #include <argp.h>    // for argp_help, argp_parse, error_t, ARGP_ERR_UNKNOWN
 #include <stdio.h>   // for NULL, printf, stdout
-#include <stdlib.h>  // for atoi, exit
+#include <stdlib.h>  // for exit
 
+#include "config.h"
 #include "util.h"
 #include "gen_hbr.h"
 
 /// argp version info
-const char *argp_program_version = ""; //TODO pull version from one place
+const char *argp_program_version = VERSION;
 /// argp bug reporting info
 const char *argp_program_bug_address = "<https://github.com/epakai/hbr/issues>";
 /// hbr-gen description for --help
@@ -38,7 +39,7 @@ static const char gen_args_doc[] = "{-n NUM|-l FILE}";
 static const struct argp_option gen_options[] = {
     {"count",          'n', "NUM",          0, "Number of outfile sections to generate", 1},
     {"episodes",       'l', "FILE",         0, "Episode list", 1},
-    {"title",          't', "NUM",          0, "DVD Title number", 2},
+    {"title",          't', "NUM",          0, "DVD Title number (1-99)", 2},
     {"source",         'f', "FILE",         0, "Source filename", 2},
     {"crop",           'c', "T:B:L:R",      0, "Pixels to crop, top:bottom:left:right", 2},
     {"type",           'p', "series|movie", 0, "Type of video", 3},
@@ -140,11 +141,9 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
         break;
     case 'n':
         if (arg != NULL) {
-        if ( atoi(arg) > 0 ) {
-            gen_arguments->generate = atoi(arg);
-        }
+            gen_arguments->generate = g_ascii_strtoll(arg, NULL, 10);
         } else {
-        gen_arguments->generate = 1;
+            gen_arguments->generate = 1;
         }
         break;
     case 'f':
@@ -154,9 +153,7 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
         gen_arguments->type = arg;
         break;
     case 't':
-        if ( atoi(arg) >= 1  && atoi(arg) <= 99 ) {
-        gen_arguments->title = atoi(arg);
-        }
+        gen_arguments->title = g_ascii_strtoll(arg, NULL, 10);
         break;
     case 'y':
         gen_arguments->year = arg;
@@ -168,9 +165,7 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
         gen_arguments->name = arg;
         break;
     case 'S':
-        if ( atoi(arg) > 0 ) {
-        gen_arguments->season = atoi(arg);
-        }
+        gen_arguments->season = g_ascii_strtoll(arg, NULL, 10);
         break;
     case 'i':
         gen_arguments->input_basedir = arg;
