@@ -31,6 +31,8 @@
 
 extern option_data_t option_data;
 
+static gchar * get_handbrake_version_string (gchar *arg_version);
+
 /*
  * hbr specific options tables
  * These aren't valid options to pass to HandBrakeCLI.
@@ -90,15 +92,7 @@ static conflict_t hbr_conflicts[] =
     { NULL, NULL, NULL, NULL}
 };
 
-/**
- * @brief Find the appropriate set of options to work with
- *
- * @param arg_version Version passed as a command line option to hbr
- */
-void determine_handbrake_version(gchar *arg_version)
-{
-    // check HandBrakeCLI is available
-
+static gchar * get_handbrake_version_string (gchar *arg_version) {
     gchar *version = NULL;
     char *hb_version_argv[] = { (char *)"HandBrakeCLI", (char *)"--version",
         NULL };
@@ -139,7 +133,18 @@ void determine_handbrake_version(gchar *arg_version)
             g_strfreev(split_output);
         }
     }
+    return version;
+}
 
+/**
+ * @brief Find the appropriate set of options to work with
+ *
+ * @param arg_version Version passed as a command line option to hbr
+ */
+void determine_handbrake_version(gchar *arg_version)
+{
+    // check HandBrakeCLI is available
+    gchar *version = get_handbrake_version_string(arg_version);
     if (version == NULL) {
         hbr_error("HandBrake output for version detection was not as expected. "
                 "Exiting.", NULL, NULL, NULL, NULL);
@@ -149,6 +154,12 @@ void determine_handbrake_version(gchar *arg_version)
     gint major, minor, patch;
     //split version number
     gchar **split_version = g_strsplit(version, ".", 3);
+    if (split_version[0] == NULL || split_version[1] == NULL || split_version[2] == NULL) {
+        hbr_error("HandBrake version format was not as expected. Exiting.",
+                NULL, NULL, NULL, NULL);
+        g_strfreev(split_version);
+        exit(1);
+    }
     major = atoi(split_version[0]);
     minor = atoi(split_version[1]);
     patch = atoi(split_version[2]);
