@@ -104,6 +104,9 @@ cram: export CRAM_HBR=$(abs_builddir)/hbr
 cram: export CRAM_HBR_ARGS=--hbversion=1.3.0
 cram: hbr
 	cram3 -qv $(top_srcdir)/tests
+
+include aminclude_static.am
+
 clean-test:
 	@- rm $(top_srcdir)/tests/*.err
 else

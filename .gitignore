@@ -9,6 +9,7 @@ samples/*
 /src/config.*
 /aclocal.m4
 /autom4te.cache/
+/aminclude_static.am
 /compile
 /configure
 /config.guess

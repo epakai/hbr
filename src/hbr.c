@@ -109,6 +109,7 @@ static GOptionEntry entries[] =
 };
 
 /* Global data for options */
+extern option_data_t option_data;
 option_data_t option_data;
 
 /**

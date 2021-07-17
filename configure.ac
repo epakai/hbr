@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([hbr], [0.1], [https://github.com/epakai/hbr/issues])
+AC_INIT([hbr], [0.1], [https://github.com/epakai/hbr/issues], [hbr], [https://github.com/epakai/hbr])
 AC_CONFIG_SRCDIR([src/hbr.c])
 AC_CONFIG_HEADERS([src/config.h])
 AX_CHECK_ENABLE_DEBUG()
@@ -26,6 +26,7 @@ AC_CHECK_PROGS([CODESPELL], [codespell])
 AM_CONDITIONAL([HAVE_CODESPELL], [test -n "$CODESPELL"])
 AC_CHECK_PROGS([CRAM3], [cram3])
 AM_CONDITIONAL([HAVE_CRAM3], [test -n "$CRAM3"])
+AX_PROG_SPLINT()
 
 # Doxygen for source code documentation
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
@@ -93,7 +94,7 @@ esac
 
 AX_IS_RELEASE([git-directory])
 AX_COMPILER_FLAGS()
-AX_APPEND_COMPILE_FLAGS([-Wno-error -Wno-declaration-after-statement])
+AX_APPEND_COMPILE_FLAGS([-Wno-error -Wno-declaration-after-statement -fsanitize=address -Wshadow -Wmissing-variable-declarations])
 
 dnl argp-standalone does not provide a pkg-config file
 AC_CHECK_HEADER([argp.h], AC_DEFINE(HAVE_ARGP, 1, [have argp]))

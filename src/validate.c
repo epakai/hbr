@@ -595,7 +595,7 @@ gboolean has_duplicate_keys(const gchar *infile)
  * @return true when all keys in custom_format are parts of keys, and all
  *         values can be interpreted as the appropriate key_type
  */
-gboolean check_custom_format (GKeyFile *config, const gchar *group, option_t *option,
+gboolean check_custom_format(GKeyFile *config, const gchar *group, option_t *option,
         const gchar *config_path)
 {
     gint custom_index = GPOINTER_TO_INT(
@@ -661,6 +661,14 @@ gboolean check_custom_format (GKeyFile *config, const gchar *group, option_t *op
                             }
                             break;
                         }
+                    case k_string:
+                    case k_boolean:
+                    case k_double:
+                    case k_path:
+                    case k_integer_list:
+                    case k_string_list:
+                    case k_double_list:
+                    case k_path_list:
                     default:
                         hbr_error("Incomplete implementation of "
                                 "validate.c:check_custom_format()",
@@ -1398,7 +1406,7 @@ gboolean valid_audio_bitrate(option_t *option, const gchar *group, GKeyFile *con
     gchar **audio_encoders = g_key_file_get_string_list(config, group,
             "aencoder", &aencoder_count, &error);
     if (error != NULL) {
-        hbr_error("Could not verify audio track bitrates because audio encoders"
+        hbr_error("Could not verify audio track bitrates because audio encoder(s)"
                 " were not specified", config_path, group, option->name,
                 bitrates_string);
         valid = FALSE;
@@ -1917,7 +1925,7 @@ gboolean valid_detelecine(option_t *option, const gchar *group, GKeyFile *config
  * @brief Set of iso_639_2 language codes for checking languages against.
  *        Used in valid_iso_639() and valid_iso_639_list
  */
-const gchar *iso_639_2[] = {
+static const gchar *iso_639_2[] = {
     "aar", "abk", "ace", "ach", "ada", "ady", "afa", "afh", "afr", "ain", "aka",
     "akk", "alb", "ale", "alg", "alt", "amh", "ang", "anp", "apa", "ara", "arc",
     "arg", "arm", "arn", "arp", "art", "arw", "asm", "ast", "ath", "aus", "ava",

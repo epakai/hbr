@@ -34,12 +34,15 @@ void message_level_warn(void) { MESSAGE_LEVEL = HBR_WARN; }
 /// Only print error or worse messages
 void message_level_error(void) { MESSAGE_LEVEL = HBR_ERROR; }
 
+void hbr_print_message(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
 /**
  * @brief Message printing routine for hbr_verror(),
  *        hbr_vwarn(), hbr_vinfo()
  */
 void hbr_print_message(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp) {
+    #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     vfprintf(stderr, format, argp);
     if (path) {
         fprintf(stderr, ": (%s)", path);
