@@ -22,17 +22,6 @@
 
 #include <glib.h>
 
-// options data container
-typedef struct option_data_s option_data_t;
-/// option type
-typedef struct option_s option_t;
-/// custom types
-typedef struct custom_key_s custom_key_t;
-typedef struct custom_s custom_t;
-/// conflict type
-typedef struct conflict_s conflict_t;
-/// require type
-typedef struct require_s require_t;
 
 /**
  * @brief Possible key types (based on GKeyFile types)
@@ -44,7 +33,7 @@ typedef enum key_types {k_string, k_boolean, k_integer, k_double, k_string_list,
  * @brief Data about options that get passed to HandBrakeCLI.
  *        name should be unique in the set of options.
  */
-struct option_s {
+typedef struct option_s {
     /**
      * @brief long option name, prefixed with -- on command line
      */
@@ -71,7 +60,7 @@ struct option_s {
      * @param config_path   Path name to config
      * @param global_config Global config for validating some options
      */
-    gboolean (* valid_option)(option_t *option, const gchar *group, GKeyFile *config,
+    gboolean (* valid_option)(struct option_s *option, const gchar *group, GKeyFile *config,
             const gchar *config_path);
     /**
      * @brief number of valid values kept in the following array
@@ -81,23 +70,23 @@ struct option_s {
      * @brief array of valid values, actual type depends on key_type
      */
     void *valid_values;
-};
+} option_t;
 
-struct custom_key_s {
+typedef struct custom_key_s {
     key_type key_type;
     const gchar *key_name;
-};
+} custom_key_t;
 
-struct custom_s {
+typedef struct custom_s {
     const gchar *name;
     const void *key;
-};
+} custom_t;
 
 /**
  * @brief Data about which options conflict.
  *        name may repeat for options with multiple conflicts.
  */
-struct conflict_s {
+typedef struct conflict_s {
     /**
      * @brief name of option being considered
      */
@@ -114,13 +103,13 @@ struct conflict_s {
      * @brief optional, specific value of conflict_name that we conflict with
      */
     const gchar *conflict_value;
-};
+} conflict_t;
 
 /**
  * @brief Data about which options require others.
  *        name may repeat for options with multiple requires.
  */
-struct require_s {
+typedef struct require_s {
     /**
      * @brief name of option being considered
      */
@@ -133,9 +122,9 @@ struct require_s {
      * @brief optional, specific value of require_name that we require
      */
     const gchar *require_value;
-};
+} require_t;
 
-struct option_data_s {
+typedef struct option_data_s {
     /*
      * Pointers for dynamically allocated array that combines
      * options/hbr_options, requires/hbr_requires, and conflicts/hbr_conflicts
@@ -160,7 +149,7 @@ struct option_data_s {
      */
     GHashTable *requires_index;
     GHashTable *conflicts_index;
-};
+} option_data_t;
 
 void determine_handbrake_version(gchar *arg_version);
 void arg_hash_generate(void);
