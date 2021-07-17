@@ -41,8 +41,8 @@ SOURCES := $(addprefix $(top_srcdir)/, $(SRC))
 PCH = $(addsuffix .gch, $(SOURCES))
 
 if HAVE_CLANG
-clang-analyzer:
-	@- clang $(COMMON_CFLAGS) --analyze $(SOURCES)
+clang-analyzer: $(abs_builddir)/src/config.h
+	@- clang $(COMMON_CFLAGS) --include-directory=$(abs_builddir)/src --analyze $(SOURCES)
 	@- rm -f $(PCH)
 	@- rm *.plist
 else
