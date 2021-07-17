@@ -23,7 +23,7 @@
 #include <glib.h>
 
 GKeyFile *gen_hbr(gint outfiles_count, gint title, gint season, const gchar *type,
-		const gchar *iso_filename, const gchar *year, const gchar *crop,
+        const gchar *iso_filename, const gchar *year, const gchar *crop,
         const gchar *name, const gchar *input_basedir, const gchar *output_basedir,
         const gchar *audio, const gchar *subtitle, const gchar *chapters,
         const gchar *episodes);

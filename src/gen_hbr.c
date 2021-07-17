@@ -28,17 +28,17 @@
  * @brief Episode structure used to build episode list when -l option is used.
  */
 struct episode {
-	gint number;
+    gint number;
     gint season;
-	gchar *name;
+    gchar *name;
 };
 
 /**
  * @brief Episode list structure
  */
 struct episode_list {
-	gint count;
-	struct episode *array;
+    gint count;
+    struct episode *array;
 };
 
 static struct episode_list read_episode_list(const gchar *episode_filename);

@@ -36,43 +36,43 @@ static const char gen_args_doc[] = "{-n NUM|-l FILE}";
 
 /// Command line options for argp parser
 static const struct argp_option gen_options[] = {
-	{"count",          'n', "NUM",          0, "Number of outfile sections to generate", 1},
-	{"episodes",       'l', "FILE",         0, "Episode list", 1},
-	{"title",          't', "NUM",          0, "DVD Title number", 2},
-	{"source",         'f', "FILE",         0, "Source filename", 2},
-	{"crop",           'c', "T:B:L:R",      0, "Pixels to crop, top:bottom:left:right", 2},
-	{"type",           'p', "series|movie", 0, "Type of video", 3},
-	{"year",           'y', "YEAR",         0, "Movie Release year", 3},
-	{"name",           'N', "NAME",         0, "Movie or series name", 3},
-	{"season",         'S', "NUM",          0, "Series season", 3},
-	{"input-basedir",  'i', "PATH",         0, "Base directory for input files", 3},
-	{"output-basedir", 'o', "PATH",         0, "Base directory for input files", 3},
-	{"audio",          'a', "AUDIO",        0, "Comma-separated audio track list", 3},
-	{"subtitle",       's', "SUBTITLE",     0, "Comma-separated subtitle track list", 3},
-	{"chapters",       'C', "CHAPTERS",     0, "Chapter range", 3},
-	{"help",           '?', NULL,              0, "Give this help list", -1 },
-	{"usage",          '@', NULL,              OPTION_HIDDEN, "Give this help list", -1 },
-	{ NULL, 0, NULL, 0, NULL, 0 }
+    {"count",          'n', "NUM",          0, "Number of outfile sections to generate", 1},
+    {"episodes",       'l', "FILE",         0, "Episode list", 1},
+    {"title",          't', "NUM",          0, "DVD Title number", 2},
+    {"source",         'f', "FILE",         0, "Source filename", 2},
+    {"crop",           'c', "T:B:L:R",      0, "Pixels to crop, top:bottom:left:right", 2},
+    {"type",           'p', "series|movie", 0, "Type of video", 3},
+    {"year",           'y', "YEAR",         0, "Movie Release year", 3},
+    {"name",           'N', "NAME",         0, "Movie or series name", 3},
+    {"season",         'S', "NUM",          0, "Series season", 3},
+    {"input-basedir",  'i', "PATH",         0, "Base directory for input files", 3},
+    {"output-basedir", 'o', "PATH",         0, "Base directory for input files", 3},
+    {"audio",          'a', "AUDIO",        0, "Comma-separated audio track list", 3},
+    {"subtitle",       's', "SUBTITLE",     0, "Comma-separated subtitle track list", 3},
+    {"chapters",       'C', "CHAPTERS",     0, "Chapter range", 3},
+    {"help",           '?', NULL,              0, "Give this help list", -1 },
+    {"usage",          '@', NULL,              OPTION_HIDDEN, "Give this help list", -1 },
+    { NULL, 0, NULL, 0, NULL, 0 }
 };
 
 /**
  * @brief Arguments related to xml generation. Handled by argp.
  */
 struct gen_arguments {
-	int generate;         // Number of outfile sections to generate.
-	int title;            // DVD title number.
-	int season;           // Season number.
-	char *type;           // Type of video (series or movie).
-	char *iso_filename;   // Source filename.
-	char *year;           // Release year.
-	char *crop;           // Crop amount in pixels formatted as top:bottom:left:right
-	char *name;           // Movie or series name.
-	char *input_basedir;  // Base directory for input files.
-	char *output_basedir; // Base directory for input files.
+    int generate;         // Number of outfile sections to generate.
+    int title;            // DVD title number.
+    int season;           // Season number.
+    char *type;           // Type of video (series or movie).
+    char *iso_filename;   // Source filename.
+    char *year;           // Release year.
+    char *crop;           // Crop amount in pixels formatted as top:bottom:left:right
+    char *name;           // Movie or series name.
+    char *input_basedir;  // Base directory for input files.
+    char *output_basedir; // Base directory for input files.
     char *audio;          // Audio track list (comma-separated)
     char *subtitle;       // Subtitle track list (comma-separated)
     char *chapters;       // Chapter range (i.e. 2-18)
-	char *episodes;       // Filename for list of episodes.
+    char *episodes;       // Filename for list of episodes.
 };
 
 // Function prototype
@@ -80,7 +80,7 @@ static error_t parse_gen_opt(int token, char *arg, struct argp_state *state);
 
 /// argp struct of all parsing/help info
 static const struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc,
-	gen_doc, NULL, NULL, NULL};
+    gen_doc, NULL, NULL, NULL};
 /**
  * @brief Produces a hbr template based on arguments or an episode list
  *
@@ -91,25 +91,25 @@ static const struct argp gen_argp = {gen_options, parse_gen_opt, gen_args_doc,
  */
 int main(int argc, char * argv[])
 {
-	struct gen_arguments gen_arguments = {1, 0, 0,
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    struct gen_arguments gen_arguments = {1, 0, 0,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
-	argp_parse(&gen_argp, argc, argv, ARGP_NO_HELP, NULL, &gen_arguments);
+    argp_parse(&gen_argp, argc, argv, ARGP_NO_HELP, NULL, &gen_arguments);
 
-	GKeyFile *config = gen_hbr(gen_arguments.generate, gen_arguments.title,
-			gen_arguments.season, gen_arguments.type,
-			gen_arguments.iso_filename, gen_arguments.year, gen_arguments.crop,
-			gen_arguments.name, gen_arguments.input_basedir,
-            gen_arguments.output_basedir, gen_arguments.audio,
-            gen_arguments.subtitle, gen_arguments.chapters,
-            gen_arguments.episodes);
-	if (config != NULL) {
-		print_hbr(config);
-        g_key_file_free(config);
-	} else {
-        hbr_error("hbr file generation failed", NULL, NULL, NULL, NULL);
-	}
-	return 0;
+    GKeyFile *config = gen_hbr(gen_arguments.generate, gen_arguments.title,
+        gen_arguments.season, gen_arguments.type,
+        gen_arguments.iso_filename, gen_arguments.year, gen_arguments.crop,
+        gen_arguments.name, gen_arguments.input_basedir,
+        gen_arguments.output_basedir, gen_arguments.audio,
+        gen_arguments.subtitle, gen_arguments.chapters,
+        gen_arguments.episodes);
+    if (config != NULL) {
+    print_hbr(config);
+    g_key_file_free(config);
+    } else {
+    hbr_error("hbr file generation failed", NULL, NULL, NULL, NULL);
+    }
+    return 0;
 }
 
 /**
@@ -123,72 +123,72 @@ int main(int argc, char * argv[])
  */
 static error_t parse_gen_opt(int token, char *arg, struct argp_state *state)
 {
-	struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
-	switch (token) {
-		case '@':
-		case '?':
-			//TODO maybe pull executable name from somewhere else
-			argp_help(&gen_argp, stdout, ARGP_HELP_SHORT_USAGE, (char *)"hbr-gen");
-			argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, (char *)"hbr-gen");
-			argp_help(&gen_argp, stdout, ARGP_HELP_LONG, (char *)"hbr-gen");
-			printf("Report bugs to %s\n", argp_program_bug_address);
-			exit(0);
-			break;
-		case 'l':
-			gen_arguments->episodes = arg;
-			gen_arguments->generate = 1;
-			break;
-		case 'n':
-			if (arg != NULL) {
-				if ( atoi(arg) > 0 ) {
-					gen_arguments->generate = atoi(arg);
-				}
-			} else {
-				gen_arguments->generate = 1;
-			}
-			break;
-		case 'f':
-            gen_arguments->iso_filename = arg;
-			break;
-		case 'p':
-            gen_arguments->type = arg;
-			break;
-		case 't':
-			if ( atoi(arg) >= 1  && atoi(arg) <= 99 ) {
-				gen_arguments->title = atoi(arg);
-			}
-			break;
-		case 'y':
-			gen_arguments->year = arg;
-			break;
-		case 'c':
-			gen_arguments->crop = arg;
-			break;
-		case 'N':
-			gen_arguments->name = arg;
-			break;
-		case 'S':
-			if ( atoi(arg) > 0 ) {
-				gen_arguments->season = atoi(arg);
-			}
-			break;
-		case 'i':
-			gen_arguments->input_basedir = arg;
-			break;
-		case 'o':
-			gen_arguments->output_basedir = arg;
-			break;
-		case 'a':
-			gen_arguments->audio = arg;
-			break;
-		case 's':
-			gen_arguments->subtitle = arg;
-			break;
-		case 'C':
-			gen_arguments->chapters = arg;
-			break;
-		default:
-			return ARGP_ERR_UNKNOWN;
-	}
-	return 0;
+    struct gen_arguments *gen_arguments = (struct gen_arguments *) state->input;
+    switch (token) {
+    case '@':
+    case '?':
+        //TODO maybe pull executable name from somewhere else
+        argp_help(&gen_argp, stdout, ARGP_HELP_SHORT_USAGE, (char *)"hbr-gen");
+        argp_help(&gen_argp, stdout, ARGP_HELP_PRE_DOC, (char *)"hbr-gen");
+        argp_help(&gen_argp, stdout, ARGP_HELP_LONG, (char *)"hbr-gen");
+        printf("Report bugs to %s\n", argp_program_bug_address);
+        exit(0);
+        break;
+    case 'l':
+        gen_arguments->episodes = arg;
+        gen_arguments->generate = 1;
+        break;
+    case 'n':
+        if (arg != NULL) {
+        if ( atoi(arg) > 0 ) {
+            gen_arguments->generate = atoi(arg);
+        }
+        } else {
+        gen_arguments->generate = 1;
+        }
+        break;
+    case 'f':
+        gen_arguments->iso_filename = arg;
+        break;
+    case 'p':
+        gen_arguments->type = arg;
+        break;
+    case 't':
+        if ( atoi(arg) >= 1  && atoi(arg) <= 99 ) {
+        gen_arguments->title = atoi(arg);
+        }
+        break;
+    case 'y':
+        gen_arguments->year = arg;
+        break;
+    case 'c':
+        gen_arguments->crop = arg;
+        break;
+    case 'N':
+        gen_arguments->name = arg;
+        break;
+    case 'S':
+        if ( atoi(arg) > 0 ) {
+        gen_arguments->season = atoi(arg);
+        }
+        break;
+    case 'i':
+        gen_arguments->input_basedir = arg;
+        break;
+    case 'o':
+        gen_arguments->output_basedir = arg;
+        break;
+    case 'a':
+        gen_arguments->audio = arg;
+        break;
+    case 's':
+        gen_arguments->subtitle = arg;
+        break;
+    case 'C':
+        gen_arguments->chapters = arg;
+        break;
+    default:
+        return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
 }
