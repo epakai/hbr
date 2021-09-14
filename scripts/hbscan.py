@@ -387,9 +387,9 @@ def main():
         CURRENT_PATH = None
         for line in sys.stdin.readlines():
             parser.parseString(line)
-            if (title_list and
-                    title_list[-1].filename is None and
-                    CURRENT_PATH is not None):
+            if (title_list
+                    and title_list[-1].filename is None
+                    and CURRENT_PATH is not None):
                 title_list[-1].filename = CURRENT_PATH
     elif len(ARGS.path) >= 1:
         if (ARGS.nodvdnav):
@@ -401,7 +401,8 @@ def main():
                           '--scan', '-t', '0', '-i', path] for path in ARGS.path]
 
         procs_list = [subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT, cwd=os.getcwd()) for cmd in cmds_list]
+                                       stderr=subprocess.STDOUT,
+                                       cwd=os.getcwd()) for cmd in cmds_list]
         proc_outputs = [proc.communicate()[0] for proc in procs_list]
 
         for proc in procs_list:

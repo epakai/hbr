@@ -116,7 +116,7 @@ option_data_t option_data;
  * @brief Reads the input file and calls handbrake for each specified outfile
  *
  * @param argc Command line argument count
- * @param argv[] Arguments to be parsed by argp
+ * @param argv[] Arguments to be parsed by glib command line parser
  *
  * @return 0 - success, 1 - failure
  */

@@ -21,6 +21,14 @@
 
 #include "util.h"
 
+
+static void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
+static void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
+static void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
+        const gchar *key, const gchar *value, va_list argp);
+
 static enum message_level {
     HBR_INFO,
     HBR_WARN,
@@ -85,7 +93,7 @@ void hbr_error(const gchar *format, const gchar *path, const gchar *section,
  * @brief Variadic implementation for hbr_error
  */
     __attribute__((__format__ (__printf__, 1, 0)))
-void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
+static void hbr_verror(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
     if (MESSAGE_LEVEL <= HBR_ERROR) {
@@ -118,7 +126,7 @@ void hbr_warn(const gchar *format, const gchar *path, const gchar *section,
  * @brief Variadic implementation for hbr_warn
  */
     __attribute__((__format__ (__printf__, 1, 0)))
-void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
+static void hbr_vwarn(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
     if (MESSAGE_LEVEL <= HBR_WARN) {
@@ -151,7 +159,7 @@ void hbr_info(const gchar *format, const gchar *path, const gchar *section,
  * @brief Variadic implementation for hbr_info
  */
     __attribute__((__format__ (__printf__, 1, 0)))
-void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
+static void hbr_vinfo(const gchar *format, const gchar *path, const gchar *section,
         const gchar *key, const gchar *value, va_list argp)
 {
     if (MESSAGE_LEVEL <= HBR_INFO) {

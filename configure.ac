@@ -82,7 +82,7 @@ AC_CHECK_LIB(gobject-2.0, g_object_unref)
 PKG_CHECK_MODULES(GOBJECT2, gobject-2.0)
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([stdlib.h string.h unistd.h assert.h stdio.h errno.h math.h sys/types.h sys/wait.h sys/param.h])
 
 dnl check for argp, FreeBSD has the header in /usr/local/include
 case $host_os in

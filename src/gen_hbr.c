@@ -57,13 +57,10 @@ static void create_outfile_section(GKeyFile *config, gint outfile_count, gint ep
 static struct episode_list read_episode_list(const gchar *episode_filename)
 {
     int max_count = 30;
-    struct episode_list list;
-    list.count = 0;
+    struct episode_list list = {0, NULL};
     GDataInputStream *episode_list_file = open_datastream(episode_filename);
     if (episode_list_file == NULL)  {
         hbr_error("Failed to open episode list", episode_filename, NULL, NULL, NULL);
-        list.count = 0;
-        list.array = NULL;
         return list;
     }
 
