@@ -15,6 +15,13 @@ using the '-' argument.
 
     HandBrakeCLI --scan -t 0 -i MOVIE.iso 2>&1 | hbscan.py -
 
+HandBrakeCLI has output from libdvdnav which isn't utf-8
+encoded. This will cause readlines() to have a
+UnicodeDecodeError. When manually scanning you can filter:
+
+    HandBrakeCLI --scan -t 0 -i MOVIE.iso 2>&1 | \
+            grep -v ^libdvdnav: | hbscan.py -
+
 Note: HandBrakeCLI scan defaults to ignoring titles shorter
 than 10 seconds, but hbscan.py sets --min-duration 0 unless
 overridden.
@@ -273,7 +280,7 @@ def build_parser(title_list):
                           ("audio_codec") + ')')
              + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphanums + "'")) + ')')
              + '(' + pp.Word(pp.nums + '.')("audio_channels") + 'ch)'
-             + pp.Optional('(' + pp.Combine(pp.Word(pp.nums) + 'kbps')
+             + pp.Optional('(' + pp.Combine(pp.Word(pp.nums) + ' kbps')
                            ("audio_bitrate_short") + ')')
              + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphas)) + ')')
              + '(iso639-2:' + pp.Word(pp.alphas)("audio_iso639") + ')'
@@ -331,6 +338,8 @@ def emit_outfile_sections(title_list):
         else:
             mpls_file_path = os.path.join(title.filename, "BDMV", "PLAYLIST",
                                           title.playlist.lower())
+            # TODO mpls_dump is part of libbluray, but not normally installed
+            # None of the normal blu-ray utils seem to dump playlist stream files though
             mpls_dump_out = subprocess.run(['mpls_dump', '-l', mpls_file_path],
                                            stdout=subprocess.PIPE,
                                            cwd=os.getcwd(), text=True,
