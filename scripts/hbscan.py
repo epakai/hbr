@@ -70,9 +70,10 @@ class Chapter():
 
 
 class Audio():
-    def __init__(self, audio_number, codec, channels, iso639, frequency,
-                 bitrate, bitrate_short):
+    def __init__(self, audio_number, surround_codec, codec, channels, iso639,
+                 frequency, bitrate, bitrate_short):
         self.audio_number = audio_number
+        self.surround_codec = surround_codec
         self.codec = codec
         self.channels = channels
         self.iso639 = iso639
@@ -167,6 +168,7 @@ def add_chapter(title_list):
 def add_audio(title_list):
     def parse_action(token):
         title_list[-1].audio.append(Audio(token.audio_number,
+                                          token.audio_surround_codec,
                                           token.audio_codec,
                                           token.audio_channels,
                                           token.audio_iso639,
@@ -273,6 +275,7 @@ def build_parser(title_list):
     # + 1, Unknown (AC3) (2.0 ch) (iso639-2: und), 48000Hz, 192000bps
     # new output
     # + 1, Unknown (AC3) (2.0 ch) (192 kbps) (iso639-2: und), 48000Hz, 192000bps
+    # + 1, English (AC3) (5.1 ch) (Dolby Digital EX) (640 kbps) (iso639-2: eng), 48000Hz, 640000bps
     audio = ('+' + pp.Word(pp.nums)("audio_number")
              + pp.OneOrMore(pp.Word(unicode_printables,
                                     excludeChars='()'))("audio_lang")
@@ -280,6 +283,8 @@ def build_parser(title_list):
                           ("audio_codec") + ')')
              + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphanums + "'")) + ')')
              + '(' + pp.Word(pp.nums + '.')("audio_channels") + 'ch)'
+             + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphas))
+                           ("audio_surround_codec") + ')')
              + pp.Optional('(' + pp.Combine(pp.Word(pp.nums) + ' kbps')
                            ("audio_bitrate_short") + ')')
              + pp.Optional('(' + pp.OneOrMore(pp.Word(pp.alphas)) + ')')
