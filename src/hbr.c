@@ -525,7 +525,7 @@ void generate_thumbnail(gchar *filename, int outfile_count, int total_outfiles,
  * @param skip      Skip encoding existing files
  * @param filename  output filename (also used to generate log filename)
  *
- * @return error status from hb_fork(), 0 is success
+ * @return error status from hb_fork(), 0 is success, 1 on other errors
  */
 int call_handbrake(GPtrArray *args, int out_count, gboolean overwrite,
         gboolean skip, gchar *filename)
