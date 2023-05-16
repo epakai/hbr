@@ -88,7 +88,7 @@ static GOptionEntry entries[] =
     {"debug",     'd', 0, G_OPTION_ARG_NONE,      &opt_debug,
         "print the commands to be run instead of executing", NULL},
     {"config",    'c', 0, G_OPTION_ARG_FILENAME,  &opt_config,
-        "use named configuration file instead of default", NULL},
+        "use named configuration file instead of default", "CONFIG"},
     {"preview",   'p', 0, G_OPTION_ARG_NONE,      &opt_preview,
         "generate a preview image for each output file", NULL},
     {"overwrite", 'y', 0, G_OPTION_ARG_NONE,      &opt_overwrite,

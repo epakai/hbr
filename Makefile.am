@@ -3,7 +3,7 @@ SUPPORT_SOURCES = src/options.c src/options.h src/keyfile.c src/keyfile.h src/bu
 GEN_SOURCES = src/gen_hbr.c src/gen_hbr.h
 COMMON_SOURCES = src/util.c src/util.h
 
-bin_PROGRAMS = hbr hbr-gen
+bin_PROGRAMS = hbr hbr-gui hbr-gen
 
 COMMON_CFLAGS = $(GLIB2_CFLAGS) $(GIO2_CFLAGS) $(GOBJECT2_CFLAGS)
 AM_SPLINTFLAGS = $(COMMON_CFLAGS)
@@ -11,6 +11,10 @@ AM_SPLINTFLAGS = $(COMMON_CFLAGS)
 hbr_SOURCES = src/hbr.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
 hbr_CFLAGS = $(COMMON_CFLAGS) $(WARN_CFLAGS)
 hbr_LDADD = $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(WARN_LDFLAGS)
+
+hbr_gui_SOURCES = src/gui.c $(SUPPORT_SOURCES) $(HB_INFO_SOURCES) $(COMMON_SOURCES)
+hbr_gui_CFLAGS = $(GTK3_CFLAGS) $(COMMON_CFLAGS) $(WARN_CFLAGS)
+hbr_gui_LDADD = $(GTK3_LIBS) $(GIO2_LIBS) $(GOBJECT2_LIBS) $(GLIB2_LIBS) $(WARN_LDFLAGS)
 
 hbr_gen_SOURCES = src/hbr-gen.c $(GEN_SOURCES) $(COMMON_SOURCES)
 hbr_gen_CFLAGS = $(COMMON_CFLAGS) $(WARN_CFLAGS)
@@ -37,7 +41,7 @@ clean-doc: ;
 distclean-doc: ;
 endif
 
-SRC = src/hbr.c src/hbr-gen.c $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
+SRC = src/hbr.c src/gui.c src/hbr-gen.c $(HB_INFO_SOURCES) $(SUPPORT_SOURCES) $(GEN_SOURCES) $(COMMON_SOURCES)
 SOURCES := $(addprefix $(top_srcdir)/, $(SRC))
 PCH = $(addsuffix .gch, $(SOURCES))
 

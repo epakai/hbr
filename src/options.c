@@ -75,7 +75,6 @@ static option_t hbr_options[] =
 static require_t hbr_requires[] =
 {
     { "extra", "type", "movie"},
-    { "year", "type", "movie"},
     { "season", "type", "series"},
     { "episode", "type", "series"},
     { NULL, NULL, NULL}
@@ -87,8 +86,6 @@ static require_t hbr_requires[] =
  */
 static conflict_t hbr_conflicts[] =
 {
-    { "add_year", "true", "type", "series" },
-    { "type", "series", "add_year", "true" },
     { NULL, NULL, NULL, NULL}
 };
 

@@ -1195,8 +1195,8 @@ gboolean valid_string_list(option_t *option, const gchar *group, GKeyFile *confi
          const gchar *config_path)
 {
     assert(option->valid_values_count == 0 && option->valid_values == NULL);
-    g_print("valid_string_list: %s\n", option->name);  //TODO REMOVE
-    return FALSE; //TODO incomplete
+    g_print("valid_string_list (we didn't actually validate anything): %s\n", option->name);  //TODO REMOVE
+    return TRUE; //TODO incomplete
 }
 
 gboolean valid_filename_exists(option_t *option, const gchar *group, GKeyFile *config,

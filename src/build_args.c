@@ -450,12 +450,13 @@ gchar * build_filename(GKeyFile *config, const gchar *group)
     }
     g_free(output_basedir);
 
+    if (year && add_year) {
+        // year in the output directory
+        append_year(config, group, filename);
+        g_string_append(filename, G_DIR_SEPARATOR_S);
+    }
+
     if (strcmp(type, "movie") == 0) {
-        if (year && add_year) {
-            // year in the output directory
-            append_year(config, group, filename);
-            g_string_append(filename, G_DIR_SEPARATOR_S);
-        }
         // extras subdirectories
         if (extra_type) {
             struct extra {

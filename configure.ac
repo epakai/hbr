@@ -74,6 +74,8 @@ AS_IF([test "$enable_doxygen_latex" = "yes"], AC_SUBST([GENERATE_LATEX], ["yes"]
 AC_SUBST([GENERATE_LATEX], ["no"]))
 
 # Checks for libraries.
+AC_CHECK_LIB(gtk+-3.0, gtk_application_new)
+PKG_CHECK_MODULES(GTK3, gtk+-3.0)
 AC_CHECK_LIB(glib-2.0, g_keyfile_new)
 PKG_CHECK_MODULES(GLIB2, glib-2.0)
 AC_CHECK_LIB(gio-2.0, g_data_input_stream_new)
